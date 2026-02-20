@@ -221,7 +221,7 @@ export default function Home() {
 
       {/* Logo/Image */}
       <div className="flex justify-center pb-8 px-4">
-        <img src="/abtow-logo.jpg" alt="ABTOW 2026 Open" className="w-64 md:w-80 max-w-full" />
+        <img src="/abtow-logo.png" alt="ABTOW 2026 Open" className="w-64 md:w-80 max-w-full" />
       </div>
 
       {/* Leaderboard Table */}

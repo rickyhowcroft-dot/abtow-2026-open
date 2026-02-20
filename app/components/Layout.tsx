@@ -68,7 +68,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           
           {/* Logo */}
           <div className="mb-8 pt-4">
-            <img src="/abtow-logo.jpg" alt="ABTOW 2026" className="w-48 rounded-lg mx-auto" />
+            <img src="/abtow-logo.png" alt="ABTOW 2026" className="w-48 rounded-lg mx-auto" />
           </div>
           
           {/* Navigation Links */}
