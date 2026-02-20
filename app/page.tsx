@@ -291,9 +291,9 @@ export default function Home() {
         <div className="flex justify-between items-center mt-6 mb-4 px-2">
           <div className="text-sm font-semibold italic text-gray-600" style={{ fontFamily: 'Georgia, serif' }}>Team Shaft</div>
           <div className="text-sm text-gray-500 text-center" style={{ fontFamily: 'Georgia, serif' }}>
-            {selectedDay === 1 && (<><div>Ritz Carlton GC — Best Ball</div><div className="text-xs text-gray-400">March 16, 2026</div></>)}
-            {selectedDay === 2 && (<><div>Southern Dunes — Stableford</div><div className="text-xs text-gray-400">March 17, 2026 ☘️</div></>)}
-            {selectedDay === 3 && (<><div>Champions Gate</div><div>Individual Match Play</div><div className="text-xs text-gray-400">March 18, 2026</div></>)}
+            {selectedDay === 1 && (<><div>Ritz Carlton GC — Best Ball</div><div className="text-xs text-gray-400">March 16, 2026</div><div className="mt-1"><Link href="/day/1" className="text-[10px] font-semibold text-[#2a6b7c] bg-[#2a6b7c]/10 px-3 py-1 rounded-full hover:bg-[#2a6b7c]/20 transition-colors">Day 1 Details</Link></div></>)}
+            {selectedDay === 2 && (<><div>Southern Dunes — Stableford</div><div className="text-xs text-gray-400">March 17, 2026 ☘️</div><div className="mt-1"><Link href="/day/2" className="text-[10px] font-semibold text-[#2a6b7c] bg-[#2a6b7c]/10 px-3 py-1 rounded-full hover:bg-[#2a6b7c]/20 transition-colors">Day 2 Details</Link></div></>)}
+            {selectedDay === 3 && (<><div>Champions Gate</div><div>Individual Match Play</div><div className="text-xs text-gray-400">March 18, 2026</div><div className="mt-1"><Link href="/day/3" className="text-[10px] font-semibold text-[#2a6b7c] bg-[#2a6b7c]/10 px-3 py-1 rounded-full hover:bg-[#2a6b7c]/20 transition-colors">Day 3 Details</Link></div></>)}
           </div>
           <div className="text-sm font-semibold italic text-gray-600" style={{ fontFamily: 'Georgia, serif' }}>Team Balls</div>
         </div>
