@@ -263,7 +263,7 @@ export default function Home() {
             </tbody>
           </table>
           <div className="px-4 py-3 bg-[#2a6b7c]/10 text-xs text-gray-600" style={{ fontFamily: 'Georgia, serif' }}>
-            Scoring is based on total match points each day. $4,800 purse.
+            Scoring is based on total match points each day.
           </div>
         </div>
       </div>
