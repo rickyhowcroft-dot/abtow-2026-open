@@ -211,9 +211,11 @@ export default function Home() {
         <div className="flex items-center justify-center gap-0 max-w-md mx-auto mb-2">
           <div className="flex-1 border-t border-gray-400"></div>
         </div>
-        <p className="text-[11px] md:text-base tracking-[0.15em] md:tracking-[0.2em] text-gray-700 font-semibold uppercase mb-2 whitespace-nowrap" style={{ fontFamily: 'Georgia, serif' }}>
-          Ritz Carlton GC &bull; Southern Dunes &bull; Champions Gate
-        </p>
+        <div className="text-sm md:text-base tracking-[0.15em] text-gray-700 font-semibold uppercase mb-2 space-y-0.5" style={{ fontFamily: 'Georgia, serif' }}>
+          <div>Ritz Carlton GC</div>
+          <div>Southern Dunes</div>
+          <div>Champions Gate</div>
+        </div>
         <div className="flex items-center justify-center gap-0 max-w-md mx-auto">
           <div className="flex-1 border-t border-gray-400"></div>
         </div>
