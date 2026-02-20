@@ -69,16 +69,22 @@ export default function SkinsDetail() {
 
     const results: SkinResult[] = [];
 
+    // For skins, all players use their full playing_handicap (75%) for net calculation
+    // even on Day 3 where match play uses strokes off low man.
+    // Net scores never cut or push a gross score:
+    // If a player wins gross outright, exclude them from net evaluation on that hole.
+
     for (let hole = 1; hole <= 18; hole++) {
       const holeData = course.par_data[`hole_${hole}`];
       if (!holeData) continue;
 
       const holeScores: Array<{ player: Player; grossScore: number; netScore: number }> = [];
 
-      // Get all scores for this hole
+      // Get all scores for this hole across ALL players in the day
       players.forEach(player => {
         const score = scores.find(s => s.player_id === player.id && s.hole_number === hole);
         if (score?.gross_score) {
+          // Always use full playing_handicap for skins (75% handicap)
           const netScore = calculateNetScore(score.gross_score, player.playing_handicap, holeData.handicap);
           holeScores.push({
             player,
@@ -99,20 +105,31 @@ export default function SkinsDetail() {
       // Find gross winners
       const minGrossScore = Math.min(...holeScores.map(s => s.grossScore));
       const grossWinners = holeScores.filter(s => s.grossScore === minGrossScore);
+      const grossWinner = grossWinners.length === 1 ? grossWinners[0] : null;
 
-      // Find net winners
-      const minNetScore = Math.min(...holeScores.map(s => s.netScore));
-      const netWinners = holeScores.filter(s => s.netScore === minNetScore);
+      // Find net winners — exclude gross winner so net can't cut/push gross
+      const netEligible = grossWinner 
+        ? holeScores.filter(s => s.player.id !== grossWinner.player.id)
+        : holeScores;
+      
+      let netWinner = null;
+      let netTie = false;
+      if (netEligible.length > 0) {
+        const minNetScore = Math.min(...netEligible.map(s => s.netScore));
+        const netWinners = netEligible.filter(s => s.netScore === minNetScore);
+        netWinner = netWinners.length === 1 ? netWinners[0] : null;
+        netTie = netWinners.length > 1;
+      }
 
       results.push({
         hole,
         par: holeData.par,
-        grossWinner: grossWinners.length === 1 ? grossWinners[0].player : undefined,
-        grossScore: grossWinners.length === 1 ? minGrossScore : undefined,
+        grossWinner: grossWinner?.player,
+        grossScore: grossWinner ? minGrossScore : undefined,
         grossTie: grossWinners.length > 1,
-        netWinner: netWinners.length === 1 ? netWinners[0].player : undefined,
-        netScore: netWinners.length === 1 ? minNetScore : undefined,
-        netTie: netWinners.length > 1
+        netWinner: netWinner?.player,
+        netScore: netWinner ? netWinner.netScore : undefined,
+        netTie
       });
     }
 
