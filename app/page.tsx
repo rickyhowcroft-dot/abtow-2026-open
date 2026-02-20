@@ -262,7 +262,7 @@ export default function Home() {
               </tr>
             </tbody>
           </table>
-          <div className="px-4 py-3 bg-[#2a6b7c]/10 text-xs text-gray-600" style={{ fontFamily: 'Georgia, serif' }}>
+          <div className="px-4 py-3 bg-[#2a6b7c]/10 text-xs text-gray-600 text-center" style={{ fontFamily: 'Georgia, serif' }}>
             Scoring is based on total match points each day.
           </div>
         </div>
