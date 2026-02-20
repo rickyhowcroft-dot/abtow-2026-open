@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import type { Player, Match, Score, Course } from '@/lib/scoring';
 import { calculateMatchPlayStrokes, calculateStablefordPoints, calculateNetScore, calculateBestBallResults, calculateStablefordResults, calculateIndividualResults } from '@/lib/scoring';
@@ -255,12 +256,16 @@ export default function ScoreEntry() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="px-4 py-3">
-          <div className="text-center">
+        <div className="px-4 py-3 flex items-center">
+          <Link href="/" className="shrink-0 mr-3">
+            <img src="/abtow-logo.png" alt="Home" className="w-10 h-10 object-contain" />
+          </Link>
+          <div className="text-center flex-1">
             <h1 className="text-lg font-bold">Group {match.group_number} - Day {match.day}</h1>
             <p className="text-sm text-gray-600">{course.name} ({course.tees})</p>
             <p className="text-xs text-gray-500">{match.format}</p>
           </div>
+          <div className="w-10 shrink-0"></div>
         </div>
       </div>
 
