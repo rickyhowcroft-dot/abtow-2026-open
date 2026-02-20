@@ -256,16 +256,17 @@ export default function ScoreEntry() {
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
-        <div className="px-4 py-3 flex items-center">
-          <Link href="/" className="shrink-0 mr-3">
-            <img src="/abtow-logo.png" alt="Home" className="w-10 h-10 object-contain" />
-          </Link>
-          <div className="text-center flex-1">
+        <div className="px-4 py-3">
+          <div className="flex justify-center mb-2">
+            <Link href="/" className="text-xs font-semibold text-[#2a6b7c] bg-[#2a6b7c]/10 px-4 py-1.5 rounded-full hover:bg-[#2a6b7c]/20 transition-colors">
+              ← Leaderboard
+            </Link>
+          </div>
+          <div className="text-center">
             <h1 className="text-lg font-bold">Group {match.group_number} - Day {match.day}</h1>
             <p className="text-sm text-gray-600">{course.name} ({course.tees})</p>
             <p className="text-xs text-gray-500">{match.format}</p>
           </div>
-          <div className="w-10 shrink-0"></div>
         </div>
       </div>
 
