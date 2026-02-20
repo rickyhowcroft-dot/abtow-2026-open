@@ -409,7 +409,7 @@ export default function Home() {
       {/* Footer */}
       <div className="text-center pb-8 px-4">
         <p className="text-sm italic text-gray-500 mb-2" style={{ fontFamily: 'Georgia, serif' }}>
-          &ldquo;If you&apos;re reading this, you should be golfing.&rdquo;
+          If you&apos;re reading this, you should be golfing.
         </p>
         <p className="text-xs text-gray-400" style={{ fontFamily: 'Georgia, serif' }}>
           What happens at ABTOW stays at ABTOW.<br />Except the scores. Those are public.
