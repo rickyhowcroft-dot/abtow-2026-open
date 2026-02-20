@@ -406,8 +406,11 @@ export default function Home() {
 
       {/* Footer */}
       <div className="text-center pb-8 px-4">
-        <p className="text-xs text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>
-          For more info, contact the site administrator. If you don&apos;t know who the site admin is, you don&apos;t need to contact him.
+        <p className="text-sm italic text-gray-500 mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+          &ldquo;If you&apos;re reading this, you should be golfing.&rdquo;
+        </p>
+        <p className="text-xs text-gray-400" style={{ fontFamily: 'Georgia, serif' }}>
+          What happens at ABTOW stays at ABTOW.<br />Except the scores. Those are public.
         </p>
       </div>
 
