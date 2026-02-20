@@ -11,10 +11,8 @@ export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [scores, setScores] = useState<Score[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [selectedDay, setSelectedDay] = useState(1);
   const [loading, setLoading] = useState(true);
   const [teamScores, setTeamScores] = useState({ shafts: 0, balls: 0 });
-  const [modalMatch, setModalMatch] = useState<Match | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -169,6 +167,31 @@ export default function Home() {
     return `${teamPlayers.join(' & ')} (${isShafts ? 'Shaft' : 'Balls'}) - N/A`;
   }
 
+  // Calculate per-day team points
+  function getDayPoints(day: number) {
+    let shafts = 0, balls = 0;
+    const dayMatches = matches.filter(m => m.day === day);
+    dayMatches.forEach(match => {
+      const course = courses.find(c => c.id === match.course_id);
+      if (!course) return;
+      let result: MatchResult;
+      switch (match.format) {
+        case 'Best Ball': result = calculateBestBallResults(match, scores, players, course); break;
+        case 'Stableford': result = calculateStablefordResults(match, scores, players, course); break;
+        case 'Individual': result = calculateIndividualResults(match, scores, players, course); break;
+        default: return;
+      }
+      const team1IsShafts = players.find(p => match.team1_players.includes(p.name))?.team === 'Shaft';
+      if (team1IsShafts) { shafts += result.team1_total; balls += result.team2_total; }
+      else { balls += result.team1_total; shafts += result.team2_total; }
+    });
+    return { shafts, balls };
+  }
+
+  const day1 = getDayPoints(1);
+  const day2 = getDayPoints(2);
+  const day3 = getDayPoints(3);
+
   if (loading) {
     return (
       <div className="flex justify-center items-center min-h-96">
@@ -178,140 +201,105 @@ export default function Home() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Team Scores Header */}
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-        <div className="text-center">
-          <h2 className="newspaper-header text-4xl mb-4">Tournament Leaderboard</h2>
-          <div className="flex justify-center items-center space-x-8">
-            <div className="text-center">
-              <div className="text-2xl font-bold team-shafts">Team Shaft</div>
-              <div className="text-4xl font-bold text-blue-600">{teamScores.shafts}</div>
-            </div>
-            <div className="text-6xl font-light text-gray-400">vs</div>
-            <div className="text-center">
-              <div className="text-2xl font-bold team-balls">Team Balls</div>
-              <div className="text-4xl font-bold text-red-600">{teamScores.balls}</div>
-            </div>
+    <div className="min-h-screen" style={{ backgroundColor: '#f5f0e8' }}>
+      {/* Hero Section */}
+      <div className="text-center pt-10 pb-6 px-4">
+        <h1 className="text-6xl font-bold text-gray-900 mb-1" style={{ fontFamily: 'Georgia, serif' }}>2026</h1>
+        <h2 className="text-3xl md:text-4xl font-bold tracking-wide text-gray-900 mb-4" style={{ fontFamily: 'Georgia, serif' }}>ABTOW OPEN</h2>
+        <div className="flex items-center justify-center gap-0 max-w-md mx-auto mb-2">
+          <div className="flex-1 border-t border-gray-400"></div>
+        </div>
+        <p className="text-sm md:text-base tracking-[0.2em] text-gray-700 font-semibold uppercase mb-2" style={{ fontFamily: 'Georgia, serif' }}>
+          Ritz Carlton GC &bull; Southern Dunes &bull; Champions Gate
+        </p>
+        <div className="flex items-center justify-center gap-0 max-w-md mx-auto">
+          <div className="flex-1 border-t border-gray-400"></div>
+        </div>
+      </div>
+
+      {/* Logo/Image */}
+      <div className="flex justify-center pb-8 px-4">
+        <img src="/abtow-logo.jpg" alt="ABTOW 2026 Open" className="w-64 md:w-80 max-w-full" />
+      </div>
+
+      {/* Leaderboard Table */}
+      <div className="max-w-lg mx-auto px-4 mb-8">
+        <div className="bg-[#2a6b7c] text-white text-center py-3 rounded-t-lg">
+          <h3 className="text-2xl md:text-3xl font-bold tracking-wide" style={{ fontFamily: 'Georgia, serif' }}>LEADERBOARD</h3>
+        </div>
+        <div className="bg-white rounded-b-lg shadow-lg overflow-hidden">
+          <table className="w-full text-left">
+            <thead>
+              <tr className="border-b-2 border-gray-300">
+                <th className="px-4 py-3 text-sm font-bold text-gray-800" rowSpan={2} style={{ fontFamily: 'Georgia, serif' }}>Team</th>
+                <th className="text-center text-sm font-bold text-gray-800 pt-3 pb-1" colSpan={3} style={{ fontFamily: 'Georgia, serif' }}>Day</th>
+                <th className="px-3 py-3 text-center text-sm font-bold text-gray-800" rowSpan={2} style={{ fontFamily: 'Georgia, serif' }}>Pts.</th>
+              </tr>
+              <tr className="border-b border-gray-200">
+                <th className="px-3 py-1 text-center text-sm font-bold text-gray-600">1</th>
+                <th className="px-3 py-1 text-center text-sm font-bold text-gray-600">2</th>
+                <th className="px-3 py-1 text-center text-sm font-bold text-gray-600">3</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr className="border-b border-gray-200 hover:bg-gray-50">
+                <td className="px-4 py-4 font-semibold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>Team Shaft</td>
+                <td className="px-3 py-4 text-center font-semibold">{day1.shafts || '–'}</td>
+                <td className="px-3 py-4 text-center font-semibold">{day2.shafts || '–'}</td>
+                <td className="px-3 py-4 text-center font-semibold">{day3.shafts || '–'}</td>
+                <td className="px-3 py-4 text-center font-bold text-lg">{teamScores.shafts}</td>
+              </tr>
+              <tr className="hover:bg-gray-50">
+                <td className="px-4 py-4 font-semibold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>Team Balls</td>
+                <td className="px-3 py-4 text-center font-semibold">{day1.balls || '–'}</td>
+                <td className="px-3 py-4 text-center font-semibold">{day2.balls || '–'}</td>
+                <td className="px-3 py-4 text-center font-semibold">{day3.balls || '–'}</td>
+                <td className="px-3 py-4 text-center font-bold text-lg">{teamScores.balls}</td>
+              </tr>
+            </tbody>
+          </table>
+          <div className="px-4 py-3 bg-[#2a6b7c]/10 text-xs text-gray-600" style={{ fontFamily: 'Georgia, serif' }}>
+            Scoring is based on total match points each day. $4,800 purse.
           </div>
         </div>
       </div>
 
-      {/* Day Tabs */}
-      <div className="flex justify-center mb-6">
-        <div className="bg-white rounded-lg p-1 shadow-md">
-          {[1, 2, 3].map(day => (
-            <button
-              key={day}
-              onClick={() => setSelectedDay(day)}
-              className={`px-6 py-3 rounded-md font-semibold transition-colors ${
-                selectedDay === day
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              Day {day}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* Day Header */}
-      <div className="text-center mb-6">
-        {selectedDay === 1 && (
-          <div>
-            <h3 className="newspaper-header text-2xl mb-2">Day 1 - Ritz Carlton GC (Blue Tees)</h3>
-            <p className="text-gray-600 mb-4">Team Best Ball Match Play</p>
-          </div>
-        )}
-        {selectedDay === 2 && (
-          <div>
-            <h3 className="newspaper-header text-2xl mb-2">Day 2 - Southern Dunes (Blue/White Blended)</h3>
-            <p className="text-gray-600 mb-4">Stableford</p>
-          </div>
-        )}
-        {selectedDay === 3 && (
-          <div>
-            <h3 className="newspaper-header text-2xl mb-2">Day 3 - Champions Gate International (White Tees)</h3>
-            <p className="text-gray-600 mb-4">Individual Match Play</p>
-          </div>
-        )}
-        <div className="flex justify-center gap-3 flex-wrap">
-          <Link 
-            href={`/day/${selectedDay}`}
-            className="btn-secondary inline-block"
-          >
-            View Day {selectedDay} Details
-          </Link>
-          <Link 
-            href={`/skins/${selectedDay}`}
-            className="btn-secondary inline-block"
-          >
-            View Skins
-          </Link>
-          <Link 
-            href={`/scoreboard/${selectedDay}`}
-            className="inline-block bg-blue-600 text-white px-6 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-colors"
-          >
-            📊 Overall Scoreboard
-          </Link>
-        </div>
-      </div>
-
-      {/* Matches for Selected Day */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-        {getMatchesForDay(selectedDay).map(match => {
-          const result = getMatchResult(match);
-          const team1IsShafts = players.find(p => match.team1_players.includes(p.name))?.team === 'Shaft';
-          
+      {/* Day Navigation Cards */}
+      <div className="max-w-lg mx-auto px-4 pb-8 space-y-3">
+        {[1, 2, 3].map(day => {
+          const dayInfo = day === 1 
+            ? { course: 'Ritz Carlton GC', format: 'Team Best Ball Match Play' }
+            : day === 2 
+            ? { course: 'Southern Dunes', format: 'Stableford' }
+            : { course: 'Champions Gate International', format: 'Individual Match Play' };
+          const pts = getDayPoints(day);
           return (
-            <div key={match.id} className="bg-white rounded-lg shadow-md p-4">
-              <div className="text-center mb-3">
-                <h4 className="font-semibold text-lg">Group {match.group_number}</h4>
-                <p className="text-sm text-gray-500">{getMatchStatus(match)}</p>
-              </div>
-              
-              <Link href={`/score/${match.group_access_token}`} className="block space-y-3 hover:opacity-80 transition-opacity">
-                <div className={`p-3 rounded ${team1IsShafts ? 'bg-blue-50' : 'bg-red-50'}`}>
-                  <div className="font-medium">{formatTeamNames(match.team1_players, true, match)}</div>
+            <Link key={day} href={`/day/${day}`} className="block bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>Day {day} — {dayInfo.course}</div>
+                  <div className="text-sm text-gray-500">{dayInfo.format}</div>
                 </div>
-                
-                <div className="text-center text-gray-400 font-bold">VS</div>
-                
-                <div className={`p-3 rounded ${!team1IsShafts ? 'bg-blue-50' : 'bg-red-50'}`}>
-                  <div className="font-medium">{formatTeamNames(match.team2_players, false, match)}</div>
+                <div className="text-right">
+                  <div className="text-sm">
+                    <span className="text-blue-600 font-bold">{pts.shafts}</span>
+                    <span className="text-gray-400 mx-1">-</span>
+                    <span className="text-red-600 font-bold">{pts.balls}</span>
+                  </div>
+                  <div className="text-xs text-gray-400">View Details →</div>
                 </div>
-              </Link>
-              
-              <div className="flex justify-between mt-4 space-x-2">
-                <button 
-                  onClick={() => setModalMatch(match)}
-                  className="flex-1 bg-gray-100 text-center py-2 rounded text-sm font-medium hover:bg-gray-200 transition-colors"
-                >
-                  View Scorecard
-                </button>
-                <Link 
-                  href={`/score/${match.group_access_token}`}
-                  className="flex-1 bg-blue-600 text-white text-center py-2 rounded text-sm font-medium hover:bg-blue-700 transition-colors"
-                >
-                  Enter Scores
-                </Link>
               </div>
-            </div>
+            </Link>
           );
         })}
       </div>
 
-      {/* Scorecard Modal */}
-      {modalMatch && (
-        <ScorecardModal
-          match={modalMatch}
-          allPlayers={players}
-          allScores={scores}
-          courses={courses}
-          onClose={() => setModalMatch(null)}
-        />
-      )}
+      {/* Footer */}
+      <div className="text-center pb-8 px-4">
+        <p className="text-xs text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>
+          For more info, contact the site administrator. If you don&apos;t know who the site admin is, you don&apos;t need to contact him.
+        </p>
+      </div>
     </div>
   );
 }
