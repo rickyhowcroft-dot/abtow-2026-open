@@ -388,6 +388,7 @@ describe('Skins calculations', () => {
   ) {
     const results: Array<{
       hole: number;
+      par?: number;
       grossWinner?: Player;
       grossTie?: boolean;
       netWinner?: Player;
@@ -409,7 +410,7 @@ describe('Skins calculations', () => {
       });
 
       if (holeScores.length === 0) {
-        results.push({ hole });
+        results.push({ hole, par: holeData.par });
         continue;
       }
 
@@ -418,22 +419,31 @@ describe('Skins calculations', () => {
       const grossWinners = holeScores.filter(s => s.grossScore === minGross);
       const grossWinner = grossWinners.length === 1 ? grossWinners[0] : null;
 
-      // Net — exclude gross winner (net never cuts/pushes gross)
-      const netEligible = grossWinner
-        ? holeScores.filter(s => s.player.id !== grossWinner.player.id)
-        : holeScores;
+      // Gross birdie or better wins BOTH gross and net
+      const isBirdieOrBetter = grossWinner && minGross < holeData.par;
 
       let netWinner = null;
       let netTie = false;
-      if (netEligible.length > 0) {
-        const minNet = Math.min(...netEligible.map(s => s.netScore));
-        const netWinners = netEligible.filter(s => s.netScore === minNet);
-        netWinner = netWinners.length === 1 ? netWinners[0] : null;
-        netTie = netWinners.length > 1;
+
+      if (isBirdieOrBetter) {
+        netWinner = grossWinner;
+      } else {
+        // Net — exclude gross winner (net never cuts/pushes gross)
+        const netEligible = grossWinner
+          ? holeScores.filter(s => s.player.id !== grossWinner.player.id)
+          : holeScores;
+
+        if (netEligible.length > 0) {
+          const minNet = Math.min(...netEligible.map(s => s.netScore));
+          const netWinners = netEligible.filter(s => s.netScore === minNet);
+          netWinner = netWinners.length === 1 ? netWinners[0] : null;
+          netTie = netWinners.length > 1;
+        }
       }
 
       results.push({
         hole,
+        par: holeData.par,
         grossWinner: grossWinner?.player,
         grossTie: grossWinners.length > 1,
         netWinner: netWinner?.player,
@@ -474,44 +484,78 @@ describe('Skins calculations', () => {
     expect(results[0].grossTie).toBe(true);
   });
 
-  test('gross winner excluded from net evaluation', () => {
-    // Hole 1 (par 4, hcp 1): 
-    // Low (hcp 4): gross 3, gets stroke on hole 1 (hcp index 1 <= 4). Net = 2
-    // Mid (hcp 10): gross 4, gets stroke. Net = 3
-    // High (hcp 18): gross 5, gets stroke. Net = 4
-    // VHigh (hcp 20): gross 5, gets stroke + base. Net = 3 (5 - 2)
-    // Gross winner: Low (3)
-    // Net evaluation excludes Low. Remaining: Mid(3), High(4), VHigh(3)
-    // Net tie between Mid and VHigh => no net skin
+  test('gross birdie wins BOTH gross and net skins', () => {
+    // Hole 1 (par 4, hcp 1):
+    // Low (hcp 4): gross 3 (birdie!). Wins gross outright.
+    // Since birdie or better, Low also wins net skin automatically.
     const scores = [
-      makeScore('m', 's1', 1, 3),
+      makeScore('m', 's1', 1, 3), // birdie
       makeScore('m', 's2', 1, 4),
       makeScore('m', 's3', 1, 5),
       makeScore('m', 's4', 1, 5),
     ];
     const results = calculateSkinsForTest(skinPlayers, scores, testCourse);
     expect(results[0].grossWinner?.name).toBe('Low');
-    // Net: Mid gets net 3, VHigh gets net 3 (5-1base-1extra) => tie
-    expect(results[0].netWinner).toBeUndefined();
-    expect(results[0].netTie).toBe(true);
+    expect(results[0].netWinner?.name).toBe('Low'); // birdie wins both!
+    expect(results[0].netTie).toBe(false);
   });
 
-  test('net skin awarded when gross winner excluded and one net winner remains', () => {
+  test('gross eagle wins both skins even if net scores are lower', () => {
     // Hole 1 (par 4, hcp 1):
-    // Low (hcp 4): gross 3. Net = 2. GROSS WINNER (excluded from net)
-    // Mid (hcp 10): gross 4. Net = 3.
-    // High (hcp 18): gross 6. Net = 5.
-    // VHigh (hcp 20): gross 6. Net = 4 (6-1-1).
-    // Net eligible: Mid(3), High(5), VHigh(4) => Mid wins net skin
+    // Low (hcp 4): gross 2 (eagle!). Net = 1.
+    // VHigh (hcp 20): gross 5. Net = 3 (5-2). Net is higher than gross eagle anyway.
+    // Eagle wins both.
     const scores = [
-      makeScore('m', 's1', 1, 3),
-      makeScore('m', 's2', 1, 4),
+      makeScore('m', 's1', 1, 2), // eagle
+      makeScore('m', 's2', 1, 5),
       makeScore('m', 's3', 1, 6),
+      makeScore('m', 's4', 1, 5),
+    ];
+    const results = calculateSkinsForTest(skinPlayers, scores, testCourse);
+    expect(results[0].grossWinner?.name).toBe('Low');
+    expect(results[0].netWinner?.name).toBe('Low');
+  });
+
+  test('gross par winner: net evaluated separately excluding gross winner', () => {
+    // Hole 1 (par 4, hcp 1):
+    // Low (hcp 4): gross 4 (par). Wins gross outright. NOT birdie, so normal net eval.
+    // Mid (hcp 10): gross 5. Net = 4.
+    // High (hcp 18): gross 5. Net = 4.
+    // VHigh (hcp 20): gross 6. Net = 4 (6-2).
+    // Net eligible (excl Low): Mid(4), High(4), VHigh(4) => 3-way tie
+    const scores = [
+      makeScore('m', 's1', 1, 4), // par — gross winner but not birdie
+      makeScore('m', 's2', 1, 5),
+      makeScore('m', 's3', 1, 5),
       makeScore('m', 's4', 1, 6),
     ];
     const results = calculateSkinsForTest(skinPlayers, scores, testCourse);
     expect(results[0].grossWinner?.name).toBe('Low');
-    expect(results[0].netWinner?.name).toBe('Mid');
+    expect(results[0].netWinner).toBeUndefined(); // 3-way net tie
+    expect(results[0].netTie).toBe(true);
+  });
+
+  test('gross par winner: one clear net winner among remaining players', () => {
+    // Hole 1 (par 4, hcp 1):
+    // Low (hcp 4): gross 4 (par). Gross winner, not birdie.
+    // Mid (hcp 10): gross 4. Net = 3.
+    // High (hcp 18): gross 6. Net = 5.
+    // VHigh (hcp 20): gross 7. Net = 5 (7-2).
+    // Net eligible (excl Low): Mid(3), High(5), VHigh(5) => Mid wins net
+    const scores = [
+      makeScore('m', 's1', 1, 4),
+      makeScore('m', 's2', 1, 4),
+      makeScore('m', 's3', 1, 6),
+      makeScore('m', 's4', 1, 7),
+    ];
+    const results = calculateSkinsForTest(skinPlayers, scores, testCourse);
+    // Gross: Low and Mid tied at 4 => no gross skin (push)
+    expect(results[0].grossWinner).toBeUndefined();
+    expect(results[0].grossTie).toBe(true);
+    // Net: all eligible (no gross winner). Low net=3, Mid net=3, High net=5, VHigh net=5
+    // Low and Mid tie for net => no net skin
+    expect(results[0].netWinner).toBeUndefined();
+    expect(results[0].netTie).toBe(true);
   });
 
   test('Day 3 skins use full playing handicap, not match play delta', () => {

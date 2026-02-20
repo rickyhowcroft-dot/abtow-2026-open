@@ -107,18 +107,29 @@ export default function SkinsDetail() {
       const grossWinners = holeScores.filter(s => s.grossScore === minGrossScore);
       const grossWinner = grossWinners.length === 1 ? grossWinners[0] : null;
 
-      // Find net winners — exclude gross winner so net can't cut/push gross
-      const netEligible = grossWinner 
-        ? holeScores.filter(s => s.player.id !== grossWinner.player.id)
-        : holeScores;
+      // Gross birdie or better wins BOTH gross and net skins:
+      // If outright gross winner has birdie or better, they take both skins.
+      // No net score can beat or tie a gross birdie for the net skin.
+      const isBirdieOrBetter = grossWinner && minGrossScore < holeData.par;
       
       let netWinner = null;
       let netTie = false;
-      if (netEligible.length > 0) {
-        const minNetScore = Math.min(...netEligible.map(s => s.netScore));
-        const netWinners = netEligible.filter(s => s.netScore === minNetScore);
-        netWinner = netWinners.length === 1 ? netWinners[0] : null;
-        netTie = netWinners.length > 1;
+
+      if (isBirdieOrBetter) {
+        // Gross birdie winner takes both — net skin goes to same player
+        netWinner = grossWinner;
+      } else {
+        // Normal net evaluation — exclude gross winner so net can't cut/push gross
+        const netEligible = grossWinner 
+          ? holeScores.filter(s => s.player.id !== grossWinner.player.id)
+          : holeScores;
+        
+        if (netEligible.length > 0) {
+          const minNetScore = Math.min(...netEligible.map(s => s.netScore));
+          const netWinners = netEligible.filter(s => s.netScore === minNetScore);
+          netWinner = netWinners.length === 1 ? netWinners[0] : null;
+          netTie = netWinners.length > 1;
+        }
       }
 
       results.push({
