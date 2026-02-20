@@ -258,7 +258,7 @@ export default function ScoreEntry() {
       <div className="bg-white shadow-sm border-b">
         <div className="px-4 py-3">
           <div className="flex justify-center mb-2">
-            <Link href="/" className="text-xs font-semibold text-[#2a6b7c] bg-[#2a6b7c]/10 px-4 py-1.5 rounded-full hover:bg-[#2a6b7c]/20 transition-colors">
+            <Link href="/" className="text-sm font-bold text-white bg-blue-600 px-5 py-2 rounded-lg hover:bg-blue-700 active:bg-blue-800 transition-colors shadow-sm">
               ← Leaderboard
             </Link>
           </div>
