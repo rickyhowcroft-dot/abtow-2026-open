@@ -446,8 +446,8 @@ export default function MatchDetail() {
         
         {/* Match Status Summary */}
         {(() => {
-          const team1Players = matchPlayers.filter(p => match.team1_players.includes(p.name));
-          const team2Players = matchPlayers.filter(p => match.team2_players.includes(p.name));
+          const team1Players = players.filter(p => match.team1_players.includes(p.name));
+          const team2Players = players.filter(p => match.team2_players.includes(p.name));
           const team1IsShafts = team1Players[0]?.team === 'Shaft';
 
           function getHoleWinnerSummary(hole: number) {
