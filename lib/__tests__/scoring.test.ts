@@ -613,6 +613,88 @@ describe('Edge cases', () => {
     expect(result.team1_total).toBeGreaterThan(result.team2_total);
   });
 
+  test('Match points always sum to 3 for Best Ball regardless of outcome', () => {
+    // Sweep, split, near-tie scenarios
+    const scenarios = [
+      { t1Adj: -2, t2Adj: 0 }, // team1 dominates
+      { t1Adj: 0, t2Adj: -2 }, // team2 dominates
+      { t1Adj: 0, t2Adj: 0 },  // all same (handicap diffs decide)
+      { t1Adj: -1, t2Adj: 1 }, // mixed
+    ];
+    for (const { t1Adj, t2Adj } of scenarios) {
+      const pA = makePlayer({ id: 'a', name: 'A', team: 'Shaft', playing_handicap: 5 });
+      const pB = makePlayer({ id: 'b', name: 'B', team: 'Shaft', playing_handicap: 10 });
+      const pC = makePlayer({ id: 'c', name: 'C', team: 'Balls', playing_handicap: 5 });
+      const pD = makePlayer({ id: 'd', name: 'D', team: 'Balls', playing_handicap: 10 });
+      const match: Match = {
+        id: 'sum3', day: 1, group_number: 1, format: 'Best Ball',
+        team1_players: ['A', 'B'], team2_players: ['C', 'D'],
+        course_id: 'course-1', group_access_token: 's3',
+      };
+      const scores: Score[] = [];
+      for (let h = 1; h <= 18; h++) {
+        const par = PARS[h - 1];
+        scores.push(
+          makeScore('sum3', 'a', h, par + t1Adj),
+          makeScore('sum3', 'b', h, par),
+          makeScore('sum3', 'c', h, par + t2Adj),
+          makeScore('sum3', 'd', h, par),
+        );
+      }
+      const result = calculateBestBallResults(match, scores, [pA, pB, pC, pD], testCourse);
+      expect(result.team1_total + result.team2_total).toBe(3);
+    }
+  });
+
+  test('Match points always sum to 3 for Stableford', () => {
+    const pA = makePlayer({ id: 'a', name: 'A', team: 'Shaft', playing_handicap: 6 });
+    const pB = makePlayer({ id: 'b', name: 'B', team: 'Shaft', playing_handicap: 12 });
+    const pC = makePlayer({ id: 'c', name: 'C', team: 'Balls', playing_handicap: 8 });
+    const pD = makePlayer({ id: 'd', name: 'D', team: 'Balls', playing_handicap: 10 });
+    const match: Match = {
+      id: 'sf3', day: 2, group_number: 1, format: 'Stableford',
+      team1_players: ['A', 'B'], team2_players: ['C', 'D'],
+      course_id: 'course-1', group_access_token: 'sf3',
+    };
+    // Team1 wins front, team2 wins back
+    const scores: Score[] = [];
+    for (let h = 1; h <= 9; h++) {
+      scores.push(
+        makeScore('sf3', 'a', h, PARS[h - 1] - 1),
+        makeScore('sf3', 'b', h, PARS[h - 1]),
+        makeScore('sf3', 'c', h, PARS[h - 1] + 1),
+        makeScore('sf3', 'd', h, PARS[h - 1]),
+      );
+    }
+    for (let h = 10; h <= 18; h++) {
+      scores.push(
+        makeScore('sf3', 'a', h, PARS[h - 1] + 1),
+        makeScore('sf3', 'b', h, PARS[h - 1]),
+        makeScore('sf3', 'c', h, PARS[h - 1] - 1),
+        makeScore('sf3', 'd', h, PARS[h - 1]),
+      );
+    }
+    const result = calculateStablefordResults(match, scores, [pA, pB, pC, pD], testCourse);
+    expect(result.team1_total + result.team2_total).toBe(3);
+  });
+
+  test('Match points always sum to 3 for Individual Match Play', () => {
+    const p1 = makePlayer({ id: 'x1', name: 'X1', team: 'Shaft', playing_handicap: 15 });
+    const p2 = makePlayer({ id: 'x2', name: 'X2', team: 'Balls', playing_handicap: 8 });
+    const match: Match = {
+      id: 'ind3', day: 3, group_number: 1, format: 'Individual',
+      team1_players: ['X1'], team2_players: ['X2'],
+      course_id: 'course-1', group_access_token: 'ind3',
+    };
+    const scores: Score[] = [];
+    for (let h = 1; h <= 18; h++) {
+      scores.push(makeScore('ind3', 'x1', h, PARS[h - 1] + 1));
+      scores.push(makeScore('ind3', 'x2', h, PARS[h - 1]));
+    }
+    const result = calculateIndividualResults(match, scores, [p1, p2], testCourse);
+    expect(result.team1_total + result.team2_total).toBe(3);
+  });
+
   test('Individual match play: partial scores (only some holes)', () => {
     const p1 = makePlayer({ id: 'x1', name: 'X1', team: 'Shaft', playing_handicap: 10 });
     const p2 = makePlayer({ id: 'x2', name: 'X2', team: 'Balls', playing_handicap: 10 });
@@ -634,5 +716,348 @@ describe('Edge cases', () => {
     // Total: 1.5 - 1.5
     expect(result.team1_total).toBe(1.5);
     expect(result.team2_total).toBe(1.5);
+  });
+});
+
+// ============================================================
+// Additional Edge Cases
+// ============================================================
+
+describe('Additional edge cases', () => {
+  test('Identical handicaps: best ball decided purely by gross', () => {
+    const pA = makePlayer({ id: 'a', name: 'A', team: 'Shaft', playing_handicap: 10 });
+    const pB = makePlayer({ id: 'b', name: 'B', team: 'Shaft', playing_handicap: 10 });
+    const pC = makePlayer({ id: 'c', name: 'C', team: 'Balls', playing_handicap: 10 });
+    const pD = makePlayer({ id: 'd', name: 'D', team: 'Balls', playing_handicap: 10 });
+    const match: Match = {
+      id: 'eq-hcp', day: 1, group_number: 1, format: 'Best Ball',
+      team1_players: ['A', 'B'], team2_players: ['C', 'D'],
+      course_id: 'course-1', group_access_token: 'eq',
+    };
+    const scores: Score[] = [];
+    for (let h = 1; h <= 18; h++) {
+      scores.push(makeScore('eq-hcp', 'a', h, PARS[h - 1] - 1));
+      scores.push(makeScore('eq-hcp', 'b', h, PARS[h - 1]));
+      scores.push(makeScore('eq-hcp', 'c', h, PARS[h - 1]));
+      scores.push(makeScore('eq-hcp', 'd', h, PARS[h - 1]));
+    }
+    const result = calculateBestBallResults(match, scores, [pA, pB, pC, pD], testCourse);
+    expect(result.team1_total).toBe(3);
+    expect(result.team2_total).toBe(0);
+  });
+});
+
+// ============================================================
+// Comprehensive Skins Tests
+// ============================================================
+
+describe('Skins — comprehensive edge cases', () => {
+  function calculateSkinsForTest(
+    players: Player[],
+    scores: Score[],
+    course: Course
+  ) {
+    const results: Array<{
+      hole: number; par: number;
+      grossWinner?: Player; grossScore?: number; grossTie?: boolean;
+      netWinner?: Player; netScore?: number; netTie?: boolean;
+    }> = [];
+    for (let hole = 1; hole <= 18; hole++) {
+      const holeData = course.par_data[`hole_${hole}`];
+      if (!holeData) continue;
+      const holeScores: Array<{ player: Player; grossScore: number; netScore: number }> = [];
+      players.forEach(player => {
+        const score = scores.find(s => s.player_id === player.id && s.hole_number === hole);
+        if (score?.gross_score) {
+          const netScore = calculateNetScore(score.gross_score, player.playing_handicap, holeData.handicap);
+          holeScores.push({ player, grossScore: score.gross_score, netScore });
+        }
+      });
+      if (holeScores.length === 0) { results.push({ hole, par: holeData.par }); continue; }
+      const minGross = Math.min(...holeScores.map(s => s.grossScore));
+      const grossWinners = holeScores.filter(s => s.grossScore === minGross);
+      const grossWinner = grossWinners.length === 1 ? grossWinners[0] : null;
+      const isBirdieOrBetter = grossWinner && minGross < holeData.par;
+      let netWinner: typeof grossWinner = null;
+      let netTie = false;
+      if (isBirdieOrBetter) { netWinner = grossWinner; }
+      else {
+        const netEligible = grossWinner
+          ? holeScores.filter(s => s.player.id !== grossWinner.player.id) : holeScores;
+        if (netEligible.length > 0) {
+          const minNet = Math.min(...netEligible.map(s => s.netScore));
+          const netWinners = netEligible.filter(s => s.netScore === minNet);
+          netWinner = netWinners.length === 1 ? netWinners[0] : null;
+          netTie = netWinners.length > 1;
+        }
+      }
+      results.push({
+        hole, par: holeData.par,
+        grossWinner: grossWinner?.player, grossScore: grossWinner ? minGross : undefined,
+        grossTie: grossWinners.length > 1,
+        netWinner: netWinner?.player, netScore: netWinner ? netWinner.netScore : undefined, netTie,
+      });
+    }
+    return results;
+  }
+
+  function calculateSkinsSummary(results: ReturnType<typeof calculateSkinsForTest>) {
+    const grossSkins: { [id: string]: number } = {};
+    const netSkins: { [id: string]: number } = {};
+    results.forEach(r => {
+      if (r.grossWinner) grossSkins[r.grossWinner.id] = (grossSkins[r.grossWinner.id] || 0) + 1;
+      if (r.netWinner) netSkins[r.netWinner.id] = (netSkins[r.netWinner.id] || 0) + 1;
+    });
+    const totalGross = Object.values(grossSkins).reduce((a, b) => a + b, 0);
+    const totalNet = Object.values(netSkins).reduce((a, b) => a + b, 0);
+    return {
+      grossSkins, netSkins, totalGross, totalNet,
+      grossPayout: totalGross > 0 ? 200 / totalGross : 0,
+      netPayout: totalNet > 0 ? 200 / totalNet : 0,
+    };
+  }
+
+  const p1 = makePlayer({ id: 's1', name: 'Low', team: 'Shaft', playing_handicap: 4 });
+  const p2 = makePlayer({ id: 's2', name: 'Mid', team: 'Balls', playing_handicap: 10 });
+  const p3 = makePlayer({ id: 's3', name: 'High', team: 'Shaft', playing_handicap: 18 });
+  const p4 = makePlayer({ id: 's4', name: 'VHigh', team: 'Balls', playing_handicap: 20 });
+  const allSkin = [p1, p2, p3, p4];
+
+  test('no carryovers: push on hole 1 does NOT carry to hole 2', () => {
+    const scores = [
+      makeScore('m', 's1', 1, 4), makeScore('m', 's2', 1, 4),
+      makeScore('m', 's3', 1, 5), makeScore('m', 's4', 1, 5),
+      makeScore('m', 's1', 2, 3), makeScore('m', 's2', 2, 5),
+      makeScore('m', 's3', 2, 5), makeScore('m', 's4', 2, 5),
+    ];
+    const results = calculateSkinsForTest(allSkin, scores, testCourse);
+    const summary = calculateSkinsSummary(results);
+    expect(summary.grossSkins['s1']).toBe(1);
+    expect(summary.totalGross).toBe(1);
+  });
+
+  test('36 potential skins: all birdies = 18 gross + 18 net', () => {
+    const scores: Score[] = [];
+    for (let h = 1; h <= 18; h++) {
+      scores.push(
+        makeScore('m', 's1', h, PARS[h - 1] - 1),
+        makeScore('m', 's2', h, PARS[h - 1] + 1),
+        makeScore('m', 's3', h, PARS[h - 1] + 2),
+        makeScore('m', 's4', h, PARS[h - 1] + 3),
+      );
+    }
+    const summary = calculateSkinsSummary(calculateSkinsForTest(allSkin, scores, testCourse));
+    expect(summary.totalGross).toBe(18);
+    expect(summary.totalNet).toBe(18);
+  });
+
+  test('payout: $200 / 4 gross skins = $50', () => {
+    const scores: Score[] = [];
+    for (let h = 1; h <= 4; h++) {
+      scores.push(
+        makeScore('m', 's1', h, PARS[h - 1] - 1),
+        makeScore('m', 's2', h, PARS[h - 1] + 1),
+        makeScore('m', 's3', h, PARS[h - 1] + 1),
+        makeScore('m', 's4', h, PARS[h - 1] + 1),
+      );
+    }
+    for (let h = 5; h <= 18; h++) {
+      scores.push(
+        makeScore('m', 's1', h, PARS[h - 1]),
+        makeScore('m', 's2', h, PARS[h - 1]),
+        makeScore('m', 's3', h, PARS[h - 1]),
+        makeScore('m', 's4', h, PARS[h - 1]),
+      );
+    }
+    const summary = calculateSkinsSummary(calculateSkinsForTest(allSkin, scores, testCourse));
+    expect(summary.totalGross).toBe(4);
+    expect(summary.grossPayout).toBe(50);
+  });
+
+  test('payout: no skins = $0', () => {
+    const scores: Score[] = [];
+    for (let h = 1; h <= 18; h++) {
+      scores.push(
+        makeScore('m', 's1', h, PARS[h - 1]),
+        makeScore('m', 's2', h, PARS[h - 1]),
+        makeScore('m', 's3', h, PARS[h - 1]),
+        makeScore('m', 's4', h, PARS[h - 1]),
+      );
+    }
+    const summary = calculateSkinsSummary(calculateSkinsForTest(allSkin, scores, testCourse));
+    expect(summary.grossPayout).toBe(0);
+  });
+
+  test('gross bogey winner excluded from net; net goes to someone else', () => {
+    // Hole 10 (par 4, hcp 10):
+    // Low(4): gross 5, 0 strokes, net=5. Outright gross.
+    // Mid(10): gross 6, 1 stroke (10<=10), net=5.
+    // High(18): gross 7, 1 stroke (floor(18/18)=1, 10<=0?no), net=6.
+    // VHigh(20): gross 8, 1 stroke (floor(20/18)=1, 10<=2?no), net=7.
+    // Gross winner Low (bogey). Excluded from net.
+    // Net: Mid(5) wins outright.
+    const scores = [
+      makeScore('m', 's1', 10, 5), makeScore('m', 's2', 10, 6),
+      makeScore('m', 's3', 10, 7), makeScore('m', 's4', 10, 8),
+    ];
+    const h10 = calculateSkinsForTest(allSkin, scores, testCourse).find(r => r.hole === 10)!;
+    expect(h10.grossWinner?.name).toBe('Low');
+    expect(h10.netWinner?.name).toBe('Mid');
+  });
+
+  test('all 4 tied: no skins', () => {
+    const scores = [
+      makeScore('m', 's1', 18, 5), makeScore('m', 's2', 18, 5),
+      makeScore('m', 's3', 18, 5), makeScore('m', 's4', 18, 5),
+    ];
+    const h18 = calculateSkinsForTest(allSkin, scores, testCourse).find(r => r.hole === 18)!;
+    expect(h18.grossWinner).toBeUndefined();
+    expect(h18.grossTie).toBe(true);
+    expect(h18.netWinner).toBeUndefined();
+    expect(h18.netTie).toBe(true);
+  });
+
+  test('gross par winner with net birdie excluded from net eval', () => {
+    // Hole 1 (par 4, hcp 1):
+    // VHigh(20): gross 4 (par), strokes=1+(1<=2)=2, net=2 (eagle!). Wins gross.
+    // Low(4): gross 5, strokes=0+(1<=4)=1, net=4.
+    // Mid(10): gross 5, strokes=0+(1<=10)=1, net=4.
+    // High(18): gross 6, strokes=1+(1<=0?no)=1, net=5.
+    // VHigh excluded from net. Net: Low(4) & Mid(4) tie.
+    const scores = [
+      makeScore('m', 's4', 1, 4), makeScore('m', 's1', 1, 5),
+      makeScore('m', 's2', 1, 5), makeScore('m', 's3', 1, 6),
+    ];
+    const h1 = calculateSkinsForTest(allSkin, scores, testCourse)[0];
+    expect(h1.grossWinner?.name).toBe('VHigh');
+    expect(h1.netWinner).toBeUndefined();
+    expect(h1.netTie).toBe(true);
+  });
+
+  test('multiple winners across holes, correct payout', () => {
+    const scores: Score[] = [];
+    scores.push(
+      makeScore('m', 's1', 1, 3), makeScore('m', 's2', 1, 5),
+      makeScore('m', 's3', 1, 5), makeScore('m', 's4', 1, 6),
+      makeScore('m', 's1', 2, 5), makeScore('m', 's2', 2, 3),
+      makeScore('m', 's3', 2, 5), makeScore('m', 's4', 2, 6),
+    );
+    for (let h = 3; h <= 18; h++) {
+      scores.push(
+        makeScore('m', 's1', h, PARS[h - 1]), makeScore('m', 's2', h, PARS[h - 1]),
+        makeScore('m', 's3', h, PARS[h - 1]), makeScore('m', 's4', h, PARS[h - 1]),
+      );
+    }
+    const summary = calculateSkinsSummary(calculateSkinsForTest(allSkin, scores, testCourse));
+    expect(summary.grossSkins['s1']).toBe(1);
+    expect(summary.grossSkins['s2']).toBe(1);
+    expect(summary.totalGross).toBe(2);
+    expect(summary.grossPayout).toBe(100);
+  });
+});
+
+// ============================================================
+// Integration: Full rounds
+// ============================================================
+
+describe('Integration — full Best Ball round', () => {
+  test('realistic mixed round sums to 3', () => {
+    const pA = makePlayer({ id: 'a', name: 'A', team: 'Shaft', playing_handicap: 8 });
+    const pB = makePlayer({ id: 'b', name: 'B', team: 'Shaft', playing_handicap: 14 });
+    const pC = makePlayer({ id: 'c', name: 'C', team: 'Balls', playing_handicap: 6 });
+    const pD = makePlayer({ id: 'd', name: 'D', team: 'Balls', playing_handicap: 16 });
+    const match: Match = {
+      id: 'int-bb', day: 1, group_number: 1, format: 'Best Ball',
+      team1_players: ['A', 'B'], team2_players: ['C', 'D'],
+      course_id: 'course-1', group_access_token: 'int',
+    };
+    const aS = [4,5,3,6,4,5,3,4,6, 5,4,3,5,5,4,3,5,6];
+    const bS = [5,5,4,5,5,5,4,5,6, 5,5,4,6,5,5,4,5,6];
+    const cS = [4,4,3,5,5,4,3,5,5, 4,4,3,6,4,4,3,4,5];
+    const dS = [5,6,4,6,5,5,4,5,7, 5,5,4,6,5,5,4,5,6];
+    const scores: Score[] = [];
+    for (let h = 1; h <= 18; h++) {
+      scores.push(makeScore('int-bb', 'a', h, aS[h-1]), makeScore('int-bb', 'b', h, bS[h-1]),
+        makeScore('int-bb', 'c', h, cS[h-1]), makeScore('int-bb', 'd', h, dS[h-1]));
+    }
+    const result = calculateBestBallResults(match, scores, [pA, pB, pC, pD], testCourse);
+    expect(result.team1_total + result.team2_total).toBe(3);
+    expect(result.status).toBe('in_progress');
+  });
+});
+
+describe('Integration — full Stableford round', () => {
+  test('all score types produce valid result', () => {
+    const pA = makePlayer({ id: 'a', name: 'A', team: 'Shaft', playing_handicap: 10 });
+    const pB = makePlayer({ id: 'b', name: 'B', team: 'Shaft', playing_handicap: 18 });
+    const pC = makePlayer({ id: 'c', name: 'C', team: 'Balls', playing_handicap: 12 });
+    const pD = makePlayer({ id: 'd', name: 'D', team: 'Balls', playing_handicap: 8 });
+    const match: Match = {
+      id: 'int-sf', day: 2, group_number: 1, format: 'Stableford',
+      team1_players: ['A', 'B'], team2_players: ['C', 'D'],
+      course_id: 'course-1', group_access_token: 'int-sf',
+    };
+    const aS = [2,4,3,5,4,5,3,4,6, 4,4,4,5,4,5,3,4,5];
+    const bS = [5,5,4,6,5,5,4,5,6, 5,5,4,6,6,5,4,5,7];
+    const cS = [4,4,3,5,5,4,3,5,5, 4,5,3,5,4,4,3,5,5];
+    const dS = [4,4,3,5,4,4,3,4,5, 4,4,3,5,4,4,3,4,5];
+    const scores: Score[] = [];
+    for (let h = 1; h <= 18; h++) {
+      scores.push(makeScore('int-sf', 'a', h, aS[h-1]), makeScore('int-sf', 'b', h, bS[h-1]),
+        makeScore('int-sf', 'c', h, cS[h-1]), makeScore('int-sf', 'd', h, dS[h-1]));
+    }
+    const result = calculateStablefordResults(match, scores, [pA, pB, pC, pD], testCourse);
+    expect(result.team1_total + result.team2_total).toBe(3);
+  });
+
+  test('Stableford net score verification', () => {
+    expect(calculateStablefordPoints(calculateNetScore(3, 18, 1), 4)).toBe(4);
+    expect(calculateStablefordPoints(calculateNetScore(4, 18, 1), 4)).toBe(3);
+    expect(calculateStablefordPoints(calculateNetScore(5, 18, 1), 4)).toBe(2);
+    expect(calculateStablefordPoints(calculateNetScore(6, 18, 1), 4)).toBe(1);
+    expect(calculateStablefordPoints(calculateNetScore(7, 18, 1), 4)).toBe(0);
+  });
+
+  test.todo('Day 2: bonus point for best overall team stableford total (not yet implemented)');
+});
+
+describe('Integration — full Individual Match Play', () => {
+  test('strokes on correct holes, match result correct', () => {
+    const p1 = makePlayer({ id: 'p1', name: 'P1', team: 'Shaft', playing_handicap: 18 });
+    const p2 = makePlayer({ id: 'p2', name: 'P2', team: 'Balls', playing_handicap: 10 });
+    const match: Match = {
+      id: 'int-ind', day: 3, group_number: 1, format: 'Individual',
+      team1_players: ['P1'], team2_players: ['P2'],
+      course_id: 'course-1', group_access_token: 'int-ind',
+    };
+    const strokes = calculateMatchPlayStrokes(18, 10, testCourse);
+    for (let h = 1; h <= 8; h++) expect(strokes[h]).toBe(1);
+    for (let h = 9; h <= 18; h++) expect(strokes[h]).toBe(0);
+    const scores: Score[] = [];
+    for (let h = 1; h <= 18; h++) {
+      scores.push(makeScore('int-ind', 'p1', h, 5));
+      scores.push(makeScore('int-ind', 'p2', h, 5));
+    }
+    const result = calculateIndividualResults(match, scores, [p1, p2], testCourse);
+    expect(result.team1_total).toBe(2.5);
+    expect(result.team2_total).toBe(0.5);
+  });
+});
+
+describe('Stroke distribution edge cases', () => {
+  test('handicap 0: no strokes', () => {
+    for (let hcp = 1; hcp <= 18; hcp++) expect(calculateNetScore(5, 0, hcp)).toBe(5);
+  });
+  test('handicap 36: 2 strokes every hole', () => {
+    for (let hcp = 1; hcp <= 18; hcp++) expect(calculateNetScore(6, 36, hcp)).toBe(4);
+  });
+  test('handicap 1: stroke only on hcp index 1', () => {
+    expect(calculateNetScore(5, 1, 1)).toBe(4);
+    expect(calculateNetScore(5, 1, 2)).toBe(5);
+  });
+  test('handicap 19: 1 base + 1 extra on hardest', () => {
+    expect(calculateNetScore(6, 19, 1)).toBe(4);
+    expect(calculateNetScore(6, 19, 2)).toBe(5);
+    expect(calculateNetScore(6, 19, 18)).toBe(5);
   });
 });
