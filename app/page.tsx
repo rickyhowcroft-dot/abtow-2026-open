@@ -767,6 +767,78 @@ function ScorecardModal({ match, allPlayers, allScores, courses, onClose }: {
           </table>
         </div>
 
+        {/* Match Status Summary */}
+        {(() => {
+          const team1Players = matchPlayers.filter(p => match.team1_players.includes(p.name));
+          const team2Players = matchPlayers.filter(p => match.team2_players.includes(p.name));
+
+          function getHoleWinnerSummary(hole: number) {
+            if (match.format === 'Best Ball') {
+              const t1Nets = team1Players.map(p => { const s = getPlayerScore(p.id, hole); return s ? s - getStrokesOnHole(p, hole) : null; }).filter(n => n !== null) as number[];
+              const t2Nets = team2Players.map(p => { const s = getPlayerScore(p.id, hole); return s ? s - getStrokesOnHole(p, hole) : null; }).filter(n => n !== null) as number[];
+              if (!t1Nets.length || !t2Nets.length) return null;
+              const b1 = Math.min(...t1Nets), b2 = Math.min(...t2Nets);
+              return b1 < b2 ? 'team1' : b2 < b1 ? 'team2' : 'tie';
+            } else if (match.format === 'Stableford') {
+              let t1Pts = 0, t2Pts = 0, t1Has = false, t2Has = false;
+              team1Players.forEach(p => { const s = getPlayerScore(p.id, hole); if (s) { t1Has = true; t1Pts += calculateStablefordPoints(s - getStrokesOnHole(p, hole), getHoleData(hole).par); }});
+              team2Players.forEach(p => { const s = getPlayerScore(p.id, hole); if (s) { t2Has = true; t2Pts += calculateStablefordPoints(s - getStrokesOnHole(p, hole), getHoleData(hole).par); }});
+              if (!t1Has || !t2Has) return null;
+              return t1Pts > t2Pts ? 'team1' : t2Pts > t1Pts ? 'team2' : 'tie';
+            } else {
+              const p1 = team1Players[0], p2 = team2Players[0];
+              if (!p1 || !p2) return null;
+              const s1 = getPlayerScore(p1.id, hole), s2 = getPlayerScore(p2.id, hole);
+              if (!s1 || !s2) return null;
+              const n1 = s1 - getStrokesOnHole(p1, hole), n2 = s2 - getStrokesOnHole(p2, hole);
+              return n1 < n2 ? 'team1' : n2 < n1 ? 'team2' : 'tie';
+            }
+          }
+
+          // Count wins for front, back, overall
+          let fT1 = 0, fT2 = 0, bT1 = 0, bT2 = 0;
+          [1,2,3,4,5,6,7,8,9].forEach(h => { const w = getHoleWinnerSummary(h); if (w === 'team1') fT1++; if (w === 'team2') fT2++; });
+          [10,11,12,13,14,15,16,17,18].forEach(h => { const w = getHoleWinnerSummary(h); if (w === 'team1') bT1++; if (w === 'team2') bT2++; });
+          const allT1 = fT1 + bT1, allT2 = fT2 + bT2;
+          const hasScores = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18].some(h => getHoleWinnerSummary(h) !== null);
+
+          function statusLabel(t1: number, t2: number): { text: string; color: string } {
+            const diff = t1 - t2;
+            if (diff === 0) return { text: 'AS', color: 'text-gray-500' };
+            const team1Label = team1IsShafts ? 'Shaft' : 'Balls';
+            const team2Label = team1IsShafts ? 'Balls' : 'Shaft';
+            if (diff > 0) return { text: `${team1Label} ${diff}UP`, color: team1IsShafts ? 'text-blue-600' : 'text-red-600' };
+            return { text: `${team2Label} ${Math.abs(diff)}UP`, color: team1IsShafts ? 'text-red-600' : 'text-blue-600' };
+          }
+
+          if (!hasScores) return null;
+
+          const frontStatus = statusLabel(fT1, fT2);
+          const backStatus = statusLabel(bT1, bT2);
+          const overallStatus = statusLabel(allT1, allT2);
+
+          return (
+            <div className="px-4 py-3 bg-[#2a6b7c]/5 border-t">
+              <div className="flex justify-between items-center text-sm" style={{ fontFamily: 'Georgia, serif' }}>
+                <div className="text-center flex-1">
+                  <div className="text-[10px] text-gray-400 uppercase">Front 9</div>
+                  <div className={`font-bold ${frontStatus.color}`}>{frontStatus.text}</div>
+                </div>
+                <div className="border-l border-gray-300 h-8"></div>
+                <div className="text-center flex-1">
+                  <div className="text-[10px] text-gray-400 uppercase">Back 9</div>
+                  <div className={`font-bold ${backStatus.color}`}>{backStatus.text}</div>
+                </div>
+                <div className="border-l border-gray-300 h-8"></div>
+                <div className="text-center flex-1">
+                  <div className="text-[10px] text-gray-400 uppercase">Overall</div>
+                  <div className={`font-bold text-base ${overallStatus.color}`}>{overallStatus.text}</div>
+                </div>
+              </div>
+            </div>
+          );
+        })()}
+
         {/* Legend */}
         <div className="p-3 bg-gray-50 border-t flex flex-wrap gap-3 text-[10px] rounded-b-xl">
           <span className="flex items-center gap-1"><span className="inline-block w-3 h-3 bg-yellow-300 rounded"></span> Eagle+</span>
