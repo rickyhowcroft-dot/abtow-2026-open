@@ -11,8 +11,10 @@ export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [scores, setScores] = useState<Score[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
+  const [selectedDay, setSelectedDay] = useState(1);
   const [loading, setLoading] = useState(true);
   const [teamScores, setTeamScores] = useState({ shafts: 0, balls: 0 });
+  const [modalMatch, setModalMatch] = useState<Match | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -264,34 +266,140 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Day Navigation Cards */}
-      <div className="max-w-lg mx-auto px-4 pb-8 space-y-3">
-        {[1, 2, 3].map(day => {
-          const dayInfo = day === 1 
-            ? { course: 'Ritz Carlton GC', format: 'Team Best Ball Match Play' }
-            : day === 2 
-            ? { course: 'Southern Dunes', format: 'Stableford' }
-            : { course: 'Champions Gate International', format: 'Individual Match Play' };
-          const pts = getDayPoints(day);
+      {/* Day Tabs */}
+      <div className="max-w-2xl mx-auto px-4 mb-6">
+        <div className="flex justify-center">
+          <div className="inline-flex border border-gray-400 rounded overflow-hidden">
+            {[1, 2, 3].map(day => (
+              <button
+                key={day}
+                onClick={() => setSelectedDay(day)}
+                className={`px-6 py-2 text-sm font-bold tracking-wide transition-colors ${
+                  selectedDay === day
+                    ? 'bg-[#2a6b7c] text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100'
+                } ${day < 3 ? 'border-r border-gray-400' : ''}`}
+                style={{ fontFamily: 'Georgia, serif' }}
+              >
+                DAY {day}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Day Subheader */}
+        <div className="flex justify-between items-center mt-6 mb-4 px-2">
+          <div className="text-sm font-semibold italic text-gray-600" style={{ fontFamily: 'Georgia, serif' }}>Team Shaft</div>
+          <div className="text-sm text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>
+            {selectedDay === 1 ? 'Ritz Carlton GC — Best Ball' : selectedDay === 2 ? 'Southern Dunes — Stableford' : 'Champions Gate — Individual Match Play'}
+          </div>
+          <div className="text-sm font-semibold italic text-gray-600" style={{ fontFamily: 'Georgia, serif' }}>Team Balls</div>
+        </div>
+      </div>
+
+      {/* Match Cards */}
+      <div className="max-w-2xl mx-auto px-4 pb-8 space-y-4">
+        {getMatchesForDay(selectedDay).map(match => {
+          const result = getMatchResult(match);
+          const team1IsShafts = players.find(p => match.team1_players.includes(p.name))?.team === 'Shaft';
+          const status = getMatchStatus(match);
+          const shaftsPlayers = team1IsShafts ? match.team1_players : match.team2_players;
+          const ballsPlayers = team1IsShafts ? match.team2_players : match.team1_players;
+          const shaftsTotal = team1IsShafts ? result.team1_total : result.team2_total;
+          const ballsTotal = team1IsShafts ? result.team2_total : result.team1_total;
+
           return (
-            <Link key={day} href={`/day/${day}`} className="block bg-white rounded-lg shadow-md p-4 hover:shadow-lg transition-shadow">
-              <div className="flex items-center justify-between">
-                <div>
-                  <div className="font-bold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>Day {day} — {dayInfo.course}</div>
-                  <div className="text-sm text-gray-500">{dayInfo.format}</div>
+            <div key={match.id} className="bg-white rounded-lg shadow-md overflow-hidden">
+              {/* Match Header - Players */}
+              <div className="flex items-stretch border-b border-gray-200">
+                <div className="flex-1 p-3 text-left">
+                  {shaftsPlayers.map(name => {
+                    const p = players.find(pl => pl.name === name);
+                    return (
+                      <div key={name} className="flex items-center gap-2 mb-1 last:mb-0">
+                        {p?.avatar_url ? (
+                          <div className="w-7 h-7 rounded-full overflow-hidden border border-blue-300 shrink-0">
+                            <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
+                          </div>
+                        ) : null}
+                        <span className="font-bold text-sm text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
+                          {name.toUpperCase()} <sup className="text-[10px] text-gray-500 font-normal">{p?.playing_handicap}</sup>
+                        </span>
+                      </div>
+                    );
+                  })}
                 </div>
-                <div className="text-right">
-                  <div className="text-sm">
-                    <span className="text-blue-600 font-bold">{pts.shafts}</span>
-                    <span className="text-gray-400 mx-1">-</span>
-                    <span className="text-red-600 font-bold">{pts.balls}</span>
+                <div className="flex items-center px-3 text-center border-x border-gray-200">
+                  <div>
+                    <div className="text-xs text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>Match {match.group_number}</div>
+                    <div className="text-xs text-gray-400">{match.format}</div>
                   </div>
-                  <div className="text-xs text-gray-400">View Details →</div>
+                </div>
+                <div className="flex-1 p-3 text-right">
+                  {ballsPlayers.map(name => {
+                    const p = players.find(pl => pl.name === name);
+                    return (
+                      <div key={name} className="flex items-center gap-2 mb-1 last:mb-0 justify-end">
+                        <span className="font-bold text-sm text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
+                          {name.toUpperCase()} <sup className="text-[10px] text-gray-500 font-normal">{p?.playing_handicap}</sup>
+                        </span>
+                        {p?.avatar_url ? (
+                          <div className="w-7 h-7 rounded-full overflow-hidden border border-red-300 shrink-0">
+                            <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
+                          </div>
+                        ) : null}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
-            </Link>
+              {/* Score Bar */}
+              <div className="flex items-center bg-[#2a6b7c] text-white">
+                <div className="flex-1 flex items-center gap-2 px-3 py-2">
+                  <span className="text-lg font-bold">{shaftsTotal}</span>
+                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded">
+                    {(() => { const pts = team1IsShafts ? result.team1_front + result.team1_back : result.team2_front + result.team2_back; return `${pts}pts`; })()}
+                  </span>
+                </div>
+                <div className="px-4 py-2 text-center">
+                  <span className="text-sm font-semibold">{status}</span>
+                </div>
+                <div className="flex-1 flex items-center gap-2 px-3 py-2 justify-end">
+                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded">
+                    {(() => { const pts = team1IsShafts ? result.team2_front + result.team2_back : result.team1_front + result.team1_back; return `${pts}pts`; })()}
+                  </span>
+                  <span className="text-lg font-bold">{ballsTotal}</span>
+                </div>
+              </div>
+              {/* Actions */}
+              <div className="flex border-t border-gray-200">
+                <button
+                  onClick={() => setModalMatch(match)}
+                  className="flex-1 py-2.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors border-r border-gray-200"
+                >
+                  View Scorecard
+                </button>
+                <Link
+                  href={`/score/${match.group_access_token}`}
+                  className="flex-1 py-2.5 text-center text-sm font-medium text-[#2a6b7c] hover:bg-[#2a6b7c]/5 transition-colors"
+                >
+                  Enter Scores
+                </Link>
+              </div>
+            </div>
           );
         })}
+
+        {/* Day Links */}
+        <div className="flex justify-center gap-3 pt-2">
+          <Link href={`/day/${selectedDay}`} className="text-sm text-[#2a6b7c] hover:underline" style={{ fontFamily: 'Georgia, serif' }}>
+            View Day {selectedDay} Details
+          </Link>
+          <span className="text-gray-300">|</span>
+          <Link href={`/skins/${selectedDay}`} className="text-sm text-[#2a6b7c] hover:underline" style={{ fontFamily: 'Georgia, serif' }}>
+            View Skins
+          </Link>
+        </div>
       </div>
 
       {/* Footer */}
@@ -300,6 +408,17 @@ export default function Home() {
           For more info, contact the site administrator. If you don&apos;t know who the site admin is, you don&apos;t need to contact him.
         </p>
       </div>
+
+      {/* Scorecard Modal */}
+      {modalMatch && (
+        <ScorecardModal
+          match={modalMatch}
+          allPlayers={players}
+          allScores={scores}
+          courses={courses}
+          onClose={() => setModalMatch(null)}
+        />
+      )}
     </div>
   );
 }
