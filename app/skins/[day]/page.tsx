@@ -175,30 +175,26 @@ export default function SkinsDetail() {
   function calculateSkinsSummary() {
     const grossSkins: { [playerId: string]: number } = {};
     const netSkins: { [playerId: string]: number } = {};
-    let grossCarryover = 0;
-    let netCarryover = 0;
 
+    // No carryovers — each hole is independent.
+    // If no outright winner, the skin is simply not won.
     skinResults.forEach(result => {
-      // Gross skins
       if (result.grossWinner) {
         const playerId = result.grossWinner.id;
-        grossSkins[playerId] = (grossSkins[playerId] || 0) + 1 + grossCarryover;
-        grossCarryover = 0;
-      } else if (result.grossTie || (!result.grossWinner && skinResults.some(r => r.grossWinner))) {
-        grossCarryover += 1;
+        grossSkins[playerId] = (grossSkins[playerId] || 0) + 1;
       }
-
-      // Net skins
       if (result.netWinner) {
         const playerId = result.netWinner.id;
-        netSkins[playerId] = (netSkins[playerId] || 0) + 1 + netCarryover;
-        netCarryover = 0;
-      } else if (result.netTie || (!result.netWinner && skinResults.some(r => r.netWinner))) {
-        netCarryover += 1;
+        netSkins[playerId] = (netSkins[playerId] || 0) + 1;
       }
     });
 
-    return { grossSkins, netSkins, grossCarryover, netCarryover };
+    const totalGrossWon = Object.values(grossSkins).reduce((a, b) => a + b, 0);
+    const totalNetWon = Object.values(netSkins).reduce((a, b) => a + b, 0);
+    const grossPayout = totalGrossWon > 0 ? 200 / totalGrossWon : 0;
+    const netPayout = totalNetWon > 0 ? 200 / totalNetWon : 0;
+
+    return { grossSkins, netSkins, totalGrossWon, totalNetWon, grossPayout, netPayout };
   }
 
   if (loading) {
@@ -244,13 +240,19 @@ export default function SkinsDetail() {
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         {/* Gross Skins */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-2xl font-bold mb-4 text-center">Gross Skins ($200)</h3>
+          <h3 className="text-2xl font-bold mb-1 text-center" style={{ fontFamily: 'Georgia, serif' }}>Gross Skins ($200)</h3>
+          <p className="text-center text-sm text-gray-500 mb-4">
+            {skinsSummary.totalGrossWon > 0
+              ? `${skinsSummary.totalGrossWon} skin${skinsSummary.totalGrossWon !== 1 ? 's' : ''} won • $${skinsSummary.grossPayout.toFixed(2)} per skin`
+              : '18 potential skins'}
+          </p>
           <div className="space-y-2">
             {Object.entries(skinsSummary.grossSkins)
               .sort(([, a], [, b]) => b - a)
               .map(([playerId, skins]) => {
                 const player = players.find(p => p.id === playerId);
                 if (!player) return null;
+                const payout = skins * skinsSummary.grossPayout;
                 
                 return (
                   <div key={playerId} className="flex justify-between items-center p-3 bg-gray-50 rounded">
@@ -262,21 +264,15 @@ export default function SkinsDetail() {
                       </span>
                       <span className="text-sm text-gray-500 ml-2">({player.team})</span>
                     </div>
-                    <div className="text-lg font-bold">
-                      {skins} skin{skins !== 1 ? 's' : ''}
+                    <div className="text-right">
+                      <div className="text-lg font-bold">{skins} skin{skins !== 1 ? 's' : ''}</div>
+                      <div className="text-sm text-green-600 font-semibold">${payout.toFixed(2)}</div>
                     </div>
                   </div>
                 );
               })}
-            
-            {skinsSummary.grossCarryover > 0 && (
-              <div className="flex justify-between items-center p-3 bg-yellow-100 rounded">
-                <span className="font-semibold">Carryover</span>
-                <span className="text-lg font-bold">{skinsSummary.grossCarryover} skin{skinsSummary.grossCarryover !== 1 ? 's' : ''}</span>
-              </div>
-            )}
 
-            {Object.keys(skinsSummary.grossSkins).length === 0 && skinsSummary.grossCarryover === 0 && (
+            {Object.keys(skinsSummary.grossSkins).length === 0 && (
               <div className="text-center text-gray-500 py-4">No gross skins won yet</div>
             )}
           </div>
@@ -284,13 +280,19 @@ export default function SkinsDetail() {
 
         {/* Net Skins */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-2xl font-bold mb-4 text-center">Net Skins ($200)</h3>
+          <h3 className="text-2xl font-bold mb-1 text-center" style={{ fontFamily: 'Georgia, serif' }}>Net Skins ($200)</h3>
+          <p className="text-center text-sm text-gray-500 mb-4">
+            {skinsSummary.totalNetWon > 0
+              ? `${skinsSummary.totalNetWon} skin${skinsSummary.totalNetWon !== 1 ? 's' : ''} won • $${skinsSummary.netPayout.toFixed(2)} per skin`
+              : '18 potential skins'}
+          </p>
           <div className="space-y-2">
             {Object.entries(skinsSummary.netSkins)
               .sort(([, a], [, b]) => b - a)
               .map(([playerId, skins]) => {
                 const player = players.find(p => p.id === playerId);
                 if (!player) return null;
+                const payout = skins * skinsSummary.netPayout;
                 
                 return (
                   <div key={playerId} className="flex justify-between items-center p-3 bg-gray-50 rounded">
@@ -302,21 +304,15 @@ export default function SkinsDetail() {
                       </span>
                       <span className="text-sm text-gray-500 ml-2">({player.team})</span>
                     </div>
-                    <div className="text-lg font-bold">
-                      {skins} skin{skins !== 1 ? 's' : ''}
+                    <div className="text-right">
+                      <div className="text-lg font-bold">{skins} skin{skins !== 1 ? 's' : ''}</div>
+                      <div className="text-sm text-green-600 font-semibold">${payout.toFixed(2)}</div>
                     </div>
                   </div>
                 );
               })}
 
-            {skinsSummary.netCarryover > 0 && (
-              <div className="flex justify-between items-center p-3 bg-yellow-100 rounded">
-                <span className="font-semibold">Carryover</span>
-                <span className="text-lg font-bold">{skinsSummary.netCarryover} skin{skinsSummary.netCarryover !== 1 ? 's' : ''}</span>
-              </div>
-            )}
-
-            {Object.keys(skinsSummary.netSkins).length === 0 && skinsSummary.netCarryover === 0 && (
+            {Object.keys(skinsSummary.netSkins).length === 0 && (
               <div className="text-center text-gray-500 py-4">No net skins won yet</div>
             )}
           </div>
