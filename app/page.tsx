@@ -291,7 +291,7 @@ export default function Home() {
         <div className="flex justify-between items-center mt-6 mb-4 px-2">
           <div className="text-sm font-semibold italic text-gray-600" style={{ fontFamily: 'Georgia, serif' }}>Team Shaft</div>
           <div className="text-sm text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>
-            {selectedDay === 1 ? 'Ritz Carlton GC — Best Ball' : selectedDay === 2 ? 'Southern Dunes — Stableford' : 'Champions Gate — Individual Match Play'}
+            {selectedDay === 1 ? 'Ritz Carlton GC — Best Ball' : selectedDay === 2 ? 'Southern Dunes — Stableford' : (<>Champions Gate<br/>Individual Match Play</>)}
           </div>
           <div className="text-sm font-semibold italic text-gray-600" style={{ fontFamily: 'Georgia, serif' }}>Team Balls</div>
         </div>
