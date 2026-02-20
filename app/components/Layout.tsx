@@ -142,37 +142,17 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       
-      {/* Main Content */}
-      <header className="bg-newspaper-dark text-white py-4 shadow-lg relative">
-        <div className="container mx-auto px-4 flex items-center">
-          {/* Hamburger Menu */}
-          <button
-            onClick={toggleDrawer}
-            className="text-white hover:text-gray-300 text-2xl mr-4 p-2 -ml-2"
-          >
-            ☰
-          </button>
-          
-          <div className="flex-1 flex flex-col items-center">
-            <a href="/">
-              <img src="/abtow-logo.jpg" alt="ABTOW 2026" className="w-48 md:w-56 rounded-lg mb-2" />
-            </a>
-            <p className="text-center text-gray-300 text-sm">
-              Live Tournament Scoring
-            </p>
-          </div>
-        </div>
-      </header>
+      {/* Hamburger Button - floating top left */}
+      <button
+        onClick={toggleDrawer}
+        className="fixed top-4 left-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-[#2a6b7c] text-white shadow-lg hover:bg-[#235a68] transition-colors text-xl"
+      >
+        ☰
+      </button>
       
       <main className="flex-1">
         {children}
       </main>
-      
-      <footer className="bg-gray-800 text-white py-4 mt-8">
-        <div className="container mx-auto px-4 text-center text-sm">
-          <p>&copy; 2026 ABTOW Open. All rights reserved.</p>
-        </div>
-      </footer>
     </div>
   )
 }
