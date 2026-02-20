@@ -97,6 +97,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <a href="/players" className="block py-3 px-3 hover:bg-gray-700 active:bg-gray-600 rounded transition-colors">
               Players
             </a>
+            <a href="/rules" className="block py-3 px-3 hover:bg-gray-700 active:bg-gray-600 rounded transition-colors">
+              Rules
+            </a>
           </nav>
           
           {/* Separator */}

@@ -332,17 +332,23 @@ export default function ScoreEntry() {
                 <div className={`text-sm font-bold ${team2Color}`}>{team2Label}</div>
               </div>
               {/* Hole-by-hole dots */}
+              {/* Running match status */}
               <div className="space-y-1">
                 <div className="flex items-center gap-0.5 justify-center">
                   <span className="text-[9px] text-gray-400 w-6 text-right mr-1">F</span>
                   {frontNine.map(h => {
                     const w = getHoleWinner(h);
                     const isCurrent = h === currentHole;
+                    // Calculate running status through this hole
+                    let t1W = 0, t2W = 0;
+                    for (let i = 1; i <= h; i++) { const r = getHoleWinner(i); if (r === 'team1') t1W++; if (r === 'team2') t2W++; }
+                    const diff = t1W - t2W;
+                    const statusLabel = w === null ? null : diff === 0 ? 'AS' : diff > 0 ? `${diff}UP` : `${Math.abs(diff)}UP`;
+                    const statusColor = diff === 0 ? 'text-gray-500' : diff > 0 ? (team1IsShafts ? 'text-blue-600' : 'text-red-600') : (team1IsShafts ? 'text-red-600' : 'text-blue-600');
                     return (
                       <div key={h} className={`w-5 h-5 flex items-center justify-center rounded ${isCurrent ? 'ring-2 ring-gray-400' : ''}`}>
                         {w === null ? <span className="text-[9px] text-gray-300">{h}</span> :
-                         w === 'tie' ? <span className="text-gray-400 text-xs font-bold">–</span> :
-                         <span className={`inline-block w-2.5 h-2.5 rounded-full ${w === 'team1' ? team1Dot : team2Dot}`}></span>}
+                         <span className={`text-[7px] font-bold ${statusColor}`}>{statusLabel}</span>}
                       </div>
                     );
                   })}
@@ -353,11 +359,15 @@ export default function ScoreEntry() {
                   {backNine.map(h => {
                     const w = getHoleWinner(h);
                     const isCurrent = h === currentHole;
+                    let t1W = 0, t2W = 0;
+                    for (let i = 1; i <= h; i++) { const r = getHoleWinner(i); if (r === 'team1') t1W++; if (r === 'team2') t2W++; }
+                    const diff = t1W - t2W;
+                    const statusLabel = w === null ? null : diff === 0 ? 'AS' : diff > 0 ? `${diff}UP` : `${Math.abs(diff)}UP`;
+                    const statusColor = diff === 0 ? 'text-gray-500' : diff > 0 ? (team1IsShafts ? 'text-blue-600' : 'text-red-600') : (team1IsShafts ? 'text-red-600' : 'text-blue-600');
                     return (
                       <div key={h} className={`w-5 h-5 flex items-center justify-center rounded ${isCurrent ? 'ring-2 ring-gray-400' : ''}`}>
                         {w === null ? <span className="text-[9px] text-gray-300">{h}</span> :
-                         w === 'tie' ? <span className="text-gray-400 text-xs font-bold">–</span> :
-                         <span className={`inline-block w-2.5 h-2.5 rounded-full ${w === 'team1' ? team1Dot : team2Dot}`}></span>}
+                         <span className={`text-[7px] font-bold ${statusColor}`}>{statusLabel}</span>}
                       </div>
                     );
                   })}

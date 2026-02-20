@@ -175,16 +175,18 @@ export default function DayDetail() {
   const dayTotals = calculateDayTotals();
 
   return (
-    <div className="container mx-auto px-4 py-8 relative">
-      {/* Close Button */}
-      <Link href="/" className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-900 transition-colors text-xl font-bold z-10">
-        ✕
-      </Link>
+    <div className="container mx-auto px-4 py-8 min-h-screen" style={{ backgroundColor: '#f5f0e8' }}>
+      {/* Breadcrumb */}
+      <div className="mb-4 text-sm">
+        <Link href="/" className="text-[#2a6b7c] hover:underline" style={{ fontFamily: 'Georgia, serif' }}>Home</Link>
+        <span className="text-gray-400 mx-2">›</span>
+        <span className="text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>Day {day}</span>
+      </div>
 
       {/* Day Header */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
         <div className="text-center">
-          <h1 className="newspaper-header text-4xl mb-2">{dayInfo.title}</h1>
+          <h1 className="text-4xl mb-2" style={{ fontFamily: 'Georgia, serif' }}>{dayInfo.title}</h1>
           <p className="text-xl text-gray-600 mb-4">{dayInfo.format}</p>
           {dayInfo.rules.length > 0 && (
             <ul className="text-gray-500 text-sm max-w-xl mx-auto space-y-1 text-left">
@@ -274,7 +276,7 @@ export default function DayDetail() {
                 </Link>
                 <Link
                   href={`/score/${match.group_access_token}`}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg font-medium hover:bg-blue-700 transition-colors"
+                  className="px-4 py-2 bg-[#2a6b7c] text-white rounded-lg font-medium hover:bg-[#235a68] transition-colors"
                 >
                   Enter Scores
                 </Link>

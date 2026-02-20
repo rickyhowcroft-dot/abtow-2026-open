@@ -95,18 +95,20 @@ export default function PlayerProfilePage() {
   const teamBgColor = player.team === 'Shaft' ? 'bg-blue-50 border-blue-200' : 'bg-red-50 border-red-200'
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 min-h-screen" style={{ backgroundColor: '#f5f0e8' }}>
       <div className="max-w-2xl mx-auto">
-        <div className="mb-6">
-          <Link href="/players" className="text-blue-600 hover:text-blue-800 transition-colors">
-            ← Back to Players
-          </Link>
+        <div className="mb-4 text-sm">
+          <Link href="/" className="text-[#2a6b7c] hover:underline" style={{ fontFamily: 'Georgia, serif' }}>Home</Link>
+          <span className="text-gray-400 mx-2">›</span>
+          <Link href="/players" className="text-[#2a6b7c] hover:underline" style={{ fontFamily: 'Georgia, serif' }}>Players</Link>
+          <span className="text-gray-400 mx-2">›</span>
+          <span className="text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>{playerName}</span>
         </div>
 
         <div className={`bg-white rounded-lg shadow-lg p-8 text-center border-2 ${teamBgColor}`}>
           <PlayerAvatar player={player} />
           
-          <h1 className="newspaper-header text-3xl mb-2">{displayName}</h1>
+          <h1 className="text-3xl mb-2" style={{ fontFamily: 'Georgia, serif' }}>{displayName}</h1>
           
           {player.nickname && (
             <p className="text-lg text-gray-600 italic mb-4">&ldquo;{player.nickname}&rdquo;</p>

@@ -175,16 +175,20 @@ export default function MatchDetail() {
   const backNine = Array.from({ length: 9 }, (_, i) => i + 10);
 
   return (
-    <div className="container mx-auto px-4 py-6 relative">
-      {/* Close Button */}
-      <Link href={`/day/${match.day}`} className="absolute top-4 right-4 w-10 h-10 flex items-center justify-center rounded-full bg-gray-200 hover:bg-gray-300 text-gray-600 hover:text-gray-900 transition-colors text-xl font-bold z-10">
-        ✕
-      </Link>
+    <div className="container mx-auto px-4 py-6 min-h-screen" style={{ backgroundColor: '#f5f0e8' }}>
+      {/* Breadcrumb */}
+      <div className="mb-4 text-sm">
+        <Link href="/" className="text-[#2a6b7c] hover:underline" style={{ fontFamily: 'Georgia, serif' }}>Home</Link>
+        <span className="text-gray-400 mx-2">›</span>
+        <Link href={`/day/${match.day}`} className="text-[#2a6b7c] hover:underline" style={{ fontFamily: 'Georgia, serif' }}>Day {match.day}</Link>
+        <span className="text-gray-400 mx-2">›</span>
+        <span className="text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>Match {match.group_number}</span>
+      </div>
 
       {/* Match Header */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <div className="text-center">
-          <h1 className="newspaper-header text-3xl mb-2">
+          <h1 className="text-3xl mb-2" style={{ fontFamily: 'Georgia, serif' }}>
             Group {match.group_number} - Day {match.day}
           </h1>
           <p className="text-lg text-gray-600">{course.name} ({course.tees})</p>

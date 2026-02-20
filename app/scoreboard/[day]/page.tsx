@@ -103,7 +103,7 @@ export default function ScoreboardPage() {
   });
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen" style={{ backgroundColor: '#f5f0e8' }}>
       {/* Header */}
       <div className="bg-newspaper-dark text-white py-4 px-4">
         <div className="flex items-center justify-between max-w-7xl mx-auto">

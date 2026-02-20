@@ -711,21 +711,31 @@ function ScorecardModal({ match, allPlayers, allScores, courses, onClose }: {
                   }
                 }
 
-                const team1Color = team1IsShafts ? 'bg-blue-500' : 'bg-red-500';
-                const team2Color = team1IsShafts ? 'bg-red-500' : 'bg-blue-500';
+                // Calculate running match status through each hole
+                function getRunningStatus(throughHole: number): { label: string; color: string } {
+                  let t1Wins = 0, t2Wins = 0;
+                  for (let h = 1; h <= throughHole; h++) {
+                    const w = getHoleWinner(h);
+                    if (w === 'team1') t1Wins++;
+                    if (w === 'team2') t2Wins++;
+                  }
+                  const diff = t1Wins - t2Wins;
+                  if (diff === 0) return { label: 'AS', color: 'text-gray-500' };
+                  if (diff > 0) return { label: `${diff}UP`, color: team1IsShafts ? 'text-blue-600' : 'text-red-600' };
+                  return { label: `${Math.abs(diff)}UP`, color: team1IsShafts ? 'text-red-600' : 'text-blue-600' };
+                }
 
                 const renderMatchHoles = (holes: number[]) => holes.map(hole => {
                   const winner = getHoleWinner(hole);
+                  if (winner === null) return <td key={hole} className="px-1 py-1.5 text-center"></td>;
+                  const status = getRunningStatus(hole);
                   return (
                     <td key={hole} className="px-1 py-1.5 text-center">
-                      {winner === null ? '' :
-                       winner === 'tie' ? <span className="text-gray-400 font-bold">–</span> :
-                       <span className={`inline-block w-2.5 h-2.5 rounded-full ${winner === 'team1' ? team1Color : team2Color}`}></span>}
+                      <span className={`text-[8px] font-bold ${status.color}`}>{status.label}</span>
                     </td>
                   );
                 });
 
-                // Calculate running totals for front/back/total
                 function countWins(holes: number[]) {
                   let t1 = 0, t2 = 0;
                   holes.forEach(h => {

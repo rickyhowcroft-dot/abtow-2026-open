@@ -221,12 +221,12 @@ export default function SkinsDetail() {
   const skinsSummary = calculateSkinsSummary();
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-8 min-h-screen" style={{ backgroundColor: '#f5f0e8' }}>
       {/* Breadcrumb */}
       <div className="mb-4 text-sm">
-        <Link href="/" className="text-blue-600 hover:underline">Home</Link>
+        <Link href="/" className="text-[#2a6b7c] hover:underline" style={{ fontFamily: 'Georgia, serif' }}>Home</Link>
         <span className="text-gray-400 mx-2">›</span>
-        <Link href={`/day/${day}`} className="text-blue-600 hover:underline">Day {day}</Link>
+        <Link href={`/day/${day}`} className="text-[#2a6b7c] hover:underline" style={{ fontFamily: 'Georgia, serif' }}>Day {day}</Link>
         <span className="text-gray-400 mx-2">›</span>
         <span className="text-gray-500">Skins</span>
       </div>
@@ -234,7 +234,7 @@ export default function SkinsDetail() {
       {/* Header */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
         <div className="text-center">
-          <h1 className="newspaper-header text-4xl mb-2">Skins Results</h1>
+          <h1 className="text-4xl mb-2" style={{ fontFamily: 'Georgia, serif' }}>Skins Results</h1>
           <p className="text-xl text-gray-600 mb-2">{dayInfo.title}</p>
           <p className="text-gray-500">$200 NET • $200 GROSS</p>
         </div>
