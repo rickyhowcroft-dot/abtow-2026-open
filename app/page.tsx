@@ -246,17 +246,17 @@ export default function Home() {
             <tbody>
               <tr className="border-b border-gray-200 hover:bg-gray-50">
                 <td className="px-4 py-4 font-semibold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>Team Shaft</td>
-                <td className="px-3 py-4 text-center font-semibold">{day1.shafts || '–'}</td>
-                <td className="px-3 py-4 text-center font-semibold">{day2.shafts || '–'}</td>
-                <td className="px-3 py-4 text-center font-semibold">{day3.shafts || '–'}</td>
-                <td className="px-3 py-4 text-center font-bold text-lg">{teamScores.shafts}</td>
+                <td className="px-3 py-4 text-center font-semibold">{day1.shafts || '—'}</td>
+                <td className="px-3 py-4 text-center font-semibold">{day2.shafts || '—'}</td>
+                <td className="px-3 py-4 text-center font-semibold">{day3.shafts || '—'}</td>
+                <td className="px-3 py-4 text-center font-bold text-lg">{teamScores.shafts || '—'}</td>
               </tr>
               <tr className="hover:bg-gray-50">
                 <td className="px-4 py-4 font-semibold text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>Team Balls</td>
-                <td className="px-3 py-4 text-center font-semibold">{day1.balls || '–'}</td>
-                <td className="px-3 py-4 text-center font-semibold">{day2.balls || '–'}</td>
-                <td className="px-3 py-4 text-center font-semibold">{day3.balls || '–'}</td>
-                <td className="px-3 py-4 text-center font-bold text-lg">{teamScores.balls}</td>
+                <td className="px-3 py-4 text-center font-semibold">{day1.balls || '—'}</td>
+                <td className="px-3 py-4 text-center font-semibold">{day2.balls || '—'}</td>
+                <td className="px-3 py-4 text-center font-semibold">{day3.balls || '—'}</td>
+                <td className="px-3 py-4 text-center font-bold text-lg">{teamScores.balls || '—'}</td>
               </tr>
             </tbody>
           </table>
