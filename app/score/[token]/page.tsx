@@ -460,10 +460,10 @@ export default function ScoreEntry() {
           <button
             onClick={goToPreviousHole}
             disabled={currentHole === 1}
-            className={`px-4 py-2 rounded-lg font-semibold ${
+            className={`px-5 py-3 rounded-lg font-semibold text-base mobile-tap-target ${
               currentHole === 1
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                : 'bg-gray-300 text-gray-700 hover:bg-gray-400 active:bg-gray-500'
             }`}
           >
             ← Prev
@@ -479,10 +479,10 @@ export default function ScoreEntry() {
           <button
             onClick={goToNextHole}
             disabled={currentHole === 18}
-            className={`px-4 py-2 rounded-lg font-semibold ${
+            className={`px-5 py-3 rounded-lg font-semibold text-base mobile-tap-target ${
               currentHole === 18
                 ? 'bg-gray-200 text-gray-400 cursor-not-allowed'
-                : 'bg-blue-600 text-white hover:bg-blue-700'
+                : 'bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800'
             }`}
           >
             Next →
@@ -584,49 +584,24 @@ export default function ScoreEntry() {
               </div>
               
               {/* Quick Score Buttons */}
-              <div className="grid grid-cols-6 gap-1">
+              <div className="grid grid-cols-5 gap-1.5">
                 {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => (
                   <button
                     key={score}
                     onClick={() => {
                       saveScore(player.id, currentHole, score);
                     }}
-                    className={`py-2 px-1 text-sm font-semibold rounded mobile-tap-target ${
+                    className={`py-3 px-1 text-base font-semibold rounded-lg mobile-tap-target ${
                       scores[player.id][currentHole] === score
                         ? isShaftsPlayer
                           ? 'bg-blue-600 text-white'
                           : 'bg-red-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400'
                     }`}
                   >
                     {score}
                   </button>
                 ))}
-                <button
-                  onClick={() => {
-                    if (scores[player.id][currentHole]) {
-                      setSaved(prev => ({
-                        ...prev,
-                        [player.id]: { ...prev[player.id], [currentHole]: true }
-                      }));
-                      setTimeout(() => {
-                        setSaved(prev => ({
-                          ...prev,
-                          [player.id]: { ...prev[player.id], [currentHole]: false }
-                        }));
-                      }, 2000);
-                    }
-                  }}
-                  className={`py-2 px-1 text-sm font-semibold rounded mobile-tap-target ${
-                    scores[player.id][currentHole]
-                      ? saved[player.id]?.[currentHole]
-                        ? 'bg-green-500 text-white'
-                        : 'bg-green-100 text-green-700'
-                      : 'bg-gray-200 text-gray-400'
-                  }`}
-                >
-                  ✓
-                </button>
               </div>
             </div>
             </div>
@@ -639,15 +614,30 @@ export default function ScoreEntry() {
         <div className="text-center mb-3">
           <div className="text-sm font-semibold text-gray-700">Jump to Hole</div>
         </div>
-        <div className="grid grid-cols-9 gap-2">
-          {Array.from({ length: 18 }, (_, i) => i + 1).map(hole => (
+        <div className="grid grid-cols-9 gap-1.5 mb-1">
+          {Array.from({ length: 9 }, (_, i) => i + 1).map(hole => (
             <button
               key={hole}
               onClick={() => setCurrentHole(hole)}
-              className={`py-2 px-1 text-sm font-semibold rounded mobile-tap-target ${
+              className={`py-2.5 px-0.5 text-sm font-semibold rounded-lg mobile-tap-target ${
                 currentHole === hole
                   ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400'
+              }`}
+            >
+              {hole}
+            </button>
+          ))}
+        </div>
+        <div className="grid grid-cols-9 gap-1.5">
+          {Array.from({ length: 9 }, (_, i) => i + 10).map(hole => (
+            <button
+              key={hole}
+              onClick={() => setCurrentHole(hole)}
+              className={`py-2.5 px-0.5 text-sm font-semibold rounded-lg mobile-tap-target ${
+                currentHole === hole
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400'
               }`}
             >
               {hole}
@@ -665,18 +655,18 @@ export default function ScoreEntry() {
 
       {/* Navigation Footer */}
       <div className="bg-white border-t p-4">
-        <div className="flex justify-center space-x-4">
+        <div className="flex justify-center gap-3">
           <button
             onClick={() => router.push('/')}
-            className="btn-secondary"
+            className="btn-secondary text-sm"
           >
-            Back to Leaderboard
+            Leaderboard
           </button>
           <button
             onClick={() => router.push(`/match/${match.id}`)}
-            className="btn-primary"
+            className="btn-primary text-sm"
           >
-            View Scorecard
+            Scorecard
           </button>
         </div>
       </div>

@@ -200,15 +200,15 @@ export default function DayDetail() {
           {/* Day Totals */}
           <div className="mt-6 p-4 bg-gray-50 rounded-lg">
             <h3 className="text-lg font-semibold mb-3">Day {day} Results</h3>
-            <div className="flex justify-center items-center space-x-8">
+            <div className="flex justify-center items-center gap-4 sm:gap-8">
               <div className="text-center">
-                <div className="text-lg font-bold text-blue-600">Team Shaft</div>
-                <div className="text-3xl font-bold text-blue-600">{dayTotals.shafts}</div>
+                <div className="text-base sm:text-lg font-bold text-blue-600">Team Shaft</div>
+                <div className="text-2xl sm:text-3xl font-bold text-blue-600">{dayTotals.shafts}</div>
               </div>
-              <div className="text-4xl font-light text-gray-400">vs</div>
+              <div className="text-3xl sm:text-4xl font-light text-gray-400">vs</div>
               <div className="text-center">
-                <div className="text-lg font-bold text-red-600">Team Balls</div>
-                <div className="text-3xl font-bold text-red-600">{dayTotals.balls}</div>
+                <div className="text-base sm:text-lg font-bold text-red-600">Team Balls</div>
+                <div className="text-2xl sm:text-3xl font-bold text-red-600">{dayTotals.balls}</div>
               </div>
             </div>
           </div>

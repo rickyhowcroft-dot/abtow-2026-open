@@ -67,6 +67,24 @@ body {
   min-width: 44px;
 }
 
+/* Prevent iOS zoom on input focus */
+input[type="number"],
+input[type="text"],
+select,
+textarea {
+  font-size: 16px;
+}
+
+/* Better touch feedback */
+button, a {
+  -webkit-tap-highlight-color: rgba(0, 0, 0, 0.1);
+}
+
+/* Prevent horizontal overflow on mobile */
+.overflow-x-auto {
+  -webkit-overflow-scrolling: touch;
+}
+
 @media (max-width: 640px) {
   .score-input {
     @apply h-14 text-2xl;
@@ -79,5 +97,10 @@ body {
   
   .mobile-scorecard .hole-number {
     @apply text-sm font-bold;
+  }
+
+  /* Ensure modal doesn't overflow viewport */
+  .fixed.inset-0 {
+    padding: 8px;
   }
 }

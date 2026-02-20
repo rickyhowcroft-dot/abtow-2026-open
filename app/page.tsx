@@ -493,7 +493,7 @@ function ScorecardModal({ match, allPlayers, allScores, courses, onClose }: {
 
         <div className="overflow-auto flex-1">
         {/* Match Result Summary */}
-        <div className="flex justify-center items-center gap-4 py-3 bg-gray-50 border-b">
+        <div className="flex flex-wrap justify-center items-center gap-3 py-3 px-2 bg-gray-50 border-b">
           <div className={`flex items-center gap-2 px-3 py-2 rounded ${team1IsShafts ? 'bg-blue-100' : 'bg-red-100'}`}>
             <div className="flex -space-x-2">
               {match.team1_players.map(name => {

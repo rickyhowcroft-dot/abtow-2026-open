@@ -1,11 +1,17 @@
-import type { Metadata } from 'next'
+import type { Metadata, Viewport } from 'next'
 import Layout from './components/Layout'
 import './globals.css'
+
+export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  userScalable: false,
+}
 
 export const metadata: Metadata = {
   title: 'ABTOW 2026 Open | Live Scoring',
   description: 'Live scoring for the ABTOW 2026 Open — March 16-18, 2026. Ritz Carlton GC • Southern Dunes • Champions Gate.',
-  viewport: 'width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no',
   icons: {
     icon: '/favicon.ico',
     apple: '/apple-touch-icon.png',

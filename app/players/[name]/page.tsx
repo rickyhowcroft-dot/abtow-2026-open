@@ -14,7 +14,7 @@ function PlayerAvatar({ player }: { player: Player }) {
   const teamBg = player.team === 'Shaft' ? 'bg-team-shafts' : 'bg-team-balls'
 
   return (
-    <div className="mx-auto mb-6 w-60 h-60 rounded-full overflow-hidden border-4 border-white shadow-lg">
+    <div className="mx-auto mb-6 w-40 h-40 sm:w-60 sm:h-60 rounded-full overflow-hidden border-4 border-white shadow-lg">
       {player.avatar_url ? (
         <img 
           src={player.avatar_url} 
@@ -22,7 +22,7 @@ function PlayerAvatar({ player }: { player: Player }) {
           className="w-full h-full object-cover" style={{ objectPosition: player.avatar_position || 'center 30%' }}
         />
       ) : (
-        <div className={`w-60 h-60 rounded-full flex items-center justify-center text-7xl font-bold text-white ${teamBg} shadow-lg`}>
+        <div className={`w-40 h-40 sm:w-60 sm:h-60 rounded-full flex items-center justify-center text-5xl sm:text-7xl font-bold text-white ${teamBg} shadow-lg`}>
           {initials}
         </div>
       )}

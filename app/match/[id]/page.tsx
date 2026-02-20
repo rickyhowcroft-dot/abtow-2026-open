@@ -193,15 +193,15 @@ export default function MatchDetail() {
           {result && (
             <div className="mt-4 p-4 bg-gray-50 rounded-lg">
               <div className="text-lg font-semibold mb-2">Match Result</div>
-              <div className="flex justify-center items-center space-x-6">
-                <div className={`text-center p-3 rounded ${team1IsShafts ? 'bg-blue-100' : 'bg-red-100'}`}>
-                  <div className="font-semibold">{match.team1_players.join(' & ')}</div>
+              <div className="flex flex-col sm:flex-row justify-center items-center gap-3 sm:gap-6">
+                <div className={`text-center p-3 rounded w-full sm:w-auto ${team1IsShafts ? 'bg-blue-100' : 'bg-red-100'}`}>
+                  <div className="font-semibold text-sm sm:text-base">{match.team1_players.join(' & ')}</div>
                   <div className="text-sm text-gray-600">{team1IsShafts ? 'Shaft' : 'Balls'}</div>
                   <div className="text-2xl font-bold">{result.team1_total}</div>
                 </div>
                 <div className="text-2xl font-light text-gray-400">vs</div>
-                <div className={`text-center p-3 rounded ${!team1IsShafts ? 'bg-blue-100' : 'bg-red-100'}`}>
-                  <div className="font-semibold">{match.team2_players.join(' & ')}</div>
+                <div className={`text-center p-3 rounded w-full sm:w-auto ${!team1IsShafts ? 'bg-blue-100' : 'bg-red-100'}`}>
+                  <div className="font-semibold text-sm sm:text-base">{match.team2_players.join(' & ')}</div>
                   <div className="text-sm text-gray-600">{!team1IsShafts ? 'Shaft' : 'Balls'}</div>
                   <div className="text-2xl font-bold">{result.team2_total}</div>
                 </div>

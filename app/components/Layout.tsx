@@ -72,29 +72,29 @@ export default function Layout({ children }: { children: React.ReactNode }) {
           </div>
           
           {/* Navigation Links */}
-          <nav className="space-y-3 mb-6">
-            <a href="/" className="block py-2 px-3 hover:bg-gray-700 rounded transition-colors">
+          <nav className="space-y-1 mb-6">
+            <a href="/" className="block py-3 px-3 hover:bg-gray-700 active:bg-gray-600 rounded transition-colors">
               Home (Leaderboard)
             </a>
-            <a href="/day/1" className="block py-2 px-3 hover:bg-gray-700 rounded transition-colors">
+            <a href="/day/1" className="block py-3 px-3 hover:bg-gray-700 active:bg-gray-600 rounded transition-colors">
               Day 1 - Ritz Carlton GC
             </a>
-            <a href="/day/2" className="block py-2 px-3 hover:bg-gray-700 rounded transition-colors">
+            <a href="/day/2" className="block py-3 px-3 hover:bg-gray-700 active:bg-gray-600 rounded transition-colors">
               Day 2 - Southern Dunes
             </a>
-            <a href="/day/3" className="block py-2 px-3 hover:bg-gray-700 rounded transition-colors">
+            <a href="/day/3" className="block py-3 px-3 hover:bg-gray-700 active:bg-gray-600 rounded transition-colors">
               Day 3 - Champions Gate
             </a>
-            <a href="/skins/1" className="block py-2 px-3 hover:bg-gray-700 rounded transition-colors">
+            <a href="/skins/1" className="block py-3 px-3 hover:bg-gray-700 active:bg-gray-600 rounded transition-colors">
               Skins - Day 1
             </a>
-            <a href="/skins/2" className="block py-2 px-3 hover:bg-gray-700 rounded transition-colors">
+            <a href="/skins/2" className="block py-3 px-3 hover:bg-gray-700 active:bg-gray-600 rounded transition-colors">
               Skins - Day 2
             </a>
-            <a href="/skins/3" className="block py-2 px-3 hover:bg-gray-700 rounded transition-colors">
+            <a href="/skins/3" className="block py-3 px-3 hover:bg-gray-700 active:bg-gray-600 rounded transition-colors">
               Skins - Day 3
             </a>
-            <a href="/players" className="block py-2 px-3 hover:bg-gray-700 rounded transition-colors">
+            <a href="/players" className="block py-3 px-3 hover:bg-gray-700 active:bg-gray-600 rounded transition-colors">
               Players
             </a>
           </nav>
@@ -145,7 +145,7 @@ export default function Layout({ children }: { children: React.ReactNode }) {
       {/* Hamburger Button - floating top left */}
       <button
         onClick={toggleDrawer}
-        className="fixed top-4 left-4 z-30 w-10 h-10 flex items-center justify-center rounded-full bg-[#2a6b7c] text-white shadow-lg hover:bg-[#235a68] transition-colors text-xl"
+        className="fixed top-4 left-4 z-30 w-11 h-11 flex items-center justify-center rounded-full bg-[#2a6b7c] text-white shadow-lg hover:bg-[#235a68] active:bg-[#1d4d58] transition-colors text-xl"
       >
         ☰
       </button>
