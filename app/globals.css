@@ -1,0 +1,83 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
+:root {
+  --foreground-rgb: 0, 0, 0;
+  --background-start-rgb: 248, 248, 248;
+  --background-end-rgb: 255, 255, 255;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+  font-family: 'Inter', sans-serif;
+}
+
+.newspaper-header {
+  font-family: 'Crimson Text', serif;
+  font-weight: 600;
+  letter-spacing: -0.025em;
+}
+
+.newspaper-text {
+  font-family: 'Crimson Text', serif;
+  line-height: 1.4;
+}
+
+.score-input {
+  @apply w-full h-12 text-center text-xl font-semibold border-2 border-gray-300 rounded-lg;
+  @apply focus:border-blue-500 focus:ring-2 focus:ring-blue-200 focus:outline-none;
+  @apply transition-colors duration-200;
+}
+
+.score-input:focus {
+  @apply border-blue-500 ring-2 ring-blue-200;
+}
+
+.team-shafts {
+  @apply text-blue-600 border-blue-600;
+}
+
+.team-balls {
+  @apply text-red-600 border-red-600;
+}
+
+.btn-primary {
+  @apply bg-blue-600 text-white px-6 py-3 rounded-lg font-semibold;
+  @apply hover:bg-blue-700 active:bg-blue-800 transition-colors;
+}
+
+.btn-secondary {
+  @apply bg-gray-200 text-gray-800 px-6 py-3 rounded-lg font-semibold;
+  @apply hover:bg-gray-300 active:bg-gray-400 transition-colors;
+}
+
+.mobile-tap-target {
+  min-height: 44px;
+  min-width: 44px;
+}
+
+@media (max-width: 640px) {
+  .score-input {
+    @apply h-14 text-2xl;
+  }
+  
+  .mobile-scorecard th,
+  .mobile-scorecard td {
+    @apply text-xs px-1 py-2;
+  }
+  
+  .mobile-scorecard .hole-number {
+    @apply text-sm font-bold;
+  }
+}
