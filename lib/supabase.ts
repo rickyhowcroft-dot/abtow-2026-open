@@ -130,6 +130,210 @@ export type Database = {
           updated_at?: string
         }
       }
+      player_stats: {
+        Row: {
+          id: string
+          player_id: string
+          tournament_year: number
+          team_matches_played: number
+          team_matches_won: number
+          team_matches_lost: number
+          team_matches_tied: number
+          individual_matches_played: number
+          individual_matches_won: number
+          individual_matches_lost: number
+          individual_matches_tied: number
+          total_rounds_played: number
+          total_gross_strokes: number
+          total_net_strokes: number
+          total_holes_played: number
+          eagles: number
+          birdies: number
+          pars: number
+          bogeys: number
+          double_bogeys: number
+          triple_bogeys_plus: number
+          rounds_under_handicap: number
+          rounds_at_handicap: number
+          rounds_over_handicap: number
+          total_strokes_to_handicap: number
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          tournament_year?: number
+          team_matches_played?: number
+          team_matches_won?: number
+          team_matches_lost?: number
+          team_matches_tied?: number
+          individual_matches_played?: number
+          individual_matches_won?: number
+          individual_matches_lost?: number
+          individual_matches_tied?: number
+          total_rounds_played?: number
+          total_gross_strokes?: number
+          total_net_strokes?: number
+          total_holes_played?: number
+          eagles?: number
+          birdies?: number
+          pars?: number
+          bogeys?: number
+          double_bogeys?: number
+          triple_bogeys_plus?: number
+          rounds_under_handicap?: number
+          rounds_at_handicap?: number
+          rounds_over_handicap?: number
+          total_strokes_to_handicap?: number
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          player_id?: string
+          tournament_year?: number
+          team_matches_played?: number
+          team_matches_won?: number
+          team_matches_lost?: number
+          team_matches_tied?: number
+          individual_matches_played?: number
+          individual_matches_won?: number
+          individual_matches_lost?: number
+          individual_matches_tied?: number
+          total_rounds_played?: number
+          total_gross_strokes?: number
+          total_net_strokes?: number
+          total_holes_played?: number
+          eagles?: number
+          birdies?: number
+          pars?: number
+          bogeys?: number
+          double_bogeys?: number
+          triple_bogeys_plus?: number
+          rounds_under_handicap?: number
+          rounds_at_handicap?: number
+          rounds_over_handicap?: number
+          total_strokes_to_handicap?: number
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      player_daily_stats: {
+        Row: {
+          id: string
+          player_id: string
+          course_id: string
+          day: number
+          gross_score: number | null
+          net_score: number | null
+          playing_handicap: number | null
+          strokes_to_handicap: number | null
+          eagles: number
+          birdies: number
+          pars: number
+          bogeys: number
+          double_bogeys: number
+          triple_bogeys_plus: number
+          best_holes: number[] | null
+          worst_holes: number[] | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          course_id: string
+          day: number
+          gross_score?: number | null
+          net_score?: number | null
+          playing_handicap?: number | null
+          strokes_to_handicap?: number | null
+          eagles?: number
+          birdies?: number
+          pars?: number
+          bogeys?: number
+          double_bogeys?: number
+          triple_bogeys_plus?: number
+          best_holes?: number[] | null
+          worst_holes?: number[] | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          player_id?: string
+          course_id?: string
+          day?: number
+          gross_score?: number | null
+          net_score?: number | null
+          playing_handicap?: number | null
+          strokes_to_handicap?: number | null
+          eagles?: number
+          birdies?: number
+          pars?: number
+          bogeys?: number
+          double_bogeys?: number
+          triple_bogeys_plus?: number
+          best_holes?: number[] | null
+          worst_holes?: number[] | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      player_hole_stats: {
+        Row: {
+          id: string
+          player_id: string
+          hole_number: number
+          times_played: number
+          total_gross_strokes: number
+          eagles: number
+          birdies: number
+          pars: number
+          bogeys: number
+          double_bogeys: number
+          triple_bogeys_plus: number
+          best_score: number | null
+          worst_score: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          player_id: string
+          hole_number: number
+          times_played?: number
+          total_gross_strokes?: number
+          eagles?: number
+          birdies?: number
+          pars?: number
+          bogeys?: number
+          double_bogeys?: number
+          triple_bogeys_plus?: number
+          best_score?: number | null
+          worst_score?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          player_id?: string
+          hole_number?: number
+          times_played?: number
+          total_gross_strokes?: number
+          eagles?: number
+          birdies?: number
+          pars?: number
+          bogeys?: number
+          double_bogeys?: number
+          triple_bogeys_plus?: number
+          best_score?: number | null
+          worst_score?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
     }
   }
 }

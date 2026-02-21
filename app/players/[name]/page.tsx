@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Player } from '@/lib/scoring'
+import PlayerStatsModal from '@/app/components/PlayerStatsModal'
 
 function PlayerAvatar({ player }: { player: Player }) {
   const initials = player.first_name && player.last_name 
@@ -36,6 +37,7 @@ export default function PlayerProfilePage() {
   const [player, setPlayer] = useState<Player | null>(null)
   const [loading, setLoading] = useState(true)
   const [notFound, setNotFound] = useState(false)
+  const [showStatsModal, setShowStatsModal] = useState(false)
 
   const playerName = decodeURIComponent(params.name as string)
 
@@ -144,6 +146,12 @@ export default function PlayerProfilePage() {
           </div>
 
           <div className="mt-8 flex gap-4 justify-center flex-wrap">
+            <button
+              onClick={() => setShowStatsModal(true)}
+              className="px-6 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors font-medium"
+            >
+              View Statistics
+            </button>
             <Link href="/" className="btn-secondary">View Leaderboard</Link>
             <Link href="/players" className="btn-secondary">All Players</Link>
           </div>
@@ -153,6 +161,16 @@ export default function PlayerProfilePage() {
           <TeamMembersSection currentPlayer={player} />
         </div>
       </div>
+
+      {/* Player Stats Modal */}
+      {player && (
+        <PlayerStatsModal
+          playerId={player.id}
+          playerName={displayName}
+          isOpen={showStatsModal}
+          onClose={() => setShowStatsModal(false)}
+        />
+      )}
     </div>
   )
 }

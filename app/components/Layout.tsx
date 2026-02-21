@@ -102,6 +102,9 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <a href="/players" className="block py-2.5 px-3 text-gray-700 hover:bg-[#2a6b7c]/10 active:bg-[#2a6b7c]/20 rounded transition-colors" onClick={closeDrawer}>
               Players
             </a>
+            <a href="/statistics" className="block py-2.5 px-3 text-gray-700 hover:bg-[#2a6b7c]/10 active:bg-[#2a6b7c]/20 rounded transition-colors" onClick={closeDrawer}>
+              Statistics
+            </a>
             <a href="/rules" className="block py-2.5 px-3 text-gray-700 hover:bg-[#2a6b7c]/10 active:bg-[#2a6b7c]/20 rounded transition-colors" onClick={closeDrawer}>
               Rules
             </a>
