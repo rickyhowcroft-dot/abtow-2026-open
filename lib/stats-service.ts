@@ -6,8 +6,8 @@ type Course = Database['public']['Tables']['courses']['Row']
 type Match = Database['public']['Tables']['matches']['Row']
 type Score = Database['public']['Tables']['scores']['Row']
 type PlayerStats = Database['public']['Tables']['player_stats']['Row']
-type PlayerDailyStats = Database['public']['Tables']['player_daily_stats']['Row']
-type PlayerHoleStats = Database['public']['Tables']['player_hole_stats']['Row']
+export type PlayerDailyStats = Database['public']['Tables']['player_daily_stats']['Row']
+export type PlayerHoleStats = Database['public']['Tables']['player_hole_stats']['Row']
 
 export interface PlayerScoreCard {
   playerId: string
@@ -222,13 +222,13 @@ export class StatsService {
     
     const player = stats.players as any
     
-    const bestRound = dailyStats?.[0] ? {
+    const bestRound = (dailyStats && dailyStats.length > 0 && dailyStats[0]) ? {
       day: dailyStats[0].day,
       grossScore: dailyStats[0].gross_score!,
       course: (dailyStats[0].courses as any).name
     } : null
     
-    const worstRound = dailyStats?.length > 0 ? {
+    const worstRound = (dailyStats && dailyStats.length > 0) ? {
       day: dailyStats[dailyStats.length - 1].day,
       grossScore: dailyStats[dailyStats.length - 1].gross_score!,
       course: (dailyStats[dailyStats.length - 1].courses as any).name
@@ -302,6 +302,11 @@ export class StatsService {
       .select('*')
       .eq('player_id', playerId)
       .order('hole_number')
+    
+    if (error) {
+      console.error('Error fetching hole stats:', error)
+      return []
+    }
     
     return data || []
   }
