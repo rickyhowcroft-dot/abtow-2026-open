@@ -232,7 +232,7 @@ export default function SkinsDetail() {
         <div className="text-center">
           <h1 className="text-4xl mb-2" style={{ fontFamily: 'Georgia, serif' }}>Skins Results</h1>
           <p className="text-xl text-gray-600 mb-2">{dayInfo.title}</p>
-          <p className="text-gray-500">$200 NET • $200 GROSS</p>
+          {/* Removed $200 NET • $200 GROSS */}
         </div>
       </div>
 
@@ -240,7 +240,7 @@ export default function SkinsDetail() {
       <div className="grid md:grid-cols-2 gap-6 mb-8">
         {/* Gross Skins */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-2xl font-bold mb-1 text-center" style={{ fontFamily: 'Georgia, serif' }}>Gross Skins ($200)</h3>
+          <h3 className="text-2xl font-bold mb-1 text-center" style={{ fontFamily: 'Georgia, serif' }}>Gross Skins</h3>
           <p className="text-center text-sm text-gray-500 mb-4">
             {skinsSummary.totalGrossWon > 0
               ? `${skinsSummary.totalGrossWon} skin${skinsSummary.totalGrossWon !== 1 ? 's' : ''} won • $${skinsSummary.grossPayout.toFixed(2)} per skin`
@@ -280,7 +280,7 @@ export default function SkinsDetail() {
 
         {/* Net Skins */}
         <div className="bg-white rounded-lg shadow-md p-6">
-          <h3 className="text-2xl font-bold mb-1 text-center" style={{ fontFamily: 'Georgia, serif' }}>Net Skins ($200)</h3>
+          <h3 className="text-2xl font-bold mb-1 text-center" style={{ fontFamily: 'Georgia, serif' }}>Net Skins</h3>
           <p className="text-center text-sm text-gray-500 mb-4">
             {skinsSummary.totalNetWon > 0
               ? `${skinsSummary.totalNetWon} skin${skinsSummary.totalNetWon !== 1 ? 's' : ''} won • $${skinsSummary.netPayout.toFixed(2)} per skin`

@@ -102,6 +102,34 @@ export default function ScoreboardPage() {
     else { ballsPts += r.team1_total; shaftPts += r.team2_total; }
   });
 
+  // Stableford bonus point for Day 2
+  let stablefordShaft = 0, stablefordBalls = 0;
+  if (day === 2 && hasAnyScores) {
+    matches.forEach(m => {
+      const c = courses.find(cr => cr.id === m.course_id);
+      if (!c) return;
+      const allMatchPlayers = [...m.team1_players, ...m.team2_players];
+      allMatchPlayers.forEach(name => {
+        const player = players.find(p => p.name === name);
+        if (!player) return;
+        let totalPts = 0;
+        for (let hole = 1; hole <= 18; hole++) {
+          const sc = scores.find(s => s.match_id === m.id && s.player_id === player.id && s.hole_number === hole)?.gross_score;
+          if (sc) {
+            const hd = holeData(c, hole);
+            const net = sc - getStrokesRegular(player.playing_handicap, hd.handicap);
+            totalPts += calculateStablefordPoints(net, hd.par);
+          }
+        }
+        if (player.team === 'Shaft') stablefordShaft += totalPts;
+        else stablefordBalls += totalPts;
+      });
+    });
+    if (stablefordShaft > stablefordBalls) shaftPts += 1;
+    else if (stablefordBalls > stablefordShaft) ballsPts += 1;
+    else { shaftPts += 0.5; ballsPts += 0.5; }
+  }
+
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#f5f0e8' }}>
       {/* Header */}
@@ -138,6 +166,16 @@ export default function ScoreboardPage() {
           <div className="text-3xl font-bold text-red-600">{hasAnyScores ? ballsPts : '—'}</div>
         </div>
       </div>
+      {day === 2 && hasAnyScores && (stablefordShaft > 0 || stablefordBalls > 0) && (
+        <div className="text-center py-2 bg-white border-b text-xs text-gray-600">
+          <span className="font-semibold">Stableford Bonus:</span>{' '}
+          <span className="text-blue-600">Shaft {stablefordShaft} pts</span> vs <span className="text-red-600">Balls {stablefordBalls} pts</span>
+          {' → '}
+          <span className="font-bold">
+            {stablefordShaft > stablefordBalls ? '+1 Shaft' : stablefordBalls > stablefordShaft ? '+1 Balls' : '+0.5 each'}
+          </span>
+        </div>
+      )}
 
       {/* Scoreboards */}
       <div className="p-4 max-w-7xl mx-auto space-y-6">

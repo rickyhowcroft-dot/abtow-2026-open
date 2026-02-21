@@ -101,6 +101,36 @@ export default function Home() {
       }
     });
 
+    // Stableford bonus point for Day 2
+    const day2Matches = matches.filter(m => m.day === 2);
+    if (day2Matches.length > 0) {
+      let sShaft = 0, sBalls = 0;
+      day2Matches.forEach(match => {
+        const course = courses.find(c => c.id === match.course_id);
+        if (!course) return;
+        [...match.team1_players, ...match.team2_players].forEach(name => {
+          const player = players.find(p => p.name === name);
+          if (!player) return;
+          let pts = 0;
+          for (let hole = 1; hole <= 18; hole++) {
+            const sc = scores.find(s => s.match_id === match.id && s.player_id === player.id && s.hole_number === hole)?.gross_score;
+            if (sc) {
+              const hd = course.par_data[`hole_${hole}`] || { par: 4, handicap: 1 };
+              const strokes = Math.floor(player.playing_handicap / 18) + (hd.handicap <= (player.playing_handicap % 18) ? 1 : 0);
+              pts += calculateStablefordPoints(sc - strokes, hd.par);
+            }
+          }
+          if (player.team === 'Shaft') sShaft += pts; else sBalls += pts;
+        });
+      });
+      const hasDay2Scores = scores.some(s => day2Matches.some(m => m.id === s.match_id) && s.gross_score !== null);
+      if (hasDay2Scores) {
+        if (sShaft > sBalls) shaftsPoints += 1;
+        else if (sBalls > sShaft) ballsPoints += 1;
+        else { shaftsPoints += 0.5; ballsPoints += 0.5; }
+      }
+    }
+
     setTeamScores({ shafts: shaftsPoints, balls: ballsPoints });
   }
 
@@ -187,6 +217,36 @@ export default function Home() {
       if (team1IsShafts) { shafts += result.team1_total; balls += result.team2_total; }
       else { balls += result.team1_total; shafts += result.team2_total; }
     });
+
+    // Stableford bonus point for Day 2
+    if (day === 2 && dayMatches.length > 0) {
+      let sShaft = 0, sBalls = 0;
+      dayMatches.forEach(match => {
+        const course = courses.find(c => c.id === match.course_id);
+        if (!course) return;
+        [...match.team1_players, ...match.team2_players].forEach(name => {
+          const player = players.find(p => p.name === name);
+          if (!player) return;
+          let pts = 0;
+          for (let hole = 1; hole <= 18; hole++) {
+            const sc = scores.find(s => s.match_id === match.id && s.player_id === player.id && s.hole_number === hole)?.gross_score;
+            if (sc) {
+              const hd = course.par_data[`hole_${hole}`] || { par: 4, handicap: 1 };
+              const strokes = Math.floor(player.playing_handicap / 18) + (hd.handicap <= (player.playing_handicap % 18) ? 1 : 0);
+              pts += calculateStablefordPoints(sc - strokes, hd.par);
+            }
+          }
+          if (player.team === 'Shaft') sShaft += pts; else sBalls += pts;
+        });
+      });
+      const hasDay2Scores = scores.some(s => dayMatches.some(m => m.id === s.match_id) && s.gross_score !== null);
+      if (hasDay2Scores) {
+        if (sShaft > sBalls) shafts += 1;
+        else if (sBalls > sShaft) balls += 1;
+        else { shafts += 0.5; balls += 0.5; }
+      }
+    }
+
     return { shafts, balls };
   }
 
@@ -322,9 +382,11 @@ export default function Home() {
                     return (
                       <div key={name} className="flex items-center gap-2 mb-1 last:mb-0">
                         {p?.avatar_url ? (
-                          <div className="w-7 h-7 rounded-full overflow-hidden border border-blue-300 shrink-0">
-                            <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
-                          </div>
+                          <Link href={`/players/${encodeURIComponent(name)}`} className="shrink-0 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                            <div className="w-7 h-7 rounded-full overflow-hidden border border-blue-300 hover:ring-2 hover:ring-blue-400 hover:scale-110 transition-all">
+                              <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
+                            </div>
+                          </Link>
                         ) : null}
                         <span className="font-bold text-sm text-gray-900" style={{ fontFamily: 'Georgia, serif' }}>
                           {name.toUpperCase()} <sup className="text-[10px] text-gray-500 font-normal">{p?.playing_handicap}</sup>
@@ -348,9 +410,11 @@ export default function Home() {
                           {name.toUpperCase()} <sup className="text-[10px] text-gray-500 font-normal">{p?.playing_handicap}</sup>
                         </span>
                         {p?.avatar_url ? (
-                          <div className="w-7 h-7 rounded-full overflow-hidden border border-red-300 shrink-0">
-                            <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
-                          </div>
+                          <Link href={`/players/${encodeURIComponent(name)}`} className="shrink-0 cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                            <div className="w-7 h-7 rounded-full overflow-hidden border border-red-300 hover:ring-2 hover:ring-red-400 hover:scale-110 transition-all">
+                              <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
+                            </div>
+                          </Link>
                         ) : null}
                       </div>
                     );
@@ -505,9 +569,11 @@ function ScorecardModal({ match, allPlayers, allScores, courses, onClose }: {
                 const p = allPlayers.find(pl => pl.name === name);
                 const initials = p?.first_name && p?.last_name ? `${p.first_name.charAt(0)}${p.last_name.charAt(0)}` : name.charAt(0);
                 return p?.avatar_url ? (
-                  <div key={name} className="w-8 h-8 rounded-full overflow-hidden border-2 border-white">
-                    <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
-                  </div>
+                  <Link key={name} href={`/players/${encodeURIComponent(name)}`} className="cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white hover:ring-2 hover:ring-blue-400 hover:scale-110 transition-all">
+                      <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
+                    </div>
+                  </Link>
                 ) : (
                   <div key={name} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white ${team1IsShafts ? 'bg-blue-500' : 'bg-red-500'}`}>{initials}</div>
                 );
@@ -525,9 +591,11 @@ function ScorecardModal({ match, allPlayers, allScores, courses, onClose }: {
                 const p = allPlayers.find(pl => pl.name === name);
                 const initials = p?.first_name && p?.last_name ? `${p.first_name.charAt(0)}${p.last_name.charAt(0)}` : name.charAt(0);
                 return p?.avatar_url ? (
-                  <div key={name} className="w-8 h-8 rounded-full overflow-hidden border-2 border-white">
-                    <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
-                  </div>
+                  <Link key={name} href={`/players/${encodeURIComponent(name)}`} className="cursor-pointer" onClick={(e) => e.stopPropagation()}>
+                    <div className="w-8 h-8 rounded-full overflow-hidden border-2 border-white hover:ring-2 hover:ring-red-400 hover:scale-110 transition-all">
+                      <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
+                    </div>
+                  </Link>
                 ) : (
                   <div key={name} className={`w-8 h-8 rounded-full border-2 border-white flex items-center justify-center text-[10px] font-bold text-white ${!team1IsShafts ? 'bg-blue-500' : 'bg-red-500'}`}>{initials}</div>
                 );
