@@ -108,6 +108,10 @@ export default function Layout({ children }: { children: React.ReactNode }) {
             <a href="/rules" className="block py-2.5 px-3 text-gray-700 hover:bg-[#2a6b7c]/10 active:bg-[#2a6b7c]/20 rounded transition-colors" onClick={closeDrawer}>
               Rules
             </a>
+            <div className="border-t border-gray-300 my-2"></div>
+            <a href="/admin" className="block py-2.5 px-3 text-gray-500 hover:bg-gray-100 active:bg-gray-200 rounded transition-colors text-sm" onClick={closeDrawer}>
+              🔒 Admin
+            </a>
           </nav>
           
           {/* Separator */}

@@ -8,9 +8,13 @@ import PostRoundProcessor from '@/lib/post-round-processor';
 import type { Player, Match, Score, Course } from '@/lib/scoring';
 import { calculateMatchPlayStrokes, calculateStablefordPoints, calculateNetScore, calculateBestBallResults, calculateStablefordResults, calculateIndividualResults } from '@/lib/scoring';
 
+const ADMIN_KEY = 'abtow_admin_auth';
+const ADMIN_PASSWORD = 'FuckCalder';
+
 export default function ScoreEntry() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const token = params.token as string;
   
   const [match, setMatch] = useState<Match | null>(null);
@@ -21,11 +25,15 @@ export default function ScoreEntry() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<{ [playerId: string]: { [hole: number]: boolean } }>({});
+  const [isAdminMode, setIsAdminMode] = useState(false);
 
   useEffect(() => {
-    if (token) {
-      fetchMatchData();
-    }
+    // Check for admin override: needs both the query param AND a valid admin session
+    const params = new URLSearchParams(window.location.search);
+    const override = params.get('adminOverride') === '1';
+    const hasAdminSession = sessionStorage.getItem(ADMIN_KEY) === ADMIN_PASSWORD;
+    if (override && hasAdminSession) setIsAdminMode(true);
+    if (token) fetchMatchData();
   }, [token]);
 
   async function fetchMatchData() {
@@ -218,6 +226,25 @@ export default function ScoreEntry() {
     );
   }
 
+  // Locked state — admin override bypasses this
+  if ((match as any).scores_locked && !isAdminMode) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-96 px-6 text-center gap-4">
+        <div className="text-5xl">🔒</div>
+        <h2 className="text-2xl font-bold" style={{ fontFamily: 'Georgia, serif' }}>Scores Locked</h2>
+        <p className="text-gray-500 max-w-xs">Scoring for this round has been closed by the tournament admin.</p>
+        <Link href="/" className="btn-primary mt-2">Back to Leaderboard</Link>
+      </div>
+    );
+  }
+
+  // Admin mode banner
+  const AdminBanner = isAdminMode ? (
+    <div className="bg-orange-100 border border-orange-300 text-orange-800 text-sm font-medium px-4 py-2 rounded-lg mb-4 text-center">
+      ✏️ Admin Override — Editing locked scorecard
+    </div>
+  ) : null;
+
   const holeData = getHoleData(currentHole);
   const isFront9 = currentHole <= 9;
 
@@ -260,6 +287,7 @@ export default function ScoreEntry() {
 
   return (
     <div className="min-h-screen bg-gray-50">
+      {AdminBanner && <div className="px-4 pt-3">{AdminBanner}</div>}
       {/* Header */}
       <div className="bg-white shadow-sm border-b">
         <div className="px-4 py-3">
