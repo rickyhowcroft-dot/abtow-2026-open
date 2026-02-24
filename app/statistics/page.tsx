@@ -245,32 +245,32 @@ export default function StatisticsPage() {
 
           {/* Player Statistics Table */}
           {(() => {
-            type Col = { key: string; label: string; sortKey?: string; renderCell: (p: PlayerStatsOverview) => React.ReactNode }
+            type Col = { key: string; label: string; sortKey?: string; renderCell: (p: PlayerStatsOverview, hidden: boolean) => React.ReactNode }
 
             const allCols: Col[] = [
               {
                 key: 'rounds',
                 label: 'Rounds',
-                renderCell: (p) => <td key="rounds" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.total_rounds_played}</td>
+                renderCell: (p, hidden) => <td key="rounds" className={`px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 ${hidden ? 'hidden md:table-cell' : ''}`}>{p.total_rounds_played}</td>
               },
               {
                 key: 'scoringAverage',
                 label: 'Scoring Avg',
                 sortKey: 'scoringAverage',
-                renderCell: (p) => <td key="scoringAverage" className="px-6 py-4 whitespace-nowrap text-center"><span className="text-lg font-bold text-gray-900">{p.scoringAverage > 0 ? p.scoringAverage.toFixed(1) : '—'}</span></td>
+                renderCell: (p, hidden) => <td key="scoringAverage" className={`px-4 py-4 whitespace-nowrap text-center ${hidden ? 'hidden md:table-cell' : ''}`}><span className="text-lg font-bold text-gray-900">{p.scoringAverage > 0 ? p.scoringAverage.toFixed(1) : '—'}</span></td>
               },
               {
                 key: 'netAverage',
                 label: 'Net Avg',
                 sortKey: 'netAverage',
-                renderCell: (p) => <td key="netAverage" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.netScoringAverage > 0 ? p.netScoringAverage.toFixed(1) : '—'}</td>
+                renderCell: (p, hidden) => <td key="netAverage" className={`px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 ${hidden ? 'hidden md:table-cell' : ''}`}>{p.netScoringAverage > 0 ? p.netScoringAverage.toFixed(1) : '—'}</td>
               },
               {
                 key: 'handicapPerformance',
                 label: 'vs Handicap',
                 sortKey: 'handicapPerformance',
-                renderCell: (p) => (
-                  <td key="handicapPerformance" className="px-6 py-4 whitespace-nowrap text-center">
+                renderCell: (p, hidden) => (
+                  <td key="handicapPerformance" className={`px-4 py-4 whitespace-nowrap text-center ${hidden ? 'hidden md:table-cell' : ''}`}>
                     <span className={`text-sm font-medium ${p.handicapPerformance < 0 ? 'text-green-600' : p.handicapPerformance > 0 ? 'text-red-600' : 'text-gray-500'}`}>
                       {p.total_rounds_played > 0 ? `${p.handicapPerformance > 0 ? '+' : ''}${p.handicapPerformance.toFixed(1)}` : '—'}
                     </span>
@@ -280,24 +280,24 @@ export default function StatisticsPage() {
               {
                 key: 'eagles',
                 label: 'Eagles',
-                renderCell: (p) => <td key="eagles" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.eagles}</td>
+                renderCell: (p, hidden) => <td key="eagles" className={`px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 ${hidden ? 'hidden md:table-cell' : ''}`}>{p.eagles}</td>
               },
               {
                 key: 'mostBirdies',
                 label: 'Birdies',
                 sortKey: 'mostBirdies',
-                renderCell: (p) => <td key="mostBirdies" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.birdies}</td>
+                renderCell: (p, hidden) => <td key="mostBirdies" className={`px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 ${hidden ? 'hidden md:table-cell' : ''}`}>{p.birdies}</td>
               },
               {
                 key: 'mostBogeys',
                 label: 'Bogeys',
                 sortKey: 'mostBogeys',
-                renderCell: (p) => <td key="mostBogeys" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.bogeys}</td>
+                renderCell: (p, hidden) => <td key="mostBogeys" className={`px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 ${hidden ? 'hidden md:table-cell' : ''}`}>{p.bogeys}</td>
               },
               {
                 key: 'pars',
                 label: 'Pars',
-                renderCell: (p) => <td key="pars" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.pars} ({formatPercentage(p.pars, p.total_holes_played)})</td>
+                renderCell: (p, hidden) => <td key="pars" className={`px-4 py-4 whitespace-nowrap text-center text-sm text-gray-900 ${hidden ? 'hidden md:table-cell' : ''}`}>{p.pars} ({formatPercentage(p.pars, p.total_holes_played)})</td>
               },
             ]
 
@@ -315,13 +315,13 @@ export default function StatisticsPage() {
                   <table className="w-full">
                     <thead className="bg-gray-50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player</th>
-                        {orderedCols.map(col => (
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player</th>
+                        {orderedCols.map((col, i) => (
                           <th
                             key={col.key}
-                            className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${
+                            className={`px-4 py-3 text-center text-xs font-medium uppercase tracking-wider ${
                               col.sortKey === sortBy ? 'text-green-700 bg-green-50' : 'text-gray-500'
-                            }`}
+                            } ${i > 0 ? 'hidden md:table-cell' : ''}`}
                           >
                             {col.label}
                             {col.sortKey === sortBy && <span className="ml-1">↑</span>}
@@ -342,7 +342,7 @@ export default function StatisticsPage() {
                               </div>
                             </div>
                           </td>
-                          {orderedCols.map(col => col.renderCell(player))}
+                          {orderedCols.map((col, i) => col.renderCell(player, i > 0))}
                           <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
                             <button
                               onClick={() => openPlayerStats(player.player_id, player.playerName)}
