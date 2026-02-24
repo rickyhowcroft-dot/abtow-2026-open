@@ -411,12 +411,12 @@ export default function SkinsDetail() {
       </div>
 
       {/* Navigation */}
-      <div className="mt-8 text-center space-x-4">
-        <Link href={`/day/${day}`} className="btn-secondary">
-          Back to Day {day}
+      <div className="mt-8 flex flex-col sm:flex-row justify-center items-center gap-3">
+        <Link href={`/day/${day}`} className="btn-secondary w-full sm:w-auto">
+          ← Back to Day {day}
         </Link>
-        <Link href="/" className="btn-primary">
-          Leaderboard
+        <Link href="/" className="btn-primary w-full sm:w-auto">
+          🏠 Leaderboard
         </Link>
       </div>
     </div>
