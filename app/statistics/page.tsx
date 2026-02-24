@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Layout from '@/app/components/Layout'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
 import StatsService, { type PlayerStatsOverview } from '@/lib/stats-service'
-import { TrendingUp, Award, Target, BarChart3 } from 'lucide-react'
+import { TrendingUp, Award, Target, BarChart3, TrendingDown, AlertTriangle } from 'lucide-react'
 
 export default function StatisticsPage() {
   const [allStats, setAllStats] = useState<PlayerStatsOverview[]>([])
@@ -56,7 +56,17 @@ export default function StatisticsPage() {
       const prevConsistency = prev.pars / (prev.total_holes_played || 1)
       const currentConsistency = current.pars / (current.total_holes_played || 1)
       return prevConsistency > currentConsistency ? prev : current
-    }) : null
+    }) : null,
+    bestNetScore: allStats.length > 0
+      ? allStats
+          .filter(p => p.total_rounds_played > 0)
+          .reduce((prev, current) =>
+            prev.netScoringAverage < current.netScoringAverage ? prev : current)
+      : null,
+    mostBogeys: allStats.length > 0
+      ? allStats.reduce((prev, current) =>
+          prev.bogeys > current.bogeys ? prev : current)
+      : null,
   }
 
   const openPlayerStats = (playerId: string, playerName: string) => {
@@ -94,7 +104,7 @@ export default function StatisticsPage() {
               <Award className="mr-2 text-yellow-500" />
               Tournament Leaders
             </h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {leaders.lowestAverage && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
                   <div className="flex items-center">
@@ -144,6 +154,32 @@ export default function StatisticsPage() {
                       <p className="text-orange-600 font-medium">
                         {formatPercentage(leaders.mostConsistent.pars, leaders.mostConsistent.total_holes_played)} pars
                       </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {leaders.bestNetScore && (
+                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-teal-500">
+                  <div className="flex items-center">
+                    <TrendingDown className="text-teal-500 mr-2" size={20} />
+                    <div>
+                      <p className="text-sm text-gray-600">Best Net Score</p>
+                      <p className="font-bold text-lg">{leaders.bestNetScore.playerName}</p>
+                      <p className="text-teal-600 font-medium">
+                        {leaders.bestNetScore.netScoringAverage.toFixed(1)} avg
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {leaders.mostBogeys && (
+                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
+                  <div className="flex items-center">
+                    <AlertTriangle className="text-red-400 mr-2" size={20} />
+                    <div>
+                      <p className="text-sm text-gray-600">Most Bogeys</p>
+                      <p className="font-bold text-lg">{leaders.mostBogeys.playerName}</p>
+                      <p className="text-red-400 font-medium">{leaders.mostBogeys.bogeys}</p>
                     </div>
                   </div>
                 </div>
@@ -209,6 +245,9 @@ export default function StatisticsPage() {
                       Birdies
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Bogeys
+                    </th>
+                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Pars
                     </th>
                     <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -256,6 +295,9 @@ export default function StatisticsPage() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
                         {player.birdies}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
+                        {player.bogeys}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
                         {player.pars} ({formatPercentage(player.pars, player.total_holes_played)})
