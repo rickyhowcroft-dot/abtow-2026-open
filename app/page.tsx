@@ -11,7 +11,14 @@ export default function Home() {
   const [matches, setMatches] = useState<Match[]>([]);
   const [scores, setScores] = useState<Score[]>([]);
   const [courses, setCourses] = useState<Course[]>([]);
-  const [selectedDay, setSelectedDay] = useState(1);
+  const [selectedDay, setSelectedDay] = useState<number>(() => {
+    const now = new Date();
+    const day2 = new Date('2026-03-17T00:00:00');
+    const day3 = new Date('2026-03-18T00:00:00');
+    if (now >= day3) return 3;
+    if (now >= day2) return 2;
+    return 1;
+  });
   const [loading, setLoading] = useState(true);
   const [teamScores, setTeamScores] = useState({ shafts: 0, balls: 0 });
   const [modalMatch, setModalMatch] = useState<Match | null>(null);
