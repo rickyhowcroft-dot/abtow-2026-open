@@ -114,7 +114,7 @@ export default function StatisticsPage() {
                     <Icon><TrendingDown className="text-green-500" size={20} /></Icon>
                     <div>
                       <p className="text-sm text-gray-500">Lowest Scoring Average</p>
-                      {leaders.lowestAverage.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      {leaders.lowestAverage.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-green-600 font-medium text-sm">{leaders.lowestAverage[0].scoringAverage.toFixed(1)}</p>
                     </div>
                   </div>
@@ -126,7 +126,7 @@ export default function StatisticsPage() {
                     <Icon>🐥</Icon>
                     <div>
                       <p className="text-sm text-gray-500">Most Birdies</p>
-                      {leaders.mostBirdies.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      {leaders.mostBirdies.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-blue-600 font-medium text-sm">{leaders.mostBirdies[0].birdies}</p>
                     </div>
                   </div>
@@ -138,7 +138,7 @@ export default function StatisticsPage() {
                     <Icon><span>⌛️</span><span>🛍️</span></Icon>
                     <div>
                       <p className="text-sm text-gray-500">Best vs Handicap</p>
-                      {leaders.bestHandicap.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      {leaders.bestHandicap.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-purple-600 font-medium text-sm">
                         {leaders.bestHandicap[0].handicapPerformance > 0 ? '+' : ''}
                         {leaders.bestHandicap[0].handicapPerformance.toFixed(1)}
@@ -153,7 +153,7 @@ export default function StatisticsPage() {
                     <Icon>🏌</Icon>
                     <div>
                       <p className="text-sm text-gray-500">Most Consistent</p>
-                      {leaders.mostConsistent.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      {leaders.mostConsistent.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-orange-600 font-medium text-sm">
                         {formatPercentage(leaders.mostConsistent[0].pars, leaders.mostConsistent[0].total_holes_played)} pars
                       </p>
@@ -167,7 +167,7 @@ export default function StatisticsPage() {
                     <Icon>💰</Icon>
                     <div>
                       <p className="text-sm text-gray-500">Best Net Score</p>
-                      {leaders.bestNetScore.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      {leaders.bestNetScore.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-teal-600 font-medium text-sm">
                         {leaders.bestNetScore[0].netScoringAverage.toFixed(1)} avg
                       </p>
@@ -181,7 +181,7 @@ export default function StatisticsPage() {
                     <Icon><span>⛳️</span><span>😩</span></Icon>
                     <div>
                       <p className="text-sm text-gray-500">Most Bogeys</p>
-                      {leaders.mostBogeys.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      {leaders.mostBogeys.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-red-400 font-medium text-sm">{leaders.mostBogeys[0].bogeys}</p>
                     </div>
                   </div>
@@ -193,7 +193,7 @@ export default function StatisticsPage() {
                     <Icon>🫃🏻</Icon>
                     <div>
                       <p className="text-sm text-gray-500">Worst Net Score</p>
-                      {leaders.worstNetScore.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      {leaders.worstNetScore.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-red-600 font-medium text-sm">
                         {leaders.worstNetScore[0].netScoringAverage.toFixed(1)} avg
                       </p>
