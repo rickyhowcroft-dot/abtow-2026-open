@@ -14,7 +14,6 @@ const ADMIN_PASSWORD = 'FuckCalder';
 export default function ScoreEntry() {
   const params = useParams();
   const router = useRouter();
-  const searchParams = useSearchParams();
   const token = params.token as string;
   
   const [match, setMatch] = useState<Match | null>(null);
