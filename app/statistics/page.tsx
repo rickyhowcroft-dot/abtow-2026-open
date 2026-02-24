@@ -147,7 +147,7 @@ export default function StatisticsPage() {
               {leaders.bestHandicap && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
                   <div className="flex items-center">
-                    <Icon>⌛️🛄</Icon>
+                    <Icon>⌛️🛍️</Icon>
                     <div>
                       <p className="text-sm text-gray-500">Best vs Handicap</p>
                       <p className="font-bold text-base leading-tight">{leaders.bestHandicap.playerName}</p>
