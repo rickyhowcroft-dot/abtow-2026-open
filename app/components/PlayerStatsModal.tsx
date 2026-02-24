@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
-import type { PlayerStatsOverview, PlayerHoleStats, PlayerDailyStats } from '@/lib/stats-service'
+import type { PlayerStatsOverview, PlayerDailyStats } from '@/lib/stats-service'
 import StatsService from '@/lib/stats-service'
 
 interface PlayerStatsModalProps {
@@ -12,13 +12,12 @@ interface PlayerStatsModalProps {
   onClose: () => void
 }
 
-type TabType = 'overview' | 'daily' | 'holes'
+type TabType = 'overview' | 'daily'
 
 export default function PlayerStatsModal({ playerId, playerName, isOpen, onClose }: PlayerStatsModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [stats, setStats] = useState<PlayerStatsOverview | null>(null)
   const [dailyStats, setDailyStats] = useState<Array<PlayerDailyStats & { courseName: string }>>([])
-  const [holeStats, setHoleStats] = useState<PlayerHoleStats[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -30,15 +29,13 @@ export default function PlayerStatsModal({ playerId, playerName, isOpen, onClose
   const loadStats = async () => {
     setLoading(true)
     try {
-      const [playerStats, dailyData, holeData] = await Promise.all([
+      const [playerStats, dailyData] = await Promise.all([
         StatsService.getPlayerStats(playerId),
-        StatsService.getPlayerDailyStats(playerId),
-        StatsService.getPlayerHoleStats(playerId)
+        StatsService.getPlayerDailyStats(playerId)
       ])
       
       setStats(playerStats)
       setDailyStats(dailyData)
-      setHoleStats(holeData)
     } catch (error) {
       console.error('Error loading stats:', error)
     } finally {
@@ -95,16 +92,6 @@ export default function PlayerStatsModal({ playerId, playerName, isOpen, onClose
               >
                 Daily Performance
               </button>
-              <button
-                onClick={() => setActiveTab('holes')}
-                className={`px-6 py-3 font-medium border-b-2 transition-colors ${
-                  activeTab === 'holes'
-                    ? 'border-green-500 text-green-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700'
-                }`}
-              >
-                Hole Analysis
-              </button>
             </div>
 
             {/* Content */}
@@ -114,9 +101,6 @@ export default function PlayerStatsModal({ playerId, playerName, isOpen, onClose
               )}
               {activeTab === 'daily' && (
                 <DailyTab dailyStats={dailyStats} />
-              )}
-              {activeTab === 'holes' && (
-                <HolesTab holeStats={holeStats} formatPercentage={formatPercentage} />
               )}
             </div>
           </>
@@ -297,60 +281,6 @@ function DailyTab({ dailyStats }: { dailyStats: Array<PlayerDailyStats & { cours
                 <td className="border p-3 text-center">{day.pars}</td>
                 <td className="border p-3 text-center">{day.bogeys}</td>
                 <td className="border p-3 text-center">{day.double_bogeys + day.triple_bogeys_plus}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </div>
-  )
-}
-
-function HolesTab({ 
-  holeStats, 
-  formatPercentage 
-}: { 
-  holeStats: PlayerHoleStats[]
-  formatPercentage: (n: number, d: number) => string
-}) {
-  if (holeStats.length === 0) {
-    return <div>No hole statistics available</div>
-  }
-
-  return (
-    <div className="space-y-4">
-      <h3 className="text-xl font-semibold mb-4">Hole-by-Hole Analysis</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse text-sm">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="border p-2 text-left">Hole</th>
-              <th className="border p-2 text-center">Played</th>
-              <th className="border p-2 text-center">Avg Score</th>
-              <th className="border p-2 text-center">Best</th>
-              <th className="border p-2 text-center">Worst</th>
-              <th className="border p-2 text-center">Eagles</th>
-              <th className="border p-2 text-center">Birdies</th>
-              <th className="border p-2 text-center">Pars</th>
-              <th className="border p-2 text-center">Bogeys+</th>
-            </tr>
-          </thead>
-          <tbody>
-            {holeStats.map((hole) => (
-              <tr key={hole.hole_number} className="hover:bg-gray-50">
-                <td className="border p-2 font-medium">#{hole.hole_number}</td>
-                <td className="border p-2 text-center">{hole.times_played}</td>
-                <td className="border p-2 text-center font-bold">
-                  {hole.times_played > 0 ? (hole.total_gross_strokes / hole.times_played).toFixed(1) : '-'}
-                </td>
-                <td className="border p-2 text-center text-green-600 font-medium">{hole.best_score || '-'}</td>
-                <td className="border p-2 text-center text-red-600 font-medium">{hole.worst_score || '-'}</td>
-                <td className="border p-2 text-center">{hole.eagles} ({formatPercentage(hole.eagles, hole.times_played)})</td>
-                <td className="border p-2 text-center">{hole.birdies} ({formatPercentage(hole.birdies, hole.times_played)})</td>
-                <td className="border p-2 text-center">{hole.pars} ({formatPercentage(hole.pars, hole.times_played)})</td>
-                <td className="border p-2 text-center">
-                  {hole.bogeys + hole.double_bogeys + hole.triple_bogeys_plus} ({formatPercentage(hole.bogeys + hole.double_bogeys + hole.triple_bogeys_plus, hole.times_played)})
-                </td>
               </tr>
             ))}
           </tbody>
