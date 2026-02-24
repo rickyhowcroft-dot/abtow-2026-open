@@ -171,15 +171,22 @@ export default function Layout({ children }: { children: React.ReactNode }) {
         </div>
       </div>
       
-      {/* Hamburger Button - floating top left */}
-      <button
-        onClick={toggleDrawer}
-        className="fixed top-4 left-4 z-30 w-11 h-11 flex items-center justify-center rounded-full bg-[#2a6b7c] text-white shadow-lg hover:bg-[#235a68] active:bg-[#1d4d58] transition-colors text-xl"
-      >
-        ☰
-      </button>
-      
-      <main className="flex-1">
+      {/* Top Header Bar */}
+      <header className="fixed top-0 left-0 right-0 z-30 h-14 flex items-center px-3 shadow-sm" style={{ backgroundColor: '#f5f0e8', borderBottom: '1px solid #d6cfc0' }}>
+        <button
+          onClick={toggleDrawer}
+          className="w-11 h-11 flex items-center justify-center rounded-full bg-[#2a6b7c] text-white shadow hover:bg-[#235a68] active:bg-[#1d4d58] transition-colors text-xl shrink-0"
+        >
+          ☰
+        </button>
+        <a href="/" className="flex-1 flex justify-center" style={{ fontFamily: 'Georgia, serif' }}>
+          <span className="text-sm font-bold tracking-widest text-[#2a6b7c] uppercase">ABTOW 2026 Open</span>
+        </a>
+        {/* Spacer to balance the button */}
+        <div className="w-11 shrink-0" />
+      </header>
+
+      <main className="flex-1 pt-14">
         {children}
       </main>
     </div>
