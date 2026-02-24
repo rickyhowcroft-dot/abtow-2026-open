@@ -16,6 +16,7 @@ interface SkinResult {
   netScore?: number;
   grossTie?: boolean;
   netTie?: boolean;
+  push?: boolean; // gross outright at par/bogey but a net score tied/beat it
 }
 
 export default function SkinsDetail() {
@@ -107,38 +108,45 @@ export default function SkinsDetail() {
       const grossWinners = holeScores.filter(s => s.grossScore === minGrossScore);
       const grossWinner = grossWinners.length === 1 ? grossWinners[0] : null;
 
-      // Birdie or better wins BOTH gross and net skins
-      const isBirdieOrBetter = grossWinner && minGrossScore < holeData.par;
-
       let netWinner = null;
       let netTie = false;
+      let push = false;
 
-      if (isBirdieOrBetter) {
-        // Birdie or better gross winner takes both skins
-        netWinner = grossWinner;
-      } else {
-        // Net evaluated separately — exclude gross winner so net can't cut gross
-        const netEligible = grossWinner
-          ? holeScores.filter(s => s.player.id !== grossWinner.player.id)
-          : holeScores;
+      if (grossWinner) {
+        const isBirdieOrBetter = minGrossScore < holeData.par;
 
-        if (netEligible.length > 0) {
-          const minNetScore = Math.min(...netEligible.map(s => s.netScore));
-          const netWinners = netEligible.filter(s => s.netScore === minNetScore);
-          netWinner = netWinners.length === 1 ? netWinners[0] : null;
-          netTie = netWinners.length > 1;
+        if (isBirdieOrBetter) {
+          // Birdie or better outright gross winner takes BOTH gross and net skins
+          netWinner = grossWinner;
+        } else {
+          // Par or worse outright gross winner: check if any other player's net ties or beats it
+          const others = holeScores.filter(s => s.player.id !== grossWinner.player.id);
+          const netPushes = others.filter(s => s.netScore <= minGrossScore);
+
+          if (netPushes.length > 0) {
+            // Push — net score tied/beat the gross winner's score; nobody wins
+            push = true;
+          }
+          // else: gross winner takes gross skin only — no net skin awarded
         }
+      } else {
+        // Gross tied — no gross skin; check all players for outright net winner
+        const minNetScore = Math.min(...holeScores.map(s => s.netScore));
+        const netWinners = holeScores.filter(s => s.netScore === minNetScore);
+        netWinner = netWinners.length === 1 ? netWinners[0] : null;
+        netTie = netWinners.length > 1;
       }
 
       results.push({
         hole,
         par: holeData.par,
-        grossWinner: grossWinner?.player,
-        grossScore: grossWinner ? minGrossScore : undefined,
+        grossWinner: !push ? grossWinner?.player : undefined,
+        grossScore: !push && grossWinner ? minGrossScore : undefined,
         grossTie: grossWinners.length > 1,
         netWinner: netWinner?.player,
         netScore: netWinner ? netWinner.netScore : undefined,
-        netTie
+        netTie,
+        push
       });
     }
 
@@ -341,56 +349,60 @@ export default function SkinsDetail() {
                 <tr key={result.hole} className="border-t">
                   <td className="px-3 py-2 text-center font-semibold">{result.hole}</td>
                   <td className="px-3 py-2 text-center">{result.par}</td>
-                  <td className={`px-3 py-2 text-center ${
-                    result.grossTie ? 'bg-yellow-100' : ''
-                  }`}>
-                    {result.grossWinner ? (
-                      <span className={`font-semibold ${
-                        result.grossWinner.team === 'Shaft' ? 'text-blue-600' : 'text-red-600'
-                      }`}>
-                        {result.grossWinner.name}
-                      </span>
-                    ) : result.grossTie ? (
-                      <span className="text-yellow-600 font-semibold">TIE</span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    {result.grossScore ? (
-                      <span className={`font-semibold ${
-                        result.grossScore < result.par ? 'text-green-600' :
-                        result.grossScore > result.par ? 'text-red-600' : ''
-                      }`}>
-                        {result.grossScore}
-                      </span>
-                    ) : '—'}
-                  </td>
-                  <td className={`px-3 py-2 text-center ${
-                    result.netTie ? 'bg-yellow-100' : ''
-                  }`}>
-                    {result.netWinner ? (
-                      <span className={`font-semibold ${
-                        result.netWinner.team === 'Shaft' ? 'text-blue-600' : 'text-red-600'
-                      }`}>
-                        {result.netWinner.name}
-                      </span>
-                    ) : result.netTie ? (
-                      <span className="text-yellow-600 font-semibold">TIE</span>
-                    ) : (
-                      <span className="text-gray-400">—</span>
-                    )}
-                  </td>
-                  <td className="px-3 py-2 text-center">
-                    {result.netScore ? (
-                      <span className={`font-semibold ${
-                        result.netScore < result.par ? 'text-green-600' :
-                        result.netScore > result.par ? 'text-red-600' : ''
-                      }`}>
-                        {result.netScore}
-                      </span>
-                    ) : '—'}
-                  </td>
+                  {result.push ? (
+                    <td colSpan={4} className="px-3 py-2 text-center bg-orange-50">
+                      <span className="text-orange-500 font-semibold">PUSH — no skins</span>
+                    </td>
+                  ) : (
+                    <>
+                      <td className={`px-3 py-2 text-center ${result.grossTie ? 'bg-yellow-100' : ''}`}>
+                        {result.grossWinner ? (
+                          <span className={`font-semibold ${
+                            result.grossWinner.team === 'Shaft' ? 'text-blue-600' : 'text-red-600'
+                          }`}>
+                            {result.grossWinner.name}
+                          </span>
+                        ) : result.grossTie ? (
+                          <span className="text-yellow-600 font-semibold">TIE</span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        {result.grossScore ? (
+                          <span className={`font-semibold ${
+                            result.grossScore < result.par ? 'text-green-600' :
+                            result.grossScore > result.par ? 'text-red-600' : ''
+                          }`}>
+                            {result.grossScore}
+                          </span>
+                        ) : '—'}
+                      </td>
+                      <td className={`px-3 py-2 text-center ${result.netTie ? 'bg-yellow-100' : ''}`}>
+                        {result.netWinner ? (
+                          <span className={`font-semibold ${
+                            result.netWinner.team === 'Shaft' ? 'text-blue-600' : 'text-red-600'
+                          }`}>
+                            {result.netWinner.name}
+                          </span>
+                        ) : result.netTie ? (
+                          <span className="text-yellow-600 font-semibold">TIE</span>
+                        ) : (
+                          <span className="text-gray-400">—</span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 text-center">
+                        {result.netScore ? (
+                          <span className={`font-semibold ${
+                            result.netScore < result.par ? 'text-green-600' :
+                            result.netScore > result.par ? 'text-red-600' : ''
+                          }`}>
+                            {result.netScore}
+                          </span>
+                        ) : '—'}
+                      </td>
+                    </>
+                  )}
                 </tr>
               ))}
             </tbody>
