@@ -403,17 +403,21 @@ export default function ScoreEntry() {
           }
 
           let cumT1 = 0, cumT2 = 0;
-          const holesPlayed: { hole: number; t1Cum: number; t2Cum: number }[] = [];
+          const holesPlayed: { hole: number; t1Hole: number; t2Hole: number; t1Cum: number; t2Cum: number }[] = [];
           for (let h = 1; h <= 18; h++) {
-            cumT1 += teamPtsForHole(t1Players, h);
-            cumT2 += teamPtsForHole(t2Players, h);
-            holesPlayed.push({ hole: h, t1Cum: cumT1, t2Cum: cumT2 });
+            const t1Hole = teamPtsForHole(t1Players, h);
+            const t2Hole = teamPtsForHole(t2Players, h);
+            cumT1 += t1Hole;
+            cumT2 += t2Hole;
+            holesPlayed.push({ hole: h, t1Hole, t2Hole, t1Cum: cumT1, t2Cum: cumT2 });
           }
 
           const frontNine = holesPlayed.slice(0, 9);
           const backNine = holesPlayed.slice(9, 18);
           const frontT1 = frontNine[8]?.t1Cum || 0;
           const frontT2 = frontNine[8]?.t2Cum || 0;
+          const backT1 = (holesPlayed[17]?.t1Cum || 0) - frontT1;
+          const backT2 = (holesPlayed[17]?.t2Cum || 0) - frontT2;
           const totalT1 = holesPlayed[17]?.t1Cum || 0;
           const totalT2 = holesPlayed[17]?.t2Cum || 0;
 
@@ -432,21 +436,21 @@ export default function ScoreEntry() {
                 </div>
                 <div className={`text-sm font-bold ${team2Color}`}>{team2Label}</div>
               </div>
-              {/* Cumulative points per hole */}
+              {/* Per-hole points (shows this hole's pts, totals at end of each nine) */}
               <div className="space-y-1">
                 <div className="flex items-center gap-0.5 justify-center">
                   <span className="text-[9px] text-gray-400 w-6 text-right mr-1">F</span>
-                  {frontNine.map(({ hole, t1Cum, t2Cum }) => {
+                  {frontNine.map(({ hole, t1Hole, t2Hole }) => {
                     const isCurrent = hole === currentHole;
-                    const hasScores = t1Cum > 0 || t2Cum > 0;
-                    const leader = t1Cum > t2Cum ? 'team1' : t2Cum > t1Cum ? 'team2' : 'tie';
+                    const hasScores = t1Hole > 0 || t2Hole > 0;
+                    const leader = t1Hole > t2Hole ? 'team1' : t2Hole > t1Hole ? 'team2' : 'tie';
                     const dotColor = team1IsShafts
                       ? (leader === 'team1' ? 'text-blue-600' : leader === 'team2' ? 'text-red-600' : 'text-gray-400')
                       : (leader === 'team1' ? 'text-red-600' : leader === 'team2' ? 'text-blue-600' : 'text-gray-400');
                     return (
-                      <div key={hole} className={`w-5 h-5 flex items-center justify-center rounded ${isCurrent ? 'ring-2 ring-gray-400' : ''}`}>
+                      <div key={hole} className={`w-7 h-5 flex items-center justify-center rounded ${isCurrent ? 'ring-2 ring-gray-400' : ''}`}>
                         {!hasScores ? <span className="text-[9px] text-gray-300">{hole}</span> :
-                         <span className={`text-[9px] font-bold ${dotColor}`}>{t1Cum}-{t2Cum}</span>}
+                         <span className={`text-[9px] font-bold ${dotColor}`}>{t1Hole}-{t2Hole}</span>}
                       </div>
                     );
                   })}
@@ -454,21 +458,21 @@ export default function ScoreEntry() {
                 </div>
                 <div className="flex items-center gap-0.5 justify-center">
                   <span className="text-[9px] text-gray-400 w-6 text-right mr-1">B</span>
-                  {backNine.map(({ hole, t1Cum, t2Cum }) => {
+                  {backNine.map(({ hole, t1Hole, t2Hole }) => {
                     const isCurrent = hole === currentHole;
-                    const hasScores = t1Cum > frontT1 || t2Cum > frontT2;
-                    const leader = t1Cum > t2Cum ? 'team1' : t2Cum > t1Cum ? 'team2' : 'tie';
+                    const hasScores = t1Hole > 0 || t2Hole > 0;
+                    const leader = t1Hole > t2Hole ? 'team1' : t2Hole > t1Hole ? 'team2' : 'tie';
                     const dotColor = team1IsShafts
                       ? (leader === 'team1' ? 'text-blue-600' : leader === 'team2' ? 'text-red-600' : 'text-gray-400')
                       : (leader === 'team1' ? 'text-red-600' : leader === 'team2' ? 'text-blue-600' : 'text-gray-400');
                     return (
-                      <div key={hole} className={`w-5 h-5 flex items-center justify-center rounded ${isCurrent ? 'ring-2 ring-gray-400' : ''}`}>
+                      <div key={hole} className={`w-7 h-5 flex items-center justify-center rounded ${isCurrent ? 'ring-2 ring-gray-400' : ''}`}>
                         {!hasScores ? <span className="text-[9px] text-gray-300">{hole}</span> :
-                         <span className={`text-[9px] font-bold ${dotColor}`}>{t1Cum}-{t2Cum}</span>}
+                         <span className={`text-[9px] font-bold ${dotColor}`}>{t1Hole}-{t2Hole}</span>}
                       </div>
                     );
                   })}
-                  <span className="text-[9px] font-bold text-gray-500 ml-1">{totalT1}-{totalT2}</span>
+                  <span className="text-[9px] font-bold text-gray-500 ml-1">{backT1}-{backT2}</span>
                 </div>
               </div>
             </div>
