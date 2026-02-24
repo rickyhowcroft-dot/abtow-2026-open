@@ -102,34 +102,23 @@ export default function SkinsDetail() {
         continue;
       }
 
-      // Find gross winners
+      // Find gross winner
       const minGrossScore = Math.min(...holeScores.map(s => s.grossScore));
       const grossWinners = holeScores.filter(s => s.grossScore === minGrossScore);
       const grossWinner = grossWinners.length === 1 ? grossWinners[0] : null;
 
-      // Gross birdie or better wins BOTH gross and net skins:
-      // If outright gross winner has birdie or better, they take both skins.
-      // No net score can beat or tie a gross birdie for the net skin.
-      const isBirdieOrBetter = grossWinner && minGrossScore < holeData.par;
-      
       let netWinner = null;
       let netTie = false;
 
-      if (isBirdieOrBetter) {
-        // Gross birdie winner takes both — net skin goes to same player
+      if (grossWinner) {
+        // Outright gross winner takes BOTH gross and net skins — net cannot cut gross
         netWinner = grossWinner;
       } else {
-        // Normal net evaluation — exclude gross winner so net can't cut/push gross
-        const netEligible = grossWinner 
-          ? holeScores.filter(s => s.player.id !== grossWinner.player.id)
-          : holeScores;
-        
-        if (netEligible.length > 0) {
-          const minNetScore = Math.min(...netEligible.map(s => s.netScore));
-          const netWinners = netEligible.filter(s => s.netScore === minNetScore);
-          netWinner = netWinners.length === 1 ? netWinners[0] : null;
-          netTie = netWinners.length > 1;
-        }
+        // Gross tied — check all players for outright net winner
+        const minNetScore = Math.min(...holeScores.map(s => s.netScore));
+        const netWinners = holeScores.filter(s => s.netScore === minNetScore);
+        netWinner = netWinners.length === 1 ? netWinners[0] : null;
+        netTie = netWinners.length > 1;
       }
 
       results.push({
@@ -191,10 +180,11 @@ export default function SkinsDetail() {
 
     const totalGrossWon = Object.values(grossSkins).reduce((a, b) => a + b, 0);
     const totalNetWon = Object.values(netSkins).reduce((a, b) => a + b, 0);
-    const grossPayout = totalGrossWon > 0 ? 200 / totalGrossWon : 0;
-    const netPayout = totalNetWon > 0 ? 200 / totalNetWon : 0;
+    const totalSkinsWon = totalGrossWon + totalNetWon;
+    // Single $200 pot split across ALL skins won (gross + net combined)
+    const payoutPerSkin = totalSkinsWon > 0 ? 200 / totalSkinsWon : 0;
 
-    return { grossSkins, netSkins, totalGrossWon, totalNetWon, grossPayout, netPayout };
+    return { grossSkins, netSkins, totalGrossWon, totalNetWon, totalSkinsWon, payoutPerSkin };
   }
 
   if (loading) {
@@ -243,7 +233,7 @@ export default function SkinsDetail() {
           <h3 className="text-2xl font-bold mb-1 text-center" style={{ fontFamily: 'Georgia, serif' }}>Gross Skins</h3>
           <p className="text-center text-sm text-gray-500 mb-4">
             {skinsSummary.totalGrossWon > 0
-              ? `${skinsSummary.totalGrossWon} skin${skinsSummary.totalGrossWon !== 1 ? 's' : ''} won • $${skinsSummary.grossPayout.toFixed(2)} per skin`
+              ? `${skinsSummary.totalGrossWon} skin${skinsSummary.totalGrossWon !== 1 ? 's' : ''} won • $${skinsSummary.payoutPerSkin.toFixed(2)} per skin`
               : '18 potential skins'}
           </p>
           <div className="space-y-2">
@@ -252,7 +242,7 @@ export default function SkinsDetail() {
               .map(([playerId, skins]) => {
                 const player = players.find(p => p.id === playerId);
                 if (!player) return null;
-                const payout = skins * skinsSummary.grossPayout;
+                const payout = skins * skinsSummary.payoutPerSkin;
                 
                 return (
                   <div key={playerId} className="flex justify-between items-center p-3 bg-gray-50 rounded">
@@ -283,7 +273,7 @@ export default function SkinsDetail() {
           <h3 className="text-2xl font-bold mb-1 text-center" style={{ fontFamily: 'Georgia, serif' }}>Net Skins</h3>
           <p className="text-center text-sm text-gray-500 mb-4">
             {skinsSummary.totalNetWon > 0
-              ? `${skinsSummary.totalNetWon} skin${skinsSummary.totalNetWon !== 1 ? 's' : ''} won • $${skinsSummary.netPayout.toFixed(2)} per skin`
+              ? `${skinsSummary.totalNetWon} skin${skinsSummary.totalNetWon !== 1 ? 's' : ''} won • $${skinsSummary.payoutPerSkin.toFixed(2)} per skin`
               : '18 potential skins'}
           </p>
           <div className="space-y-2">
@@ -292,7 +282,7 @@ export default function SkinsDetail() {
               .map(([playerId, skins]) => {
                 const player = players.find(p => p.id === playerId);
                 if (!player) return null;
-                const payout = skins * skinsSummary.netPayout;
+                const payout = skins * skinsSummary.payoutPerSkin;
                 
                 return (
                   <div key={playerId} className="flex justify-between items-center p-3 bg-gray-50 rounded">
