@@ -253,43 +253,101 @@ export class StatsService {
   }
   
   /**
-   * Get all players' stats for overview page
+   * Get all players' stats for overview page — always returns all 20 players,
+   * defaulting to zeros for players who haven't completed a round yet.
    */
   static async getAllPlayersStats(): Promise<PlayerStatsOverview[]> {
-    const { data: allStats, error } = await supabase
+    // Fetch all players
+    const { data: allPlayers, error: playersError } = await supabase
+      .from('players')
+      .select('id, name, team')
+      .order('name', { ascending: true })
+
+    if (playersError || !allPlayers) return []
+
+    // Fetch all stats rows for 2026
+    const { data: allStatsRows } = await supabase
       .from('player_stats')
-      .select(`
-        *,
-        players!inner(name, team)
-      `)
+      .select('*')
       .eq('tournament_year', 2026)
-      .order('total_gross_strokes', { ascending: true })
-    
-    if (error || !allStats) return []
-    
-    const results: PlayerStatsOverview[] = []
-    
-    for (const stats of allStats) {
-      const player = stats.players as any
-      
-      results.push({
-        ...stats,
-        playerName: player.name,
-        team: player.team,
-        scoringAverage: stats.total_rounds_played > 0 
-          ? stats.total_gross_strokes / stats.total_rounds_played 
-          : 0,
-        netScoringAverage: stats.total_rounds_played > 0
-          ? stats.total_net_strokes / stats.total_rounds_played
-          : 0,
-        handicapPerformance: stats.total_rounds_played > 0
-          ? stats.total_strokes_to_handicap / stats.total_rounds_played
-          : 0,
-        bestRound: null, // We'll add this later if needed for the overview
-        worstRound: null
-      })
+
+    // Build a lookup map: player_id → stats row
+    const statsMap = new Map<string, PlayerStats>()
+    for (const row of allStatsRows || []) {
+      statsMap.set(row.player_id, row)
     }
-    
+
+    const results: PlayerStatsOverview[] = []
+
+    for (const player of allPlayers) {
+      const stats = statsMap.get(player.id)
+
+      if (stats) {
+        results.push({
+          ...stats,
+          playerName: player.name,
+          team: player.team,
+          scoringAverage: stats.total_rounds_played > 0
+            ? stats.total_gross_strokes / stats.total_rounds_played
+            : 0,
+          netScoringAverage: stats.total_rounds_played > 0
+            ? stats.total_net_strokes / stats.total_rounds_played
+            : 0,
+          handicapPerformance: stats.total_rounds_played > 0
+            ? stats.total_strokes_to_handicap / stats.total_rounds_played
+            : 0,
+          bestRound: null,
+          worstRound: null
+        })
+      } else {
+        // Player hasn't played yet — show with zero stats
+        results.push({
+          id: '',
+          player_id: player.id,
+          tournament_year: 2026,
+          team_matches_played: 0,
+          team_matches_won: 0,
+          team_matches_lost: 0,
+          team_matches_tied: 0,
+          individual_matches_played: 0,
+          individual_matches_won: 0,
+          individual_matches_lost: 0,
+          individual_matches_tied: 0,
+          total_rounds_played: 0,
+          total_gross_strokes: 0,
+          total_net_strokes: 0,
+          total_holes_played: 0,
+          eagles: 0,
+          birdies: 0,
+          pars: 0,
+          bogeys: 0,
+          double_bogeys: 0,
+          triple_bogeys_plus: 0,
+          rounds_under_handicap: 0,
+          rounds_at_handicap: 0,
+          rounds_over_handicap: 0,
+          total_strokes_to_handicap: 0,
+          created_at: '',
+          updated_at: '',
+          playerName: player.name,
+          team: player.team,
+          scoringAverage: 0,
+          netScoringAverage: 0,
+          handicapPerformance: 0,
+          bestRound: null,
+          worstRound: null
+        })
+      }
+    }
+
+    // Sort by scoring average (players with rounds first, then unplayed)
+    results.sort((a, b) => {
+      if (a.total_rounds_played === 0 && b.total_rounds_played === 0) return a.playerName.localeCompare(b.playerName)
+      if (a.total_rounds_played === 0) return 1
+      if (b.total_rounds_played === 0) return -1
+      return a.scoringAverage - b.scoringAverage
+    })
+
     return results
   }
   
