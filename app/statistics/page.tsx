@@ -48,35 +48,23 @@ export default function StatisticsPage() {
       }
     })
 
-  // Calculate tournament leaders
+  // Returns up to 3 tied leaders for a category
+  function topTied<T>(arr: T[], bestVal: (a: T) => number, isHigher: boolean): T[] {
+    if (arr.length === 0) return []
+    const best = arr.reduce((p, c) => isHigher ? (bestVal(c) > bestVal(p) ? c : p) : (bestVal(c) < bestVal(p) ? c : p))
+    const bestScore = bestVal(best)
+    return arr.filter(p => bestVal(p) === bestScore).slice(0, 3)
+  }
+
+  const playedStats = allStats.filter(p => p.total_rounds_played > 0)
   const leaders = {
-    lowestAverage: allStats.length > 0 ? allStats.reduce((prev, current) => 
-      prev.scoringAverage < current.scoringAverage ? prev : current) : null,
-    mostBirdies: allStats.length > 0 ? allStats.reduce((prev, current) => 
-      prev.birdies > current.birdies ? prev : current) : null,
-    bestHandicap: allStats.length > 0 ? allStats.reduce((prev, current) => 
-      prev.handicapPerformance < current.handicapPerformance ? prev : current) : null,
-    mostConsistent: allStats.length > 0 ? allStats.reduce((prev, current) => {
-      const prevConsistency = prev.pars / (prev.total_holes_played || 1)
-      const currentConsistency = current.pars / (current.total_holes_played || 1)
-      return prevConsistency > currentConsistency ? prev : current
-    }) : null,
-    bestNetScore: allStats.length > 0
-      ? allStats
-          .filter(p => p.total_rounds_played > 0)
-          .reduce((prev, current) =>
-            prev.netScoringAverage < current.netScoringAverage ? prev : current)
-      : null,
-    mostBogeys: allStats.length > 0
-      ? allStats.reduce((prev, current) =>
-          prev.bogeys > current.bogeys ? prev : current)
-      : null,
-    worstNetScore: allStats.length > 0
-      ? allStats
-          .filter(p => p.total_rounds_played > 0)
-          .reduce((prev, current) =>
-            prev.netScoringAverage > current.netScoringAverage ? prev : current)
-      : null,
+    lowestAverage:  topTied(allStats,    p => p.scoringAverage,    false),
+    mostBirdies:    topTied(allStats,    p => p.birdies,           true),
+    bestHandicap:   topTied(allStats,    p => p.handicapPerformance, false),
+    mostConsistent: topTied(allStats,    p => p.pars / (p.total_holes_played || 1), true),
+    bestNetScore:   topTied(playedStats, p => p.netScoringAverage,  false),
+    mostBogeys:     topTied(allStats,    p => p.bogeys,             true),
+    worstNetScore:  topTied(playedStats, p => p.netScoringAverage,  true),
   }
 
   const openPlayerStats = (playerId: string, playerName: string) => {
@@ -120,94 +108,94 @@ export default function StatisticsPage() {
               Tournament Leaders
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {leaders.lowestAverage && (
+              {leaders.lowestAverage.length > 0 && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
                   <div className="flex items-center">
                     <Icon><TrendingDown className="text-green-500" size={20} /></Icon>
                     <div>
                       <p className="text-sm text-gray-500">Lowest Scoring Average</p>
-                      <p className="font-bold text-base leading-tight">{leaders.lowestAverage.playerName}</p>
-                      <p className="text-green-600 font-medium text-sm">{leaders.lowestAverage.scoringAverage.toFixed(1)}</p>
+                      {leaders.lowestAverage.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      <p className="text-green-600 font-medium text-sm">{leaders.lowestAverage[0].scoringAverage.toFixed(1)}</p>
                     </div>
                   </div>
                 </div>
               )}
-              {leaders.mostBirdies && (
+              {leaders.mostBirdies.length > 0 && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
                   <div className="flex items-center">
                     <Icon>🐥</Icon>
                     <div>
                       <p className="text-sm text-gray-500">Most Birdies</p>
-                      <p className="font-bold text-base leading-tight">{leaders.mostBirdies.playerName}</p>
-                      <p className="text-blue-600 font-medium text-sm">{leaders.mostBirdies.birdies}</p>
+                      {leaders.mostBirdies.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      <p className="text-blue-600 font-medium text-sm">{leaders.mostBirdies[0].birdies}</p>
                     </div>
                   </div>
                 </div>
               )}
-              {leaders.bestHandicap && (
+              {leaders.bestHandicap.length > 0 && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
                   <div className="flex items-center">
                     <Icon><span>⌛️</span><span>🛍️</span></Icon>
                     <div>
                       <p className="text-sm text-gray-500">Best vs Handicap</p>
-                      <p className="font-bold text-base leading-tight">{leaders.bestHandicap.playerName}</p>
+                      {leaders.bestHandicap.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-purple-600 font-medium text-sm">
-                        {leaders.bestHandicap.handicapPerformance > 0 ? '+' : ''}
-                        {leaders.bestHandicap.handicapPerformance.toFixed(1)}
+                        {leaders.bestHandicap[0].handicapPerformance > 0 ? '+' : ''}
+                        {leaders.bestHandicap[0].handicapPerformance.toFixed(1)}
                       </p>
                     </div>
                   </div>
                 </div>
               )}
-              {leaders.mostConsistent && (
+              {leaders.mostConsistent.length > 0 && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
                   <div className="flex items-center">
                     <Icon>🏌</Icon>
                     <div>
                       <p className="text-sm text-gray-500">Most Consistent</p>
-                      <p className="font-bold text-base leading-tight">{leaders.mostConsistent.playerName}</p>
+                      {leaders.mostConsistent.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-orange-600 font-medium text-sm">
-                        {formatPercentage(leaders.mostConsistent.pars, leaders.mostConsistent.total_holes_played)} pars
+                        {formatPercentage(leaders.mostConsistent[0].pars, leaders.mostConsistent[0].total_holes_played)} pars
                       </p>
                     </div>
                   </div>
                 </div>
               )}
-              {leaders.bestNetScore && (
+              {leaders.bestNetScore.length > 0 && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-teal-500">
                   <div className="flex items-center">
                     <Icon>💰</Icon>
                     <div>
                       <p className="text-sm text-gray-500">Best Net Score</p>
-                      <p className="font-bold text-base leading-tight">{leaders.bestNetScore.playerName}</p>
+                      {leaders.bestNetScore.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-teal-600 font-medium text-sm">
-                        {leaders.bestNetScore.netScoringAverage.toFixed(1)} avg
+                        {leaders.bestNetScore[0].netScoringAverage.toFixed(1)} avg
                       </p>
                     </div>
                   </div>
                 </div>
               )}
-              {leaders.mostBogeys && (
+              {leaders.mostBogeys.length > 0 && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
                   <div className="flex items-center">
                     <Icon><span>⛳️</span><span>😩</span></Icon>
                     <div>
                       <p className="text-sm text-gray-500">Most Bogeys</p>
-                      <p className="font-bold text-base leading-tight">{leaders.mostBogeys.playerName}</p>
-                      <p className="text-red-400 font-medium text-sm">{leaders.mostBogeys.bogeys}</p>
+                      {leaders.mostBogeys.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      <p className="text-red-400 font-medium text-sm">{leaders.mostBogeys[0].bogeys}</p>
                     </div>
                   </div>
                 </div>
               )}
-              {leaders.worstNetScore && (
+              {leaders.worstNetScore.length > 0 && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-600">
                   <div className="flex items-center">
                     <Icon>🫃🏻</Icon>
                     <div>
                       <p className="text-sm text-gray-500">Worst Net Score</p>
-                      <p className="font-bold text-base leading-tight">{leaders.worstNetScore.playerName}</p>
+                      {leaders.worstNetScore.map(p => <p key={p.playerId} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-red-600 font-medium text-sm">
-                        {leaders.worstNetScore.netScoringAverage.toFixed(1)} avg
+                        {leaders.worstNetScore[0].netScoringAverage.toFixed(1)} avg
                       </p>
                     </div>
                   </div>
