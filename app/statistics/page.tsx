@@ -67,6 +67,12 @@ export default function StatisticsPage() {
       ? allStats.reduce((prev, current) =>
           prev.bogeys > current.bogeys ? prev : current)
       : null,
+    worstNetScore: allStats.length > 0
+      ? allStats
+          .filter(p => p.total_rounds_played > 0)
+          .reduce((prev, current) =>
+            prev.netScoringAverage > current.netScoringAverage ? prev : current)
+      : null,
   }
 
   const openPlayerStats = (playerId: string, playerName: string) => {
@@ -180,6 +186,20 @@ export default function StatisticsPage() {
                       <p className="text-sm text-gray-600">Most Bogeys</p>
                       <p className="font-bold text-lg">{leaders.mostBogeys.playerName}</p>
                       <p className="text-red-400 font-medium">{leaders.mostBogeys.bogeys}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {leaders.worstNetScore && (
+                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-600">
+                  <div className="flex items-center">
+                    <TrendingUp className="text-red-600 mr-2" size={20} />
+                    <div>
+                      <p className="text-sm text-gray-600">Worst Net Score</p>
+                      <p className="font-bold text-lg">{leaders.worstNetScore.playerName}</p>
+                      <p className="text-red-600 font-medium">
+                        {leaders.worstNetScore.netScoringAverage.toFixed(1)} avg
+                      </p>
                     </div>
                   </div>
                 </div>
