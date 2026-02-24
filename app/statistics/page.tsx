@@ -11,7 +11,7 @@ export default function StatisticsPage() {
   const [allStats, setAllStats] = useState<PlayerStatsOverview[]>([])
   const [loading, setLoading] = useState(true)
   const [selectedPlayer, setSelectedPlayer] = useState<{id: string, name: string} | null>(null)
-  const [sortBy, setSortBy] = useState<'scoringAverage' | 'totalScore' | 'handicapPerformance'>('scoringAverage')
+  const [sortBy, setSortBy] = useState<'scoringAverage' | 'netAverage' | 'handicapPerformance' | 'mostBogeys' | 'mostBirdies'>('scoringAverage')
   const [teamFilter, setTeamFilter] = useState<'all' | 'Shaft' | 'Balls'>('all')
 
   useEffect(() => {
@@ -35,10 +35,14 @@ export default function StatisticsPage() {
       switch (sortBy) {
         case 'scoringAverage':
           return a.scoringAverage - b.scoringAverage // Lower is better
-        case 'totalScore':
-          return a.total_gross_strokes - b.total_gross_strokes // Lower is better
+        case 'netAverage':
+          return a.netScoringAverage - b.netScoringAverage // Lower is better
         case 'handicapPerformance':
           return a.handicapPerformance - b.handicapPerformance // Lower is better (negative = under handicap)
+        case 'mostBogeys':
+          return b.bogeys - a.bogeys // Higher is worse (sort descending)
+        case 'mostBirdies':
+          return b.birdies - a.birdies // Higher is better (sort descending)
         default:
           return 0
       }
@@ -217,9 +221,11 @@ export default function StatisticsPage() {
                   onChange={(e) => setSortBy(e.target.value as any)}
                   className="border border-gray-300 rounded-md px-3 py-2"
                 >
-                  <option value="scoringAverage">Scoring Average</option>
-                  <option value="totalScore">Total Score</option>
+                  <option value="scoringAverage">Gross Score Avg</option>
+                  <option value="netAverage">Net Score Avg</option>
                   <option value="handicapPerformance">vs Handicap</option>
+                  <option value="mostBirdies">Most Birdies</option>
+                  <option value="mostBogeys">Most Bogeys</option>
                 </select>
               </div>
               <div>
