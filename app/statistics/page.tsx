@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Layout from '@/app/components/Layout'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
 import StatsService, { type PlayerStatsOverview } from '@/lib/stats-service'
-import { TrendingUp, Award, Target, BarChart3, TrendingDown, AlertTriangle } from 'lucide-react'
+import { TrendingDown, Award } from 'lucide-react'
 
 export default function StatisticsPage() {
   const [allStats, setAllStats] = useState<PlayerStatsOverview[]>([])
@@ -118,7 +118,7 @@ export default function StatisticsPage() {
               {leaders.lowestAverage && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
                   <div className="flex items-center">
-                    <TrendingUp className="text-green-500 mr-2" size={20} />
+                    <TrendingDown className="text-green-500 mr-2" size={20} />
                     <div>
                       <p className="text-sm text-gray-600">Lowest Scoring Average</p>
                       <p className="font-bold text-lg">{leaders.lowestAverage.playerName}</p>
@@ -130,7 +130,7 @@ export default function StatisticsPage() {
               {leaders.mostBirdies && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
                   <div className="flex items-center">
-                    <Target className="text-blue-500 mr-2" size={20} />
+                    <span className="text-xl mr-2">🐥</span>
                     <div>
                       <p className="text-sm text-gray-600">Most Birdies</p>
                       <p className="font-bold text-lg">{leaders.mostBirdies.playerName}</p>
@@ -142,7 +142,7 @@ export default function StatisticsPage() {
               {leaders.bestHandicap && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
                   <div className="flex items-center">
-                    <BarChart3 className="text-purple-500 mr-2" size={20} />
+                    <span className="text-xl mr-2">⌛️🛄</span>
                     <div>
                       <p className="text-sm text-gray-600">Best vs Handicap</p>
                       <p className="font-bold text-lg">{leaders.bestHandicap.playerName}</p>
@@ -157,7 +157,7 @@ export default function StatisticsPage() {
               {leaders.mostConsistent && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
                   <div className="flex items-center">
-                    <Award className="text-orange-500 mr-2" size={20} />
+                    <span className="text-xl mr-2">🏌</span>
                     <div>
                       <p className="text-sm text-gray-600">Most Consistent</p>
                       <p className="font-bold text-lg">{leaders.mostConsistent.playerName}</p>
@@ -171,7 +171,7 @@ export default function StatisticsPage() {
               {leaders.bestNetScore && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-teal-500">
                   <div className="flex items-center">
-                    <TrendingDown className="text-teal-500 mr-2" size={20} />
+                    <span className="text-xl mr-2">💰</span>
                     <div>
                       <p className="text-sm text-gray-600">Best Net Score</p>
                       <p className="font-bold text-lg">{leaders.bestNetScore.playerName}</p>
@@ -185,7 +185,7 @@ export default function StatisticsPage() {
               {leaders.mostBogeys && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
                   <div className="flex items-center">
-                    <AlertTriangle className="text-red-400 mr-2" size={20} />
+                    <span className="text-xl mr-2">⛳️😩</span>
                     <div>
                       <p className="text-sm text-gray-600">Most Bogeys</p>
                       <p className="font-bold text-lg">{leaders.mostBogeys.playerName}</p>
@@ -197,7 +197,7 @@ export default function StatisticsPage() {
               {leaders.worstNetScore && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-600">
                   <div className="flex items-center">
-                    <TrendingUp className="text-red-600 mr-2" size={20} />
+                    <span className="text-xl mr-2">🫃🏻</span>
                     <div>
                       <p className="text-sm text-gray-600">Worst Net Score</p>
                       <p className="font-bold text-lg">{leaders.worstNetScore.playerName}</p>
