@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import Link from 'next/link'
 import Layout from '@/app/components/Layout'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
@@ -244,110 +244,127 @@ export default function StatisticsPage() {
           </div>
 
           {/* Player Statistics Table */}
-          <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Player
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Rounds
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Scoring Avg
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Net Avg
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      vs Handicap
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Eagles
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Birdies
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Bogeys
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Pars
-                    </th>
-                    <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredStats.map((player, index) => (
-                    <tr key={player.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className={`w-3 h-3 rounded-full mr-3 ${
-                            player.team === 'Shaft' ? 'bg-team-shafts' : 'bg-team-balls'
-                          }`}></div>
-                          <div>
-                            <div className="text-sm font-medium text-gray-900">
-                              {index + 1}. {player.playerName}
+          {(() => {
+            type Col = { key: string; label: string; sortKey?: string; renderCell: (p: PlayerStatsOverview) => React.ReactNode }
+
+            const allCols: Col[] = [
+              {
+                key: 'rounds',
+                label: 'Rounds',
+                renderCell: (p) => <td key="rounds" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.total_rounds_played}</td>
+              },
+              {
+                key: 'scoringAverage',
+                label: 'Scoring Avg',
+                sortKey: 'scoringAverage',
+                renderCell: (p) => <td key="scoringAverage" className="px-6 py-4 whitespace-nowrap text-center"><span className="text-lg font-bold text-gray-900">{p.scoringAverage > 0 ? p.scoringAverage.toFixed(1) : '—'}</span></td>
+              },
+              {
+                key: 'netAverage',
+                label: 'Net Avg',
+                sortKey: 'netAverage',
+                renderCell: (p) => <td key="netAverage" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.netScoringAverage > 0 ? p.netScoringAverage.toFixed(1) : '—'}</td>
+              },
+              {
+                key: 'handicapPerformance',
+                label: 'vs Handicap',
+                sortKey: 'handicapPerformance',
+                renderCell: (p) => (
+                  <td key="handicapPerformance" className="px-6 py-4 whitespace-nowrap text-center">
+                    <span className={`text-sm font-medium ${p.handicapPerformance < 0 ? 'text-green-600' : p.handicapPerformance > 0 ? 'text-red-600' : 'text-gray-500'}`}>
+                      {p.total_rounds_played > 0 ? `${p.handicapPerformance > 0 ? '+' : ''}${p.handicapPerformance.toFixed(1)}` : '—'}
+                    </span>
+                  </td>
+                )
+              },
+              {
+                key: 'eagles',
+                label: 'Eagles',
+                renderCell: (p) => <td key="eagles" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.eagles}</td>
+              },
+              {
+                key: 'mostBirdies',
+                label: 'Birdies',
+                sortKey: 'mostBirdies',
+                renderCell: (p) => <td key="mostBirdies" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.birdies}</td>
+              },
+              {
+                key: 'mostBogeys',
+                label: 'Bogeys',
+                sortKey: 'mostBogeys',
+                renderCell: (p) => <td key="mostBogeys" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.bogeys}</td>
+              },
+              {
+                key: 'pars',
+                label: 'Pars',
+                renderCell: (p) => <td key="pars" className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">{p.pars} ({formatPercentage(p.pars, p.total_holes_played)})</td>
+              },
+            ]
+
+            // Promote the active sort column to position 0 of the data cols
+            const activeIdx = allCols.findIndex(c => c.sortKey === sortBy)
+            let orderedCols = [...allCols]
+            if (activeIdx > 0) {
+              const [promoted] = orderedCols.splice(activeIdx, 1)
+              orderedCols.unshift(promoted)
+            }
+
+            return (
+              <div className="bg-white rounded-lg shadow overflow-hidden">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Player</th>
+                        {orderedCols.map(col => (
+                          <th
+                            key={col.key}
+                            className={`px-6 py-3 text-center text-xs font-medium uppercase tracking-wider ${
+                              col.sortKey === sortBy ? 'text-green-700 bg-green-50' : 'text-gray-500'
+                            }`}
+                          >
+                            {col.label}
+                            {col.sortKey === sortBy && <span className="ml-1">↑</span>}
+                          </th>
+                        ))}
+                        <th className="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="bg-white divide-y divide-gray-200">
+                      {filteredStats.map((player, index) => (
+                        <tr key={player.player_id || index} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="flex items-center">
+                              <div className={`w-3 h-3 rounded-full mr-3 ${player.team === 'Shaft' ? 'bg-team-shafts' : 'bg-team-balls'}`}></div>
+                              <div>
+                                <div className="text-sm font-medium text-gray-900">{index + 1}. {player.playerName}</div>
+                                <div className="text-sm text-gray-500">Team {player.team}</div>
+                              </div>
                             </div>
-                            <div className="text-sm text-gray-500">Team {player.team}</div>
-                          </div>
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
-                        {player.total_rounds_played}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className="text-lg font-bold text-gray-900">
-                          {player.scoringAverage.toFixed(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
-                        {player.netScoringAverage.toFixed(1)}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center">
-                        <span className={`text-sm font-medium ${
-                          player.handicapPerformance < 0 ? 'text-green-600' : 'text-red-600'
-                        }`}>
-                          {player.handicapPerformance > 0 ? '+' : ''}
-                          {player.handicapPerformance.toFixed(1)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
-                        {player.eagles}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
-                        {player.birdies}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
-                        {player.bogeys}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-900">
-                        {player.pars} ({formatPercentage(player.pars, player.total_holes_played)})
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
-                        <button
-                          onClick={() => openPlayerStats(player.player_id, player.playerName)}
-                          className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors"
-                        >
-                          View Details
-                        </button>
-                        <Link
-                          href={`/players/${encodeURIComponent(player.playerName)}`}
-                          className="ml-2 bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors inline-block"
-                        >
-                          Profile
-                        </Link>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
+                          </td>
+                          {orderedCols.map(col => col.renderCell(player))}
+                          <td className="px-6 py-4 whitespace-nowrap text-center text-sm">
+                            <button
+                              onClick={() => openPlayerStats(player.player_id, player.playerName)}
+                              className="bg-green-600 text-white px-3 py-1 rounded hover:bg-green-700 transition-colors"
+                            >
+                              View Details
+                            </button>
+                            <Link
+                              href={`/players/${encodeURIComponent(player.playerName)}`}
+                              className="ml-2 bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors inline-block"
+                            >
+                              Profile
+                            </Link>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )
+          })()}
 
           {filteredStats.length === 0 && (
             <div className="text-center py-12">
