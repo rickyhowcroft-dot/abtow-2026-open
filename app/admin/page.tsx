@@ -57,8 +57,13 @@ export default function AdminPage() {
 
   async function toggleLock(matchId: string, currentlyLocked: boolean) {
     setToggling(matchId)
-    await supabase.from('matches').update({ scores_locked: !currentlyLocked }).eq('id', matchId)
-    setMatches(prev => prev.map(m => m.id === matchId ? { ...m, scores_locked: !currentlyLocked } : m))
+    const { error } = await supabase.rpc('set_match_scores_locked', {
+      match_id: matchId,
+      locked: !currentlyLocked
+    })
+    if (!error) {
+      setMatches(prev => prev.map(m => m.id === matchId ? { ...m, scores_locked: !currentlyLocked } : m))
+    }
     setToggling(null)
   }
 
