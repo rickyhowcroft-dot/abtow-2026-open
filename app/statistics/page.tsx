@@ -98,31 +98,36 @@ export default function StatisticsPage() {
     )
   }
 
+  // Reusable leader card icon wrapper — fixed width so single/double emojis align the same
+  const Icon = ({ children }: { children: React.ReactNode }) => (
+    <div className="w-9 shrink-0 flex items-center justify-center text-xl leading-none mr-3">{children}</div>
+  )
+
   return (
     <Layout>
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen bg-gray-50 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Header */}
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-900 mb-2">Tournament Statistics</h1>
-            <p className="text-xl text-gray-600">ABTOW 2026 Open Performance Analysis</p>
+          <div className="text-center mb-6">
+            <h1 className="text-4xl font-bold text-gray-900 mb-1">Tournament Statistics</h1>
+            <p className="text-lg text-gray-600">ABTOW 2026 Open Performance Analysis</p>
           </div>
 
           {/* Tournament Leaders */}
-          <div className="mb-8">
-            <h2 className="text-2xl font-semibold mb-4 flex items-center">
-              <Award className="mr-2 text-yellow-500" />
+          <div className="mb-6">
+            <h2 className="text-xl font-semibold mb-3 flex items-center">
+              <Award className="mr-2 text-yellow-500" size={20} />
               Tournament Leaders
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {leaders.lowestAverage && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
                   <div className="flex items-center">
-                    <TrendingDown className="text-green-500 mr-2" size={20} />
+                    <Icon><TrendingDown className="text-green-500" size={20} /></Icon>
                     <div>
-                      <p className="text-sm text-gray-600">Lowest Scoring Average</p>
-                      <p className="font-bold text-lg">{leaders.lowestAverage.playerName}</p>
-                      <p className="text-green-600 font-medium">{leaders.lowestAverage.scoringAverage.toFixed(1)}</p>
+                      <p className="text-sm text-gray-500">Lowest Scoring Average</p>
+                      <p className="font-bold text-base leading-tight">{leaders.lowestAverage.playerName}</p>
+                      <p className="text-green-600 font-medium text-sm">{leaders.lowestAverage.scoringAverage.toFixed(1)}</p>
                     </div>
                   </div>
                 </div>
@@ -130,11 +135,11 @@ export default function StatisticsPage() {
               {leaders.mostBirdies && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
                   <div className="flex items-center">
-                    <span className="text-xl mr-2">🐥</span>
+                    <Icon>🐥</Icon>
                     <div>
-                      <p className="text-sm text-gray-600">Most Birdies</p>
-                      <p className="font-bold text-lg">{leaders.mostBirdies.playerName}</p>
-                      <p className="text-blue-600 font-medium">{leaders.mostBirdies.birdies}</p>
+                      <p className="text-sm text-gray-500">Most Birdies</p>
+                      <p className="font-bold text-base leading-tight">{leaders.mostBirdies.playerName}</p>
+                      <p className="text-blue-600 font-medium text-sm">{leaders.mostBirdies.birdies}</p>
                     </div>
                   </div>
                 </div>
@@ -142,11 +147,11 @@ export default function StatisticsPage() {
               {leaders.bestHandicap && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
                   <div className="flex items-center">
-                    <span className="text-xl mr-2">⌛️🛄</span>
+                    <Icon>⌛️🛄</Icon>
                     <div>
-                      <p className="text-sm text-gray-600">Best vs Handicap</p>
-                      <p className="font-bold text-lg">{leaders.bestHandicap.playerName}</p>
-                      <p className="text-purple-600 font-medium">
+                      <p className="text-sm text-gray-500">Best vs Handicap</p>
+                      <p className="font-bold text-base leading-tight">{leaders.bestHandicap.playerName}</p>
+                      <p className="text-purple-600 font-medium text-sm">
                         {leaders.bestHandicap.handicapPerformance > 0 ? '+' : ''}
                         {leaders.bestHandicap.handicapPerformance.toFixed(1)}
                       </p>
@@ -157,11 +162,11 @@ export default function StatisticsPage() {
               {leaders.mostConsistent && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
                   <div className="flex items-center">
-                    <span className="text-xl mr-2">🏌</span>
+                    <Icon>🏌</Icon>
                     <div>
-                      <p className="text-sm text-gray-600">Most Consistent</p>
-                      <p className="font-bold text-lg">{leaders.mostConsistent.playerName}</p>
-                      <p className="text-orange-600 font-medium">
+                      <p className="text-sm text-gray-500">Most Consistent</p>
+                      <p className="font-bold text-base leading-tight">{leaders.mostConsistent.playerName}</p>
+                      <p className="text-orange-600 font-medium text-sm">
                         {formatPercentage(leaders.mostConsistent.pars, leaders.mostConsistent.total_holes_played)} pars
                       </p>
                     </div>
@@ -171,11 +176,11 @@ export default function StatisticsPage() {
               {leaders.bestNetScore && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-teal-500">
                   <div className="flex items-center">
-                    <span className="text-xl mr-2">💰</span>
+                    <Icon>💰</Icon>
                     <div>
-                      <p className="text-sm text-gray-600">Best Net Score</p>
-                      <p className="font-bold text-lg">{leaders.bestNetScore.playerName}</p>
-                      <p className="text-teal-600 font-medium">
+                      <p className="text-sm text-gray-500">Best Net Score</p>
+                      <p className="font-bold text-base leading-tight">{leaders.bestNetScore.playerName}</p>
+                      <p className="text-teal-600 font-medium text-sm">
                         {leaders.bestNetScore.netScoringAverage.toFixed(1)} avg
                       </p>
                     </div>
@@ -185,11 +190,11 @@ export default function StatisticsPage() {
               {leaders.mostBogeys && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
                   <div className="flex items-center">
-                    <span className="text-xl mr-2">⛳️😩</span>
+                    <Icon>⛳️😩</Icon>
                     <div>
-                      <p className="text-sm text-gray-600">Most Bogeys</p>
-                      <p className="font-bold text-lg">{leaders.mostBogeys.playerName}</p>
-                      <p className="text-red-400 font-medium">{leaders.mostBogeys.bogeys}</p>
+                      <p className="text-sm text-gray-500">Most Bogeys</p>
+                      <p className="font-bold text-base leading-tight">{leaders.mostBogeys.playerName}</p>
+                      <p className="text-red-400 font-medium text-sm">{leaders.mostBogeys.bogeys}</p>
                     </div>
                   </div>
                 </div>
@@ -197,11 +202,11 @@ export default function StatisticsPage() {
               {leaders.worstNetScore && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-600">
                   <div className="flex items-center">
-                    <span className="text-xl mr-2">🫃🏻</span>
+                    <Icon>🫃🏻</Icon>
                     <div>
-                      <p className="text-sm text-gray-600">Worst Net Score</p>
-                      <p className="font-bold text-lg">{leaders.worstNetScore.playerName}</p>
-                      <p className="text-red-600 font-medium">
+                      <p className="text-sm text-gray-500">Worst Net Score</p>
+                      <p className="font-bold text-base leading-tight">{leaders.worstNetScore.playerName}</p>
+                      <p className="text-red-600 font-medium text-sm">
                         {leaders.worstNetScore.netScoringAverage.toFixed(1)} avg
                       </p>
                     </div>
