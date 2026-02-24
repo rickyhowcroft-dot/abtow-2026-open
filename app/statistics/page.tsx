@@ -100,7 +100,7 @@ export default function StatisticsPage() {
 
   // Reusable leader card icon wrapper — fixed width so single/double emojis align the same
   const Icon = ({ children }: { children: React.ReactNode }) => (
-    <div className="w-9 shrink-0 flex items-center justify-center text-xl leading-none mr-3">{children}</div>
+    <div className="w-10 shrink-0 flex items-center justify-center text-xl leading-none mr-3 gap-0.5">{children}</div>
   )
 
   return (
@@ -147,7 +147,7 @@ export default function StatisticsPage() {
               {leaders.bestHandicap && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
                   <div className="flex items-center">
-                    <Icon>⌛️🛍️</Icon>
+                    <Icon><span>⌛️</span><span>🛍️</span></Icon>
                     <div>
                       <p className="text-sm text-gray-500">Best vs Handicap</p>
                       <p className="font-bold text-base leading-tight">{leaders.bestHandicap.playerName}</p>
@@ -190,7 +190,7 @@ export default function StatisticsPage() {
               {leaders.mostBogeys && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
                   <div className="flex items-center">
-                    <Icon>⛳️😩</Icon>
+                    <Icon><span>⛳️</span><span>😩</span></Icon>
                     <div>
                       <p className="text-sm text-gray-500">Most Bogeys</p>
                       <p className="font-bold text-base leading-tight">{leaders.mostBogeys.playerName}</p>
