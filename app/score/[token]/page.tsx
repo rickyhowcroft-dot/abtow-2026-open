@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
+import PostRoundProcessor from '@/lib/post-round-processor';
 import type { Player, Match, Score, Course } from '@/lib/scoring';
 import { calculateMatchPlayStrokes, calculateStablefordPoints, calculateNetScore, calculateBestBallResults, calculateStablefordResults, calculateIndividualResults } from '@/lib/scoring';
 
@@ -118,6 +119,11 @@ export default function ScoreEntry() {
             hole_number: hole,
             gross_score: score
           }, { onConflict: 'match_id,player_id,hole_number' });
+
+        // Trigger stats processing (non-blocking) — processes when all 18 holes complete
+        PostRoundProcessor.checkAndProcessRound(playerId, match.id).catch(err =>
+          console.error('Stats processing error:', err)
+        );
       }
 
       // Update local state
