@@ -9,6 +9,7 @@ import { TrendingDown, Award } from 'lucide-react'
 
 export default function StatisticsPage() {
   const [allStats, setAllStats] = useState<PlayerStatsOverview[]>([])
+  const [dreamRound, setDreamRound] = useState<{ gross: number; net: number; holeBreakdown: Array<{ hole: number; gross: number; net: number }> } | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedPlayer, setSelectedPlayer] = useState<{id: string, name: string} | null>(null)
   const [sortBy, setSortBy] = useState<'scoringAverage' | 'netAverage' | 'handicapPerformance' | 'mostBogeys' | 'mostBirdies'>('scoringAverage')
@@ -20,8 +21,12 @@ export default function StatisticsPage() {
 
   const loadAllStats = async () => {
     try {
-      const stats = await StatsService.getAllPlayersStats()
+      const [stats, dream] = await Promise.all([
+        StatsService.getAllPlayersStats(),
+        StatsService.getDreamRound()
+      ])
       setAllStats(stats)
+      setDreamRound(dream)
     } catch (error) {
       console.error('Error loading statistics:', error)
     } finally {
@@ -197,6 +202,56 @@ export default function StatisticsPage() {
                       <p className="text-red-600 font-medium text-sm">
                         {leaders.worstNetScore[0].netScoringAverage.toFixed(1)} avg
                       </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {dreamRound && (
+                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-400 md:col-span-2 lg:col-span-3">
+                  <div className="flex items-start">
+                    <Icon>🌟</Icon>
+                    <div className="flex-1">
+                      <p className="text-sm text-gray-500 mb-2">Dream Round — Best score per hole across all days</p>
+                      <div className="flex gap-8 mb-3">
+                        <div>
+                          <p className="text-xs text-gray-400 uppercase tracking-wide">Gross</p>
+                          <p className="text-2xl font-bold text-yellow-600">{dreamRound.gross}</p>
+                        </div>
+                        <div>
+                          <p className="text-xs text-gray-400 uppercase tracking-wide">Net</p>
+                          <p className="text-2xl font-bold text-yellow-600">{dreamRound.net}</p>
+                        </div>
+                      </div>
+                      {/* Hole-by-hole breakdown */}
+                      <div className="overflow-x-auto">
+                        <table className="text-xs w-full">
+                          <thead>
+                            <tr className="text-gray-400">
+                              <td className="pr-2 py-0.5 font-medium">Hole</td>
+                              {dreamRound.holeBreakdown.map(h => (
+                                <td key={h.hole} className="text-center px-1 py-0.5 w-7">{h.hole}</td>
+                              ))}
+                              <td className="text-center px-1 py-0.5 font-medium">Total</td>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr>
+                              <td className="pr-2 py-0.5 font-medium text-gray-500">Gross</td>
+                              {dreamRound.holeBreakdown.map(h => (
+                                <td key={h.hole} className="text-center px-1 py-0.5 font-semibold text-gray-700">{h.gross}</td>
+                              ))}
+                              <td className="text-center px-1 py-0.5 font-bold text-yellow-600">{dreamRound.gross}</td>
+                            </tr>
+                            <tr>
+                              <td className="pr-2 py-0.5 font-medium text-gray-500">Net</td>
+                              {dreamRound.holeBreakdown.map(h => (
+                                <td key={h.hole} className="text-center px-1 py-0.5 font-semibold text-teal-600">{h.net}</td>
+                              ))}
+                              <td className="text-center px-1 py-0.5 font-bold text-teal-600">{dreamRound.net}</td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   </div>
                 </div>

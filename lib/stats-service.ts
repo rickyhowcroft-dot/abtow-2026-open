@@ -389,6 +389,82 @@ export class StatsService {
       courseName: (stat.courses as any).name
     }))
   }
+
+  /**
+   * Dream Round — the best gross and net score achieved on each hole
+   * across all players and all tournament days, summed across 18 holes.
+   */
+  static async getDreamRound(): Promise<{ gross: number; net: number; holeBreakdown: Array<{ hole: number; gross: number; net: number }> } | null> {
+    // Fetch all non-null scores
+    const { data: scores, error: scoresErr } = await supabase
+      .from('scores')
+      .select('player_id, match_id, hole_number, gross_score')
+      .not('gross_score', 'is', null)
+    if (scoresErr || !scores || scores.length === 0) return null
+
+    // Fetch players (need playing_handicap)
+    const { data: players, error: playersErr } = await supabase
+      .from('players')
+      .select('id, playing_handicap')
+    if (playersErr || !players) return null
+
+    // Fetch matches (need course_id)
+    const { data: matches, error: matchesErr } = await supabase
+      .from('matches')
+      .select('id, course_id')
+    if (matchesErr || !matches) return null
+
+    // Fetch courses (need par_data for hole handicap ratings)
+    const { data: courses, error: coursesErr } = await supabase
+      .from('courses')
+      .select('id, par_data')
+    if (coursesErr || !courses) return null
+
+    // Build lookup maps
+    const playerMap = new Map(players.map(p => [p.id, p.playing_handicap ?? 0]))
+    const matchCourseMap = new Map(matches.map(m => [m.id, m.course_id]))
+    const courseParMap = new Map(courses.map(c => [c.id, c.par_data as Record<string, { handicap: number; par: number }>]))
+
+    // Net score calculation (mirrors scoring.ts calculateNetScore)
+    function netScore(gross: number, handicap: number, holeHandicap: number): number {
+      const strokes = Math.floor(handicap / 18) + (holeHandicap <= (handicap % 18) ? 1 : 0)
+      return gross - strokes
+    }
+
+    // For each hole (1-18): track best gross and best net across all players/days
+    const bestGross: Record<number, number> = {}
+    const bestNet: Record<number, number> = {}
+
+    for (const score of scores) {
+      if (!score.gross_score || !score.hole_number) continue
+      const courseId = matchCourseMap.get(score.match_id)
+      if (!courseId) continue
+      const parData = courseParMap.get(courseId)
+      if (!parData) continue
+      const holeKey = `hole_${score.hole_number}`
+      const holeData = parData[holeKey]
+      if (!holeData) continue
+      const playerHandicap = playerMap.get(score.player_id) ?? 0
+      const gross = score.gross_score
+      const net = netScore(gross, playerHandicap, holeData.handicap)
+      const h = score.hole_number
+      if (bestGross[h] === undefined || gross < bestGross[h]) bestGross[h] = gross
+      if (bestNet[h] === undefined || net < bestNet[h]) bestNet[h] = net
+    }
+
+    // Need all 18 holes to have at least one score
+    const holes = Array.from({ length: 18 }, (_, i) => i + 1)
+    if (holes.some(h => bestGross[h] === undefined)) return null
+
+    const dreamGross = holes.reduce((sum, h) => sum + bestGross[h], 0)
+    const dreamNet = holes.reduce((sum, h) => sum + bestNet[h], 0)
+
+    return {
+      gross: dreamGross,
+      net: dreamNet,
+      holeBreakdown: holes.map(h => ({ hole: h, gross: bestGross[h], net: bestNet[h] }))
+    }
+  }
 }
 
 export default StatsService
