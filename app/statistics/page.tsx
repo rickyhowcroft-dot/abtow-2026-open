@@ -14,6 +14,17 @@ export default function StatisticsPage() {
   const [selectedPlayer, setSelectedPlayer] = useState<{id: string, name: string, dreamRound?: {gross: number, net: number}} | null>(null)
   const [sortBy, setSortBy] = useState<'scoringAverage' | 'netAverage' | 'handicapPerformance' | 'mostBogeys' | 'mostBirdies'>('scoringAverage')
   const [teamFilter, setTeamFilter] = useState<'all' | 'Shaft' | 'Balls'>('all')
+  const [infoModal, setInfoModal] = useState<{ title: string; description: string } | null>(null)
+
+  const InfoBtn = ({ title, description }: { title: string; description: string }) => (
+    <button
+      onClick={(e) => { e.stopPropagation(); setInfoModal({ title, description }) }}
+      className="absolute top-2 right-2 w-5 h-5 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-400 hover:text-gray-600 text-xs font-bold transition-colors flex items-center justify-center leading-none"
+      title="What is this?"
+    >
+      i
+    </button>
+  )
 
   useEffect(() => {
     loadAllStats()
@@ -116,7 +127,8 @@ export default function StatisticsPage() {
             </h2>
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {leaders.lowestAverage.length > 0 && (
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
+                  <InfoBtn title="Lowest Scoring Average" description="Average gross strokes per round across all days played. The classic stroke play leader — pure ball-striking with no handicap adjustments. Lower is better." />
                   <div className="flex items-center">
                     <Icon><TrendingDown className="text-green-500" size={20} /></Icon>
                     <div>
@@ -128,7 +140,8 @@ export default function StatisticsPage() {
                 </div>
               )}
               {leaders.mostBirdies.length > 0 && (
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
+                  <InfoBtn title="Most Birdies" description="Total holes completed in 1 stroke under par (gross) across all rounds played. The most aggressive scorer in the field — someone who hunts pins and makes things happen." />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-blue-500 mr-3">
                       <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-birdies-tiger.jpg" alt="Tiger" className="w-full h-full object-cover object-top" />
@@ -142,7 +155,8 @@ export default function StatisticsPage() {
                 </div>
               )}
               {leaders.mostPars.length > 0 && (
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-gray-400">
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-gray-400">
+                  <InfoBtn title="Most Pars" description="Total holes completed at exactly par (gross) across all rounds. The steady, reliable player — no blow-ups, no miracles. Just consistent, dependable golf." />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-gray-400 mr-3">
                       <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-pars-scottie.jpg" alt="Scottie" className="w-full h-full object-cover object-top" />
@@ -156,7 +170,8 @@ export default function StatisticsPage() {
                 </div>
               )}
               {leaders.mostBogeys.length > 0 && (
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
+                  <InfoBtn title="Most Bogeys" description="Total holes completed in 1 stroke over par (gross) across all rounds. One too many trips to the rough, the bunker, or the water. The bogey train has a conductor." />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-red-400 mr-3">
                       <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-pars-rory.jpg" alt="Rory" className="w-full h-full object-cover object-top" />
@@ -170,7 +185,8 @@ export default function StatisticsPage() {
                 </div>
               )}
               {leaders.bestHandicap.length > 0 && (
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
+                  <InfoBtn title="Best vs Handicap" description="Average strokes above or below playing handicap per round. A negative number means you're beating your handicap. The truest measure of who is outperforming expectations — not just who hits it far." />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-purple-500 mr-3">
                       <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/best-handicap-guy.jpg?v=2" alt="Best vs HCP" className="w-full h-full object-cover object-top" />
@@ -187,7 +203,8 @@ export default function StatisticsPage() {
                 </div>
               )}
               {leaders.mostConsistent.length > 0 && (
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
+                  <InfoBtn title="Most Consistent" description="Highest percentage of holes completed at par or better (gross) across all rounds played. This player avoids blow-up holes better than anyone — the fewest disasters in the field." />
                   <div className="flex items-center">
                     <Icon>🏌</Icon>
                     <div>
@@ -201,7 +218,8 @@ export default function StatisticsPage() {
                 </div>
               )}
               {leaders.bestNetScore.length > 0 && (
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-teal-500">
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-teal-500">
+                  <InfoBtn title="Best Net Score" description="Lowest average net score per round — your gross score minus the handicap strokes you receive on each hole. This is the handicap-adjusted leader, leveling the playing field between high and low handicappers." />
                   <div className="flex items-center">
                     <Icon>💰</Icon>
                     <div>
@@ -215,7 +233,8 @@ export default function StatisticsPage() {
                 </div>
               )}
               {leaders.worstNetScore.length > 0 && (
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-600">
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-red-600">
+                  <InfoBtn title="Worst Net Score" description="Highest average net score per round. Even with handicap strokes applied, this player is still bleeding shots. The handicap isn't enough to save them." />
                   <div className="flex items-center">
                     <Icon>🫃🏻</Icon>
                     <div>
@@ -229,7 +248,8 @@ export default function StatisticsPage() {
                 </div>
               )}
               {dreamRound && dreamRound.playerDreamRounds.length > 0 && (
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+                  <InfoBtn title="Best Dream Round" description="Your personal Dream Round: take your single best gross score on each individual hole across all three tournament days, then add them up. That's your theoretical perfect 18 from this week. The lowest such score in the field wins this one." />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-yellow-500 mr-3">
                       <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/dream-round-tiger.jpg?v=3" alt="Tiger" className="w-full h-full object-cover object-top" />
@@ -419,6 +439,30 @@ export default function StatisticsPage() {
           isOpen={!!selectedPlayer}
           onClose={() => setSelectedPlayer(null)}
         />
+      )}
+
+      {/* Category Info Modal */}
+      {infoModal && (
+        <div
+          className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+          onClick={() => setInfoModal(null)}
+        >
+          <div
+            className="bg-white rounded-2xl shadow-2xl max-w-sm w-full p-6"
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between mb-4">
+              <h3 className="text-lg font-bold text-gray-900 pr-4">{infoModal.title}</h3>
+              <button
+                onClick={() => setInfoModal(null)}
+                className="shrink-0 w-7 h-7 rounded-full bg-gray-100 hover:bg-gray-200 text-gray-500 flex items-center justify-center text-sm font-bold transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+            <p className="text-gray-600 leading-relaxed text-sm">{infoModal.description}</p>
+          </div>
+        </div>
       )}
     </Layout>
   )
