@@ -65,6 +65,7 @@ export default function StatisticsPage() {
   const leaders = {
     lowestAverage:  topTied(allStats,    p => p.scoringAverage,    false),
     mostBirdies:    topTied(allStats,    p => p.birdies,           true),
+    mostPars:       topTied(allStats,    p => p.pars,              true),
     bestHandicap:   topTied(allStats,    p => p.handicapPerformance, false),
     mostConsistent: topTied(allStats,    p => p.pars / (p.total_holes_played || 1), true),
     bestNetScore:   topTied(playedStats, p => p.netScoringAverage,  false),
@@ -134,6 +135,20 @@ export default function StatisticsPage() {
                       <p className="text-sm text-gray-500">Most Birdies</p>
                       {leaders.mostBirdies.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-blue-600 font-medium text-sm">{leaders.mostBirdies[0].birdies}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {leaders.mostPars.length > 0 && (
+                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-gray-400">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-gray-400 mr-3">
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-pars-rory.jpg" alt="Rory" className="w-full h-full object-cover object-top" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Most Pars</p>
+                      {leaders.mostPars.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      <p className="text-gray-600 font-medium text-sm">{leaders.mostPars[0].pars}</p>
                     </div>
                   </div>
                 </div>
