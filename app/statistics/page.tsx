@@ -206,7 +206,9 @@ export default function StatisticsPage() {
                 <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
                   <InfoBtn title="Most Consistent" description="Highest percentage of holes completed at par or better (gross) across all rounds played. This player avoids blow-up holes better than anyone — the fewest disasters in the field." />
                   <div className="flex items-center">
-                    <Icon>🏌</Icon>
+                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-orange-500 mr-3">
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-consistent-nicklaus.jpg" alt="Nicklaus" className="w-full h-full object-cover object-top" />
+                    </div>
                     <div>
                       <p className="text-sm text-gray-500">Most Consistent</p>
                       {leaders.mostConsistent.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
