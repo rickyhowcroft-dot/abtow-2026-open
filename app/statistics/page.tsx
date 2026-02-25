@@ -254,7 +254,7 @@ export default function StatisticsPage() {
                   <InfoBtn title="Best Dream Round" description="Your personal Dream Round: take your single best gross score on each individual hole across all three tournament days, then add them up. That's your theoretical perfect 18 from this week. The lowest such score in the field wins this one." />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-yellow-500 mr-3">
-                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/dream-round-tiger.jpg?v=3" alt="Tiger" className="w-full h-full object-cover object-top" />
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/dream-round-tiger.jpg?v=4" alt="Tiger" className="w-full h-full object-cover object-top" />
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Best Dream Round</p>
