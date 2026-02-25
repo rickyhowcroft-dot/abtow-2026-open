@@ -9,9 +9,9 @@ import { TrendingDown, Award } from 'lucide-react'
 
 export default function StatisticsPage() {
   const [allStats, setAllStats] = useState<PlayerStatsOverview[]>([])
-  const [dreamRound, setDreamRound] = useState<{ gross: number; net: number; topGrossContributor: string; topNetContributor: string; holeBreakdown: Array<{ hole: number; gross: number; grossPlayer: string; net: number; netPlayer: string }> } | null>(null)
+  const [dreamRound, setDreamRound] = useState<{ gross: number; net: number; topGrossContributor: string; topNetContributor: string; holeBreakdown: Array<{ hole: number; gross: number; grossPlayer: string; net: number; netPlayer: string }>; playerDreamRounds: Array<{ playerId: string; playerName: string; dreamGross: number; dreamNet: number }> } | null>(null)
   const [loading, setLoading] = useState(true)
-  const [selectedPlayer, setSelectedPlayer] = useState<{id: string, name: string} | null>(null)
+  const [selectedPlayer, setSelectedPlayer] = useState<{id: string, name: string, dreamRound?: {gross: number, net: number}} | null>(null)
   const [sortBy, setSortBy] = useState<'scoringAverage' | 'netAverage' | 'handicapPerformance' | 'mostBogeys' | 'mostBirdies'>('scoringAverage')
   const [teamFilter, setTeamFilter] = useState<'all' | 'Shaft' | 'Balls'>('all')
 
@@ -73,7 +73,8 @@ export default function StatisticsPage() {
   }
 
   const openPlayerStats = (playerId: string, playerName: string) => {
-    setSelectedPlayer({ id: playerId, name: playerName })
+    const playerDream = dreamRound?.playerDreamRounds.find(p => p.playerId === playerId)
+    setSelectedPlayer({ id: playerId, name: playerName, dreamRound: playerDream ? { gross: playerDream.dreamGross, net: playerDream.dreamNet } : undefined })
   }
 
   const formatPercentage = (numerator: number, denominator: number): string => {
@@ -201,6 +202,22 @@ export default function StatisticsPage() {
                       {leaders.worstNetScore.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
                       <p className="text-red-600 font-medium text-sm">
                         {leaders.worstNetScore[0].netScoringAverage.toFixed(1)} avg
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {dreamRound && dreamRound.playerDreamRounds.length > 0 && (
+                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-yellow-500 mr-3">
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/dream-round-tiger.jpg?v=2" alt="Tiger" className="w-full h-full object-cover object-top" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Best Dream Round</p>
+                      <p className="font-bold text-base leading-tight">{dreamRound.playerDreamRounds[0].playerName}</p>
+                      <p className="text-yellow-600 font-medium text-sm">
+                        Gross {dreamRound.playerDreamRounds[0].dreamGross} · Net {dreamRound.playerDreamRounds[0].dreamNet}
                       </p>
                     </div>
                   </div>
@@ -449,6 +466,7 @@ export default function StatisticsPage() {
         <PlayerStatsModal
           playerId={selectedPlayer.id}
           playerName={selectedPlayer.name}
+          dreamRound={selectedPlayer.dreamRound}
           isOpen={!!selectedPlayer}
           onClose={() => setSelectedPlayer(null)}
         />

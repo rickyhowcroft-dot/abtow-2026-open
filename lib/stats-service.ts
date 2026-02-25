@@ -401,6 +401,7 @@ export class StatsService {
     topGrossContributor: string
     topNetContributor: string
     holeBreakdown: Array<{ hole: number; gross: number; grossPlayer: string; net: number; netPlayer: string }>
+    playerDreamRounds: Array<{ playerId: string; playerName: string; dreamGross: number; dreamNet: number }>
   } | null> {
     // Fetch all non-null scores
     const { data: scores, error: scoresErr } = await supabase
@@ -439,9 +440,12 @@ export class StatsService {
       return gross - strokes
     }
 
-    // For each hole (1-18): track best gross/net and which player achieved it
+    // For each hole (1-18): track best gross/net across all players and per-player
     const bestGross: Record<number, { score: number; playerId: string }> = {}
     const bestNet: Record<number, { score: number; playerId: string }> = {}
+    // Per-player personal dream round: best score per hole per player
+    const perPlayerBestGross: Record<string, Record<number, number>> = {}
+    const perPlayerBestNet: Record<string, Record<number, number>> = {}
 
     for (const score of scores) {
       if (!score.gross_score || !score.hole_number) continue
@@ -456,8 +460,15 @@ export class StatsService {
       const gross = score.gross_score
       const net = calcNet(gross, handicap, holeData.handicap)
       const h = score.hole_number
-      if (bestGross[h] === undefined || gross < bestGross[h].score) bestGross[h] = { score: gross, playerId: score.player_id }
-      if (bestNet[h] === undefined || net < bestNet[h].score) bestNet[h] = { score: net, playerId: score.player_id }
+      const pid = score.player_id
+      // Composite dream round
+      if (bestGross[h] === undefined || gross < bestGross[h].score) bestGross[h] = { score: gross, playerId: pid }
+      if (bestNet[h] === undefined || net < bestNet[h].score) bestNet[h] = { score: net, playerId: pid }
+      // Per-player personal dream round
+      if (!perPlayerBestGross[pid]) perPlayerBestGross[pid] = {}
+      if (!perPlayerBestNet[pid]) perPlayerBestNet[pid] = {}
+      if (perPlayerBestGross[pid][h] === undefined || gross < perPlayerBestGross[pid][h]) perPlayerBestGross[pid][h] = gross
+      if (perPlayerBestNet[pid][h] === undefined || net < perPlayerBestNet[pid][h]) perPlayerBestNet[pid][h] = net
     }
 
     // Need all 18 holes to have at least one score
@@ -479,6 +490,16 @@ export class StatsService {
     const topGrossId = Object.entries(grossCounts).sort((a, b) => b[1] - a[1])[0][0]
     const topNetId = Object.entries(netCounts).sort((a, b) => b[1] - a[1])[0][0]
 
+    // Per-player personal dream rounds (only for players who have all 18 holes)
+    const playerDreamRounds = Object.entries(perPlayerBestGross)
+      .filter(([pid]) => Object.keys(perPlayerBestGross[pid]).length === 18)
+      .map(([pid]) => {
+        const dreamGross = holes.reduce((sum, h) => sum + (perPlayerBestGross[pid][h] ?? 0), 0)
+        const dreamNet = holes.reduce((sum, h) => sum + (perPlayerBestNet[pid]?.[h] ?? 0), 0)
+        return { playerId: pid, playerName: playerNameMap.get(pid) ?? '', dreamGross, dreamNet }
+      })
+      .sort((a, b) => a.dreamGross - b.dreamGross)
+
     return {
       gross: dreamGross,
       net: dreamNet,
@@ -490,7 +511,8 @@ export class StatsService {
         grossPlayer: playerNameMap.get(bestGross[h].playerId) ?? '',
         net: bestNet[h].score,
         netPlayer: playerNameMap.get(bestNet[h].playerId) ?? '',
-      }))
+      })),
+      playerDreamRounds
     }
   }
 }

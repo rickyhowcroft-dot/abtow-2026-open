@@ -8,13 +8,14 @@ import StatsService from '@/lib/stats-service'
 interface PlayerStatsModalProps {
   playerId: string
   playerName: string
+  dreamRound?: { gross: number; net: number }
   isOpen: boolean
   onClose: () => void
 }
 
 type TabType = 'overview' | 'daily'
 
-export default function PlayerStatsModal({ playerId, playerName, isOpen, onClose }: PlayerStatsModalProps) {
+export default function PlayerStatsModal({ playerId, playerName, dreamRound, isOpen, onClose }: PlayerStatsModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [stats, setStats] = useState<PlayerStatsOverview | null>(null)
   const [dailyStats, setDailyStats] = useState<Array<PlayerDailyStats & { courseName: string }>>([])
@@ -97,7 +98,7 @@ export default function PlayerStatsModal({ playerId, playerName, isOpen, onClose
             {/* Content */}
             <div className="p-6 overflow-y-auto max-h-[calc(90vh-200px)]">
               {activeTab === 'overview' && (
-                <OverviewTab stats={stats} formatPercentage={formatPercentage} />
+                <OverviewTab stats={stats} dreamRound={dreamRound} formatPercentage={formatPercentage} />
               )}
               {activeTab === 'daily' && (
                 <DailyTab dailyStats={dailyStats} />
@@ -111,10 +112,12 @@ export default function PlayerStatsModal({ playerId, playerName, isOpen, onClose
 }
 
 function OverviewTab({ 
-  stats, 
+  stats,
+  dreamRound,
   formatPercentage 
 }: { 
   stats: PlayerStatsOverview | null
+  dreamRound?: { gross: number; net: number }
   formatPercentage: (n: number, d: number) => string
 }) {
   if (!stats) return <div>No statistics available</div>
@@ -230,6 +233,26 @@ function OverviewTab({
                 <div className="text-sm text-gray-600">Day {stats.worstRound.day} - {stats.worstRound.course}</div>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Dream Round */}
+      {dreamRound && (
+        <div>
+          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
+            🌟 Dream Round
+            <span className="text-sm font-normal text-gray-500">Best score per hole across all days</span>
+          </h3>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="bg-yellow-50 p-4 rounded-lg text-center border border-yellow-200">
+              <div className="text-2xl font-bold text-yellow-600">{dreamRound.gross}</div>
+              <div className="text-sm text-gray-600">Gross</div>
+            </div>
+            <div className="bg-teal-50 p-4 rounded-lg text-center border border-teal-200">
+              <div className="text-2xl font-bold text-teal-600">{dreamRound.net}</div>
+              <div className="text-sm text-gray-600">Net</div>
+            </div>
           </div>
         </div>
       )}
