@@ -174,7 +174,7 @@ export default function StatisticsPage() {
                   <InfoBtn title="Most Bogeys" description={"Total holes completed in 1 stroke over par (gross) across all rounds. One too many trips to the rough, the bunker, or the water.\n\nThe bogey train has a conductor."} />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-red-400 mr-3">
-                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-pars-rory.jpg" alt="Rory" className="w-full h-full object-cover object-top" />
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-bogeys-happy.jpg" alt="Happy Gilmore" className="w-full h-full object-cover object-center" />
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Most Bogeys</p>
