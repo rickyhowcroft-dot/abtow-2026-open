@@ -209,7 +209,9 @@ export default function StatisticsPage() {
               {dreamRound && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-yellow-400 md:col-span-2 lg:col-span-3">
                   <div className="flex items-start">
-                    <Icon>🌟</Icon>
+                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-yellow-400 mr-3">
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/dream-round-tiger.jpg" alt="Tiger" className="w-full h-full object-cover object-top" />
+                    </div>
                     <div className="flex-1">
                       <p className="text-sm text-gray-500 mb-2">Dream Round — Best score per hole across all days</p>
                       <div className="flex gap-8 mb-3">
