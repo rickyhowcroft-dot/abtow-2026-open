@@ -130,7 +130,9 @@ export default function StatisticsPage() {
                 <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
                   <InfoBtn title="Lowest Scoring Average" description={"Average gross strokes per round across all days played. The classic stroke play leader — pure ball-striking with no handicap adjustments.\n\nLower is better."} />
                   <div className="flex items-center">
-                    <Icon><TrendingDown className="text-green-500" size={20} /></Icon>
+                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-green-500 mr-3">
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/lowest-scoring-tiger.jpg" alt="Tiger" className="w-full h-full object-cover object-top" />
+                    </div>
                     <div>
                       <p className="text-sm text-gray-500">Lowest Scoring Average</p>
                       {leaders.lowestAverage.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
