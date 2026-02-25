@@ -393,8 +393,15 @@ export class StatsService {
   /**
    * Dream Round — the best gross and net score achieved on each hole
    * across all players and all tournament days, summed across 18 holes.
+   * Includes per-hole player attribution and top contributor.
    */
-  static async getDreamRound(): Promise<{ gross: number; net: number; holeBreakdown: Array<{ hole: number; gross: number; net: number }> } | null> {
+  static async getDreamRound(): Promise<{
+    gross: number
+    net: number
+    topGrossContributor: string
+    topNetContributor: string
+    holeBreakdown: Array<{ hole: number; gross: number; grossPlayer: string; net: number; netPlayer: string }>
+  } | null> {
     // Fetch all non-null scores
     const { data: scores, error: scoresErr } = await supabase
       .from('scores')
@@ -402,10 +409,10 @@ export class StatsService {
       .not('gross_score', 'is', null)
     if (scoresErr || !scores || scores.length === 0) return null
 
-    // Fetch players (need playing_handicap)
+    // Fetch players (need playing_handicap + display name)
     const { data: players, error: playersErr } = await supabase
       .from('players')
-      .select('id, playing_handicap')
+      .select('id, name, nickname, playing_handicap')
     if (playersErr || !players) return null
 
     // Fetch matches (need course_id)
@@ -421,19 +428,20 @@ export class StatsService {
     if (coursesErr || !courses) return null
 
     // Build lookup maps
-    const playerMap = new Map(players.map(p => [p.id, p.playing_handicap ?? 0]))
+    const playerHandicapMap = new Map(players.map(p => [p.id, p.playing_handicap ?? 0]))
+    const playerNameMap = new Map(players.map(p => [p.id, (p.nickname || p.name || '').split(' ')[0]]))
     const matchCourseMap = new Map(matches.map(m => [m.id, m.course_id]))
     const courseParMap = new Map(courses.map(c => [c.id, c.par_data as Record<string, { handicap: number; par: number }>]))
 
     // Net score calculation (mirrors scoring.ts calculateNetScore)
-    function netScore(gross: number, handicap: number, holeHandicap: number): number {
+    function calcNet(gross: number, handicap: number, holeHandicap: number): number {
       const strokes = Math.floor(handicap / 18) + (holeHandicap <= (handicap % 18) ? 1 : 0)
       return gross - strokes
     }
 
-    // For each hole (1-18): track best gross and best net across all players/days
-    const bestGross: Record<number, number> = {}
-    const bestNet: Record<number, number> = {}
+    // For each hole (1-18): track best gross/net and which player achieved it
+    const bestGross: Record<number, { score: number; playerId: string }> = {}
+    const bestNet: Record<number, { score: number; playerId: string }> = {}
 
     for (const score of scores) {
       if (!score.gross_score || !score.hole_number) continue
@@ -444,25 +452,45 @@ export class StatsService {
       const holeKey = `hole_${score.hole_number}`
       const holeData = parData[holeKey]
       if (!holeData) continue
-      const playerHandicap = playerMap.get(score.player_id) ?? 0
+      const handicap = playerHandicapMap.get(score.player_id) ?? 0
       const gross = score.gross_score
-      const net = netScore(gross, playerHandicap, holeData.handicap)
+      const net = calcNet(gross, handicap, holeData.handicap)
       const h = score.hole_number
-      if (bestGross[h] === undefined || gross < bestGross[h]) bestGross[h] = gross
-      if (bestNet[h] === undefined || net < bestNet[h]) bestNet[h] = net
+      if (bestGross[h] === undefined || gross < bestGross[h].score) bestGross[h] = { score: gross, playerId: score.player_id }
+      if (bestNet[h] === undefined || net < bestNet[h].score) bestNet[h] = { score: net, playerId: score.player_id }
     }
 
     // Need all 18 holes to have at least one score
     const holes = Array.from({ length: 18 }, (_, i) => i + 1)
     if (holes.some(h => bestGross[h] === undefined)) return null
 
-    const dreamGross = holes.reduce((sum, h) => sum + bestGross[h], 0)
-    const dreamNet = holes.reduce((sum, h) => sum + bestNet[h], 0)
+    const dreamGross = holes.reduce((sum, h) => sum + bestGross[h].score, 0)
+    const dreamNet = holes.reduce((sum, h) => sum + bestNet[h].score, 0)
+
+    // Top contributor = player who owns the most holes in the dream round
+    const grossCounts: Record<string, number> = {}
+    const netCounts: Record<string, number> = {}
+    holes.forEach(h => {
+      const gp = bestGross[h].playerId
+      const np = bestNet[h].playerId
+      grossCounts[gp] = (grossCounts[gp] ?? 0) + 1
+      netCounts[np] = (netCounts[np] ?? 0) + 1
+    })
+    const topGrossId = Object.entries(grossCounts).sort((a, b) => b[1] - a[1])[0][0]
+    const topNetId = Object.entries(netCounts).sort((a, b) => b[1] - a[1])[0][0]
 
     return {
       gross: dreamGross,
       net: dreamNet,
-      holeBreakdown: holes.map(h => ({ hole: h, gross: bestGross[h], net: bestNet[h] }))
+      topGrossContributor: playerNameMap.get(topGrossId) ?? '',
+      topNetContributor: playerNameMap.get(topNetId) ?? '',
+      holeBreakdown: holes.map(h => ({
+        hole: h,
+        gross: bestGross[h].score,
+        grossPlayer: playerNameMap.get(bestGross[h].playerId) ?? '',
+        net: bestNet[h].score,
+        netPlayer: playerNameMap.get(bestNet[h].playerId) ?? '',
+      }))
     }
   }
 }
