@@ -257,7 +257,7 @@ export default function StatisticsPage() {
               )}
               {dreamRound && dreamRound.playerDreamRounds.length > 0 && (
                 <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-yellow-500">
-                  <InfoBtn title="Best Dream Round" description="Your personal Dream Round: take your single best gross score on each individual hole across all three tournament days, then add them up. That's your theoretical perfect 18 from this week. The lowest such score in the field wins this one." />
+                  <InfoBtn title="Best Dream Round" description={"Your personal Dream Round: take your single best gross score on each individual hole across all three tournament days, then add them up. That's the round you could've shot — if only you'd played all 54 holes simultaneously.\n\nNobody actually shot this. It's a fantasy. A highlight reel dressed up as a scorecard.\n\nThe lowest fantasy wins."} />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-yellow-500 mr-3">
                       <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/dream-round-tiger.jpg?v=4" alt="Tiger" className="w-full h-full object-cover object-top" />
