@@ -138,6 +138,18 @@ export default function StatisticsPage() {
                   </div>
                 </div>
               )}
+              {leaders.mostBogeys.length > 0 && (
+                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
+                  <div className="flex items-center">
+                    <Icon><span>⛳️</span><span>😩</span></Icon>
+                    <div>
+                      <p className="text-sm text-gray-500">Most Bogeys</p>
+                      {leaders.mostBogeys.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      <p className="text-red-400 font-medium text-sm">{leaders.mostBogeys[0].bogeys}</p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {leaders.bestHandicap.length > 0 && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-purple-500">
                   <div className="flex items-center">
@@ -177,18 +189,6 @@ export default function StatisticsPage() {
                       <p className="text-teal-600 font-medium text-sm">
                         {leaders.bestNetScore[0].netScoringAverage.toFixed(1)} avg
                       </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {leaders.mostBogeys.length > 0 && (
-                <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
-                  <div className="flex items-center">
-                    <Icon><span>⛳️</span><span>😩</span></Icon>
-                    <div>
-                      <p className="text-sm text-gray-500">Most Bogeys</p>
-                      {leaders.mostBogeys.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
-                      <p className="text-red-400 font-medium text-sm">{leaders.mostBogeys[0].bogeys}</p>
                     </div>
                   </div>
                 </div>
