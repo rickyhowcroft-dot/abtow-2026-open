@@ -240,19 +240,28 @@ function OverviewTab({
       {/* Dream Round */}
       {dreamRound && (
         <div>
-          <h3 className="text-xl font-semibold mb-4 flex items-center gap-2">
-            🌟 Dream Round
-            <span className="text-sm font-normal text-gray-500">Best score per hole across all days</span>
-          </h3>
-          <div className="grid grid-cols-2 gap-4">
-            <div className="bg-yellow-50 p-4 rounded-lg text-center border border-yellow-200">
-              <div className="text-2xl font-bold text-yellow-600">{dreamRound.gross}</div>
-              <div className="text-sm text-gray-600">Gross</div>
+          <h3 className="text-xl font-semibold mb-4">Dream Round</h3>
+          <div className="bg-white rounded-lg border border-yellow-200 shadow-sm p-4">
+            <div className="flex items-center gap-4">
+              <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden border-2 border-yellow-500">
+                <img
+                  src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/dream-round-tiger.jpg?v=2"
+                  alt="Tiger"
+                  className="w-full h-full object-cover object-top"
+                />
+              </div>
+              <div className="flex gap-8">
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-yellow-600">{dreamRound.gross}</div>
+                  <div className="text-sm text-gray-500 mt-0.5">Gross</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-3xl font-bold text-teal-600">{dreamRound.net}</div>
+                  <div className="text-sm text-gray-500 mt-0.5">Net</div>
+                </div>
+              </div>
             </div>
-            <div className="bg-teal-50 p-4 rounded-lg text-center border border-teal-200">
-              <div className="text-2xl font-bold text-teal-600">{dreamRound.net}</div>
-              <div className="text-sm text-gray-600">Net</div>
-            </div>
+            <p className="text-xs text-gray-400 mt-3">Best score on each hole across all days played</p>
           </div>
         </div>
       )}
