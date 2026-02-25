@@ -128,7 +128,7 @@ export default function StatisticsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
               {leaders.lowestAverage.length > 0 && (
                 <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-green-500">
-                  <InfoBtn title="Lowest Scoring Average" description="Average gross strokes per round across all days played. The classic stroke play leader — pure ball-striking with no handicap adjustments. Lower is better." />
+                  <InfoBtn title="Lowest Scoring Average" description={"Average gross strokes per round across all days played. The classic stroke play leader — pure ball-striking with no handicap adjustments.\n\nLower is better."} />
                   <div className="flex items-center">
                     <Icon><TrendingDown className="text-green-500" size={20} /></Icon>
                     <div>
@@ -156,7 +156,7 @@ export default function StatisticsPage() {
               )}
               {leaders.mostPars.length > 0 && (
                 <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-gray-400">
-                  <InfoBtn title="Most Pars" description="Total holes completed at exactly par (gross) across all rounds. The steady, reliable player — no blow-ups, no miracles. Just consistent, dependable golf." />
+                  <InfoBtn title="Most Pars" description={"Total holes completed at exactly par (gross) across all rounds. The steady, reliable player — no blow-ups, no miracles.\n\nJust consistent, dependable golf."} />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-gray-400 mr-3">
                       <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-pars-scottie.jpg" alt="Scottie" className="w-full h-full object-cover object-top" />
@@ -171,7 +171,7 @@ export default function StatisticsPage() {
               )}
               {leaders.mostBogeys.length > 0 && (
                 <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
-                  <InfoBtn title="Most Bogeys" description="Total holes completed in 1 stroke over par (gross) across all rounds. One too many trips to the rough, the bunker, or the water. The bogey train has a conductor." />
+                  <InfoBtn title="Most Bogeys" description={"Total holes completed in 1 stroke over par (gross) across all rounds. One too many trips to the rough, the bunker, or the water.\n\nThe bogey train has a conductor."} />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-red-400 mr-3">
                       <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-pars-rory.jpg" alt="Rory" className="w-full h-full object-cover object-top" />
@@ -234,7 +234,7 @@ export default function StatisticsPage() {
               )}
               {leaders.worstNetScore.length > 0 && (
                 <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-red-600">
-                  <InfoBtn title="Worst Net Score" description="Highest average net score per round. Even with handicap strokes applied, this player is still bleeding shots. The handicap isn't enough to save them." />
+                  <InfoBtn title="Worst Net Score" description={"Highest average net score per round.\n\nEven with handicap strokes applied, this player is still bleeding shots.\n\nThe handicap isn't enough to save them."} />
                   <div className="flex items-center">
                     <Icon>🫃🏻</Icon>
                     <div>
@@ -460,7 +460,11 @@ export default function StatisticsPage() {
                 ✕
               </button>
             </div>
-            <p className="text-gray-600 leading-relaxed text-sm">{infoModal.description}</p>
+            <div className="space-y-2">
+              {infoModal.description.split('\n\n').map((para, i) => (
+                <p key={i} className="text-gray-600 leading-relaxed text-sm">{para}</p>
+              ))}
+            </div>
           </div>
         </div>
       )}
