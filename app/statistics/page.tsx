@@ -189,7 +189,7 @@ export default function StatisticsPage() {
                   <InfoBtn title="Best vs Handicap" description="Average strokes above or below playing handicap per round. A negative number means you're beating your handicap. The truest measure of who is outperforming expectations — not just who hits it far." />
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-purple-500 mr-3">
-                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/best-handicap-guy.jpg?v=2" alt="Best vs HCP" className="w-full h-full object-cover object-top" />
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/best-handicap-guy.jpg?v=3" alt="Best vs HCP" className="w-full h-full object-cover object-top" />
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Best vs Handicap</p>
