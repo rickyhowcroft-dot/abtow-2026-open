@@ -141,6 +141,23 @@ export default function StatisticsPage() {
                   </div>
                 </div>
               )}
+              {leaders.mostConsistent.length > 0 && (
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
+                  <InfoBtn title="Most Consistent" description="Highest percentage of holes completed at par or better (gross) across all rounds played. This player avoids blow-up holes better than anyone — the fewest disasters in the field." />
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-orange-500 mr-3">
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-consistent-nicklaus.jpg" alt="Nicklaus" className="w-full h-full object-cover object-top" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Most Consistent</p>
+                      {leaders.mostConsistent.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
+                      <p className="text-orange-600 font-medium text-sm">
+                        {formatPercentage(leaders.mostConsistent[0].pars, leaders.mostConsistent[0].total_holes_played)} pars
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
               {leaders.mostBirdies.length > 0 && (
                 <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-blue-500">
                   <InfoBtn title="Most Birdies" description="Total holes completed in 1 stroke under par (gross) across all rounds played. The most aggressive scorer in the field — someone who hunts pins and makes things happen." />
@@ -199,23 +216,6 @@ export default function StatisticsPage() {
                       <p className="text-purple-600 font-medium text-sm">
                         {leaders.bestHandicap[0].handicapPerformance > 0 ? '+' : ''}
                         {leaders.bestHandicap[0].handicapPerformance.toFixed(1)}
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              )}
-              {leaders.mostConsistent.length > 0 && (
-                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-orange-500">
-                  <InfoBtn title="Most Consistent" description="Highest percentage of holes completed at par or better (gross) across all rounds played. This player avoids blow-up holes better than anyone — the fewest disasters in the field." />
-                  <div className="flex items-center">
-                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-orange-500 mr-3">
-                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-consistent-nicklaus.jpg" alt="Nicklaus" className="w-full h-full object-cover object-top" />
-                    </div>
-                    <div>
-                      <p className="text-sm text-gray-500">Most Consistent</p>
-                      {leaders.mostConsistent.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
-                      <p className="text-orange-600 font-medium text-sm">
-                        {formatPercentage(leaders.mostConsistent[0].pars, leaders.mostConsistent[0].total_holes_played)} pars
                       </p>
                     </div>
                   </div>
