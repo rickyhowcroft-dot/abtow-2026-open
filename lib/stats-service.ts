@@ -402,7 +402,7 @@ export class StatsService {
     if (playerErr || !player) return []
 
     // Fetch matches the player has scores in (with day + course)
-    const matchIds = [...new Set(scores.map(s => s.match_id))]
+    const matchIds = Array.from(new Set(scores.map(s => s.match_id)))
     const { data: matches, error: matchesErr } = await supabase
       .from('matches')
       .select('id, day, course_id')
@@ -410,7 +410,7 @@ export class StatsService {
     if (matchesErr || !matches) return []
 
     // Fetch courses
-    const courseIds = [...new Set(matches.map(m => m.course_id))]
+    const courseIds = Array.from(new Set(matches.map(m => m.course_id)))
     const { data: courses, error: coursesErr } = await supabase
       .from('courses')
       .select('id, name, par_data')
