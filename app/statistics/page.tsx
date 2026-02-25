@@ -143,7 +143,7 @@ export default function StatisticsPage() {
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-gray-400">
                   <div className="flex items-center">
                     <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-gray-400 mr-3">
-                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-pars-rory.jpg" alt="Rory" className="w-full h-full object-cover object-top" />
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-pars-scottie.jpg" alt="Scottie" className="w-full h-full object-cover object-top" />
                     </div>
                     <div>
                       <p className="text-sm text-gray-500">Most Pars</p>
@@ -156,7 +156,9 @@ export default function StatisticsPage() {
               {leaders.mostBogeys.length > 0 && (
                 <div className="bg-white p-4 rounded-lg shadow border-l-4 border-red-400">
                   <div className="flex items-center">
-                    <Icon><span>⛳️</span><span>😩</span></Icon>
+                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-red-400 mr-3">
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/most-pars-rory.jpg" alt="Rory" className="w-full h-full object-cover object-top" />
+                    </div>
                     <div>
                       <p className="text-sm text-gray-500">Most Bogeys</p>
                       {leaders.mostBogeys.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
