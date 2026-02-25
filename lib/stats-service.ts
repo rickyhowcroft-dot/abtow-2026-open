@@ -372,6 +372,93 @@ export class StatsService {
   /**
    * Get daily performance for a player
    */
+  /**
+   * Fetch per-hole scorecard data for a player across all days played.
+   */
+  static async getPlayerScorecardData(playerId: string): Promise<Array<{
+    day: number
+    courseName: string
+    playingHandicap: number
+    holes: Array<{ holeNumber: number; par: number; holeHandicap: number; grossScore: number | null; netScore: number | null; strokesGiven: number }>
+    frontGross: number; frontNet: number; frontPar: number
+    backGross: number; backNet: number; backPar: number
+    totalGross: number; totalNet: number; totalPar: number
+  }>> {
+    // Fetch all scores for this player
+    const { data: scores, error: scoresErr } = await supabase
+      .from('scores')
+      .select('match_id, hole_number, gross_score')
+      .eq('player_id', playerId)
+      .not('gross_score', 'is', null)
+      .order('hole_number')
+    if (scoresErr || !scores) return []
+
+    // Fetch player (need playing_handicap)
+    const { data: player, error: playerErr } = await supabase
+      .from('players')
+      .select('playing_handicap')
+      .eq('id', playerId)
+      .single()
+    if (playerErr || !player) return []
+
+    // Fetch matches the player has scores in (with day + course)
+    const matchIds = [...new Set(scores.map(s => s.match_id))]
+    const { data: matches, error: matchesErr } = await supabase
+      .from('matches')
+      .select('id, day, course_id')
+      .in('id', matchIds)
+    if (matchesErr || !matches) return []
+
+    // Fetch courses
+    const courseIds = [...new Set(matches.map(m => m.course_id))]
+    const { data: courses, error: coursesErr } = await supabase
+      .from('courses')
+      .select('id, name, par_data')
+      .in('id', courseIds)
+    if (coursesErr || !courses) return []
+
+    const courseMap = new Map(courses.map(c => [c.id, c]))
+    const playerHandicap = player.playing_handicap ?? 0
+
+    function strokesGiven(handicap: number, holeHandicap: number): number {
+      return Math.floor(handicap / 18) + (holeHandicap <= (handicap % 18) ? 1 : 0)
+    }
+
+    return matches
+      .sort((a, b) => a.day - b.day)
+      .map(match => {
+        const course = courseMap.get(match.course_id)!
+        const parData = course.par_data as Record<string, { par: number; handicap: number }>
+        const matchScores = scores.filter(s => s.match_id === match.id)
+        const scoreMap = new Map(matchScores.map(s => [s.hole_number, s.gross_score]))
+
+        const holes = Array.from({ length: 18 }, (_, i) => {
+          const h = i + 1
+          const holeData = parData[`hole_${h}`]
+          const gross = scoreMap.get(h) ?? null
+          const strokes = strokesGiven(playerHandicap, holeData.handicap)
+          const net = gross !== null ? gross - strokes : null
+          return { holeNumber: h, par: holeData.par, holeHandicap: holeData.handicap, grossScore: gross, netScore: net, strokesGiven: strokes }
+        })
+
+        const front = holes.slice(0, 9)
+        const back = holes.slice(9, 18)
+        const sumGross = (arr: typeof holes) => arr.reduce((s, h) => s + (h.grossScore ?? 0), 0)
+        const sumNet = (arr: typeof holes) => arr.reduce((s, h) => s + (h.netScore ?? 0), 0)
+        const sumPar = (arr: typeof holes) => arr.reduce((s, h) => s + h.par, 0)
+
+        return {
+          day: match.day,
+          courseName: course.name,
+          playingHandicap: playerHandicap,
+          holes,
+          frontGross: sumGross(front), frontNet: sumNet(front), frontPar: sumPar(front),
+          backGross: sumGross(back), backNet: sumNet(back), backPar: sumPar(back),
+          totalGross: sumGross(holes), totalNet: sumNet(holes), totalPar: sumPar(holes),
+        }
+      })
+  }
+
   static async getPlayerDailyStats(playerId: string): Promise<Array<PlayerDailyStats & { courseName: string }>> {
     const { data, error } = await supabase
       .from('player_daily_stats')

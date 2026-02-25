@@ -1,6 +1,6 @@
 'use client'
 
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { X } from 'lucide-react'
 import type { PlayerStatsOverview, PlayerDailyStats } from '@/lib/stats-service'
 import StatsService from '@/lib/stats-service'
@@ -13,12 +13,21 @@ interface PlayerStatsModalProps {
   onClose: () => void
 }
 
-type TabType = 'overview' | 'daily'
+type TabType = 'overview' | 'daily' | 'scorecard'
+
+type ScorecardDay = {
+  day: number; courseName: string; playingHandicap: number
+  holes: Array<{ holeNumber: number; par: number; holeHandicap: number; grossScore: number | null; netScore: number | null; strokesGiven: number }>
+  frontGross: number; frontNet: number; frontPar: number
+  backGross: number; backNet: number; backPar: number
+  totalGross: number; totalNet: number; totalPar: number
+}
 
 export default function PlayerStatsModal({ playerId, playerName, dreamRound, isOpen, onClose }: PlayerStatsModalProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview')
   const [stats, setStats] = useState<PlayerStatsOverview | null>(null)
   const [dailyStats, setDailyStats] = useState<Array<PlayerDailyStats & { courseName: string }>>([])
+  const [scorecardData, setScorecardData] = useState<ScorecardDay[]>([])
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -30,13 +39,14 @@ export default function PlayerStatsModal({ playerId, playerName, dreamRound, isO
   const loadStats = async () => {
     setLoading(true)
     try {
-      const [playerStats, dailyData] = await Promise.all([
+      const [playerStats, dailyData, scorecard] = await Promise.all([
         StatsService.getPlayerStats(playerId),
-        StatsService.getPlayerDailyStats(playerId)
+        StatsService.getPlayerDailyStats(playerId),
+        StatsService.getPlayerScorecardData(playerId)
       ])
-      
       setStats(playerStats)
       setDailyStats(dailyData)
+      setScorecardData(scorecard)
     } catch (error) {
       console.error('Error loading stats:', error)
     } finally {
@@ -93,6 +103,16 @@ export default function PlayerStatsModal({ playerId, playerName, dreamRound, isO
               >
                 Daily Performance
               </button>
+              <button
+                onClick={() => setActiveTab('scorecard')}
+                className={`px-6 py-3 font-medium border-b-2 transition-colors ${
+                  activeTab === 'scorecard'
+                    ? 'border-green-500 text-green-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Scorecard
+              </button>
             </div>
 
             {/* Content */}
@@ -102,6 +122,9 @@ export default function PlayerStatsModal({ playerId, playerName, dreamRound, isO
               )}
               {activeTab === 'daily' && (
                 <DailyTab dailyStats={dailyStats} />
+              )}
+              {activeTab === 'scorecard' && (
+                <ScorecardTab scorecardData={scorecardData} />
               )}
             </div>
           </>
@@ -265,6 +288,140 @@ function OverviewTab({
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function ScorecardTab({ scorecardData }: { scorecardData: ScorecardDay[] }) {
+  if (scorecardData.length === 0) return <div className="text-gray-500">No scorecard data available.</div>
+
+  function scoreColor(gross: number | null, par: number): string {
+    if (gross === null) return ''
+    const diff = gross - par
+    if (diff <= -2) return 'bg-yellow-300 text-yellow-900'  // eagle+
+    if (diff === -1) return 'bg-green-200 text-green-900'   // birdie
+    if (diff === 0)  return ''                               // par
+    if (diff === 1)  return 'bg-orange-100 text-orange-800' // bogey
+    return 'bg-red-200 text-red-900'                        // double+
+  }
+
+  function netColor(net: number | null, par: number): string {
+    if (net === null) return ''
+    const diff = net - par
+    if (diff <= -2) return 'text-yellow-600 font-bold'
+    if (diff === -1) return 'text-green-600 font-bold'
+    if (diff === 0)  return 'text-gray-600'
+    if (diff === 1)  return 'text-orange-600'
+    return 'text-red-600 font-bold'
+  }
+
+  const Cell = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+    <td className={`border border-gray-200 text-center px-1 py-1.5 text-xs ${className}`}>{children}</td>
+  )
+
+  const SubtotalCell = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
+    <td className={`border border-gray-300 text-center px-1 py-1.5 text-xs font-bold bg-gray-50 ${className}`}>{children}</td>
+  )
+
+  const LabelCell = ({ children }: { children: React.ReactNode }) => (
+    <td className="border border-gray-200 px-2 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 whitespace-nowrap">{children}</td>
+  )
+
+  return (
+    <div className="space-y-8">
+      {scorecardData.map(day => {
+        const front = day.holes.slice(0, 9)
+        const back = day.holes.slice(9, 18)
+
+        const renderNine = (holes: typeof day.holes, label: string, grossTotal: number, netTotal: number, parTotal: number) => (
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse min-w-[520px]">
+              <tbody>
+                {/* Hole row */}
+                <tr className="bg-gray-800 text-white">
+                  <LabelCell>Hole</LabelCell>
+                  {holes.map(h => <Cell key={h.holeNumber} className="bg-gray-800 text-white font-bold">{h.holeNumber}</Cell>)}
+                  <SubtotalCell className="bg-gray-700 text-white">{label}</SubtotalCell>
+                </tr>
+                {/* H/I row */}
+                <tr>
+                  <LabelCell>H/I</LabelCell>
+                  {holes.map(h => <Cell key={h.holeNumber} className="text-gray-500">{h.holeHandicap}</Cell>)}
+                  <SubtotalCell>—</SubtotalCell>
+                </tr>
+                {/* Par row */}
+                <tr>
+                  <LabelCell>Par</LabelCell>
+                  {holes.map(h => <Cell key={h.holeNumber} className="text-gray-700">{h.par}</Cell>)}
+                  <SubtotalCell>{parTotal}</SubtotalCell>
+                </tr>
+                {/* Gross row */}
+                <tr>
+                  <LabelCell>Gross</LabelCell>
+                  {holes.map(h => (
+                    <Cell key={h.holeNumber} className={scoreColor(h.grossScore, h.par)}>
+                      <div className="relative inline-block">
+                        {h.grossScore ?? '—'}
+                        {h.strokesGiven > 0 && (
+                          <span className="absolute -top-1 -right-1.5 text-[8px] text-blue-600 font-bold leading-none">
+                            {'•'.repeat(Math.min(h.strokesGiven, 2))}
+                          </span>
+                        )}
+                      </div>
+                    </Cell>
+                  ))}
+                  <SubtotalCell className={grossTotal > 0 ? '' : 'text-gray-400'}>{grossTotal || '—'}</SubtotalCell>
+                </tr>
+                {/* Net row */}
+                <tr>
+                  <LabelCell>Net</LabelCell>
+                  {holes.map(h => (
+                    <Cell key={h.holeNumber}>
+                      <span className={netColor(h.netScore, h.par)}>{h.netScore ?? '—'}</span>
+                    </Cell>
+                  ))}
+                  <SubtotalCell className={netTotal > 0 ? '' : 'text-gray-400'}>{netTotal || '—'}</SubtotalCell>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        )
+
+        return (
+          <div key={day.day}>
+            <div className="flex items-center justify-between mb-3">
+              <div>
+                <h3 className="text-lg font-bold">Day {day.day}</h3>
+                <p className="text-sm text-gray-500">{day.courseName} · HCP {day.playingHandicap}</p>
+              </div>
+              <div className="text-right">
+                <div className="text-2xl font-bold text-gray-800">{day.totalGross}</div>
+                <div className="text-sm text-gray-500">Net {day.totalNet}</div>
+              </div>
+            </div>
+            {renderNine(front, 'OUT', day.frontGross, day.frontNet, day.frontPar)}
+            <div className="mt-2">
+              {renderNine(back, 'IN', day.backGross, day.backNet, day.backPar)}
+            </div>
+            {/* Totals row */}
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full border-collapse min-w-[520px]">
+                <tbody>
+                  <tr className="bg-gray-100">
+                    <td className="border border-gray-300 px-2 py-1.5 text-xs font-bold text-gray-700 bg-gray-200 whitespace-nowrap">Totals</td>
+                    <td className="border border-gray-300 px-3 py-1.5 text-xs text-center text-gray-600">OUT {day.frontPar}</td>
+                    <td className="border border-gray-300 px-3 py-1.5 text-xs text-center text-gray-600">IN {day.backPar}</td>
+                    <td className="border border-gray-300 px-3 py-1.5 text-xs font-bold text-center">TOT {day.totalPar}</td>
+                    <td className="border border-gray-300 px-3 py-1.5 text-xs text-center">Gross <span className="font-bold text-gray-800">{day.totalGross}</span></td>
+                    <td className="border border-gray-300 px-3 py-1.5 text-xs text-center">Net <span className="font-bold text-teal-700">{day.totalNet}</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+            <div className="mt-2 text-xs text-gray-400">• = stroke given on hole</div>
+          </div>
+        )
+      })}
     </div>
   )
 }
