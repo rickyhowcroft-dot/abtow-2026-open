@@ -268,7 +268,7 @@ function OverviewTab({
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 shrink-0 rounded-full overflow-hidden border-2 border-yellow-500">
                 <img
-                  src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/dream-round-tiger.jpg?v=2"
+                  src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/dream-round-tiger.jpg?v=3"
                   alt="Tiger"
                   className="w-full h-full object-cover object-top"
                 />
