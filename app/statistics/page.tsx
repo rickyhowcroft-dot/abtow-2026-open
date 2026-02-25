@@ -236,7 +236,9 @@ export default function StatisticsPage() {
                 <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-red-600">
                   <InfoBtn title="Worst Net Score" description={"Highest average net score per round.\n\nEven with handicap strokes applied, this player is still bleeding shots.\n\nThe handicap isn't enough to save them."} />
                   <div className="flex items-center">
-                    <Icon>🫃🏻</Icon>
+                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-red-600 mr-3">
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/worst-net-blindfold.jpg" alt="Worst Net" className="w-full h-full object-cover object-center" />
+                    </div>
                     <div>
                       <p className="text-sm text-gray-500">Worst Net Score</p>
                       {leaders.worstNetScore.map(p => <p key={p.player_id} className="font-bold text-base leading-tight">{p.playerName}</p>)}
