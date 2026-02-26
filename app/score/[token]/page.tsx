@@ -663,7 +663,9 @@ export default function ScoreEntry() {
               const isLastInTeam = idx === arr.length - 1 || match.team1_players.includes(arr[idx + 1].name) !== isTeam1;
               if (!isLastInTeam) return null;
 
-              const teamPlayers = isTeam1 ? team1Players : team2Players;
+              const t1 = arr.filter(p => match.team1_players.includes(p.name));
+              const t2 = arr.filter(p => match.team2_players.includes(p.name));
+              const teamPlayers = isTeam1 ? t1 : t2;
               let bestNet = Infinity;
               let bestGross: number | null = null;
               let bestPlayerName: string | null = null;
@@ -682,7 +684,7 @@ export default function ScoreEntry() {
 
               if (bestGross === null) return null;
 
-              const isShaftsTeam = isTeam1 ? team1Players[0].team === 'Shaft' : team2Players[0].team === 'Shaft';
+              const isShaftsTeam = teamPlayers[0].team === 'Shaft';
               const borderColor = isShaftsTeam ? 'border-blue-400 bg-blue-50' : 'border-red-400 bg-red-50';
               const textColor = isShaftsTeam ? 'text-blue-700' : 'text-red-700';
               const labelColor = isShaftsTeam ? 'text-blue-500' : 'text-red-500';
