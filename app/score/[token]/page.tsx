@@ -657,6 +657,52 @@ export default function ScoreEntry() {
                 ))}
               </div>
             </div>
+
+            {/* Best Ball Team Score — shown after last player in each team */}
+            {match.format === 'Best Ball' && (() => {
+              const isLastInTeam = idx === arr.length - 1 || match.team1_players.includes(arr[idx + 1].name) !== isTeam1;
+              if (!isLastInTeam) return null;
+
+              const teamPlayers = isTeam1 ? team1Players : team2Players;
+              let bestNet = Infinity;
+              let bestGross: number | null = null;
+              let bestPlayerName: string | null = null;
+
+              for (const tp of teamPlayers) {
+                const gross = scores[tp.id]?.[currentHole];
+                if (gross) {
+                  const net = gross - getStrokesOnHole(tp, currentHole);
+                  if (net < bestNet) {
+                    bestNet = net;
+                    bestGross = gross;
+                    bestPlayerName = tp.name;
+                  }
+                }
+              }
+
+              if (bestGross === null) return null;
+
+              const isShaftsTeam = isTeam1 ? team1Players[0].team === 'Shaft' : team2Players[0].team === 'Shaft';
+              const borderColor = isShaftsTeam ? 'border-blue-400 bg-blue-50' : 'border-red-400 bg-red-50';
+              const textColor = isShaftsTeam ? 'text-blue-700' : 'text-red-700';
+              const labelColor = isShaftsTeam ? 'text-blue-500' : 'text-red-500';
+
+              return (
+                <div className={`mt-2 p-3 rounded-lg border-2 ${borderColor}`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className={`text-xs font-bold uppercase tracking-wide ${labelColor}`}>Team Score</div>
+                      <div className="text-xs text-gray-500">{bestPlayerName}&apos;s ball</div>
+                    </div>
+                    <div className="text-right">
+                      <div className={`text-2xl font-bold ${textColor}`}>{bestNet}</div>
+                      <div className="text-xs text-gray-400">net &nbsp;•&nbsp; gross {bestGross}</div>
+                    </div>
+                  </div>
+                </div>
+              );
+            })()}
+
             </div>
           );
         })}
