@@ -15,6 +15,7 @@ export default function StatisticsPage() {
   const [sortBy, setSortBy] = useState<'scoringAverage' | 'netAverage' | 'handicapPerformance' | 'mostBogeys' | 'mostBirdies'>('scoringAverage')
   const [teamFilter, setTeamFilter] = useState<'all' | 'Shaft' | 'Balls'>('all')
   const [infoModal, setInfoModal] = useState<{ title: string; description: string } | null>(null)
+  const [nightmareRound, setNightmareRound] = useState<{ playerNightmareRounds: Array<{ playerId: string; playerName: string; nightmareGross: number; nightmareNet: number }> } | null>(null)
 
   const InfoBtn = ({ title, description }: { title: string; description: string }) => (
     <button
@@ -32,12 +33,14 @@ export default function StatisticsPage() {
 
   const loadAllStats = async () => {
     try {
-      const [stats, dream] = await Promise.all([
+      const [stats, dream, nightmare] = await Promise.all([
         StatsService.getAllPlayersStats(),
-        StatsService.getDreamRound()
+        StatsService.getDreamRound(),
+        StatsService.getNightmareRound()
       ])
       setAllStats(stats)
       setDreamRound(dream)
+      setNightmareRound(nightmare)
     } catch (error) {
       console.error('Error loading statistics:', error)
     } finally {
@@ -267,6 +270,23 @@ export default function StatisticsPage() {
                       <p className="font-bold text-base leading-tight">{dreamRound.playerDreamRounds[0].playerName}</p>
                       <p className="text-yellow-600 font-medium text-sm">
                         Gross {dreamRound.playerDreamRounds[0].dreamGross} · Net {dreamRound.playerDreamRounds[0].dreamNet}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              {nightmareRound && nightmareRound.playerNightmareRounds.length > 0 && (
+                <div className="relative bg-white p-4 rounded-lg shadow border-l-4 border-gray-700">
+                  <InfoBtn title="Nightmare Round" description={"Your personal Nightmare Round: take your single worst gross score on each individual hole across all three tournament days, then add them up. That's the round you were capable of — on your very worst day.\n\nNobody scheduled this round. It found them.\n\nThe highest score wins this one. Unfortunately."} />
+                  <div className="flex items-center">
+                    <div className="w-10 h-10 shrink-0 rounded-full overflow-hidden border-2 border-gray-700 mr-3">
+                      <img src="https://fnxyorriiytdskxpedir.supabase.co/storage/v1/object/public/avatars/nightmare-round-kevin.jpg" alt="Nightmare" className="w-full h-full object-cover object-top" />
+                    </div>
+                    <div>
+                      <p className="text-sm text-gray-500">Nightmare Round</p>
+                      <p className="font-bold text-base leading-tight">{nightmareRound.playerNightmareRounds[0].playerName}</p>
+                      <p className="text-gray-700 font-medium text-sm">
+                        Gross {nightmareRound.playerNightmareRounds[0].nightmareGross} · Net {nightmareRound.playerNightmareRounds[0].nightmareNet}
                       </p>
                     </div>
                   </div>

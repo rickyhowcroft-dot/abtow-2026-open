@@ -602,6 +602,81 @@ export class StatsService {
       playerDreamRounds
     }
   }
+
+  static async getNightmareRound(): Promise<{
+    playerNightmareRounds: Array<{ playerId: string; playerName: string; nightmareGross: number; nightmareNet: number }>
+  } | null> {
+    const { data: scores, error: scoresErr } = await supabase
+      .from('scores')
+      .select('player_id, match_id, hole_number, gross_score')
+      .not('gross_score', 'is', null)
+    if (scoresErr || !scores || scores.length === 0) return null
+
+    const { data: players, error: playersErr } = await supabase
+      .from('players')
+      .select('id, name, nickname, playing_handicap')
+    if (playersErr || !players) return null
+
+    const { data: matches, error: matchesErr } = await supabase
+      .from('matches')
+      .select('id, course_id')
+    if (matchesErr || !matches) return null
+
+    const { data: courses, error: coursesErr } = await supabase
+      .from('courses')
+      .select('id, par_data')
+    if (coursesErr || !courses) return null
+
+    const playerHandicapMap = new Map(players.map(p => [p.id, p.playing_handicap ?? 0]))
+    const playerNameMap = new Map(players.map(p => [p.id, (p.nickname || p.name || '').split(' ')[0]]))
+    const matchCourseMap = new Map(matches.map(m => [m.id, m.course_id]))
+    const courseParMap = new Map(courses.map(c => [c.id, c.par_data as Record<string, { handicap: number; par: number }>]))
+
+    function calcNet(gross: number, handicap: number, holeHandicap: number): number {
+      const strokes = Math.floor(handicap / 18) + (holeHandicap <= (handicap % 18) ? 1 : 0)
+      return gross - strokes
+    }
+
+    // Per-player WORST score per hole
+    const perPlayerWorstGross: Record<string, Record<number, number>> = {}
+    const perPlayerWorstNet: Record<string, Record<number, number>> = {}
+
+    for (const score of scores) {
+      if (!score.gross_score || !score.hole_number) continue
+      const courseId = matchCourseMap.get(score.match_id)
+      if (!courseId) continue
+      const parData = courseParMap.get(courseId)
+      if (!parData) continue
+      const holeKey = `hole_${score.hole_number}`
+      const holeData = parData[holeKey]
+      if (!holeData) continue
+      const handicap = playerHandicapMap.get(score.player_id) ?? 0
+      const gross = score.gross_score
+      const net = calcNet(gross, handicap, holeData.handicap)
+      const h = score.hole_number
+      const pid = score.player_id
+
+      if (!perPlayerWorstGross[pid]) perPlayerWorstGross[pid] = {}
+      if (!perPlayerWorstNet[pid]) perPlayerWorstNet[pid] = {}
+      if (perPlayerWorstGross[pid][h] === undefined || gross > perPlayerWorstGross[pid][h]) perPlayerWorstGross[pid][h] = gross
+      if (perPlayerWorstNet[pid][h] === undefined || net > perPlayerWorstNet[pid][h]) perPlayerWorstNet[pid][h] = net
+    }
+
+    const holes = Array.from({ length: 18 }, (_, i) => i + 1)
+
+    const playerNightmareRounds = Object.entries(perPlayerWorstGross)
+      .filter(([pid]) => Object.keys(perPlayerWorstGross[pid]).length === 18)
+      .map(([pid]) => {
+        const nightmareGross = holes.reduce((sum, h) => sum + (perPlayerWorstGross[pid][h] ?? 0), 0)
+        const nightmareNet = holes.reduce((sum, h) => sum + (perPlayerWorstNet[pid]?.[h] ?? 0), 0)
+        return { playerId: pid, playerName: playerNameMap.get(pid) ?? '', nightmareGross, nightmareNet }
+      })
+      .sort((a, b) => b.nightmareGross - a.nightmareGross) // highest (worst) first
+
+    if (playerNightmareRounds.length === 0) return null
+
+    return { playerNightmareRounds }
+  }
 }
 
 export default StatsService
