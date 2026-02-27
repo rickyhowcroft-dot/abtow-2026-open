@@ -97,7 +97,7 @@ function rawToMoneyline(winPct: number): number {
   return Math.round(((100 - winPct) / winPct) * 100 / 5) * 5
 }
 
-/** 18-hole pre-match odds from Monte Carlo data */
+/** 18-hole pre-match odds from Monte Carlo data (snaps to nearest data point). */
 export function getOdds(hcpA: number, hcpB: number): MatchupOdds {
   if (hcpA === hcpB) {
     return { playerAHcp: hcpA, playerBHcp: hcpB, aWinPct: 50, bWinPct: 50, aMoneyline: -105, bMoneyline: -105 }
@@ -120,6 +120,29 @@ export function getOdds(hcpA: number, hcpB: number): MatchupOdds {
   const aIsLower = nA === lower
   const aWinPct = aIsLower ? lowerNorm : higherNorm
   const bWinPct = aIsLower ? higherNorm : lowerNorm
+  return {
+    playerAHcp: hcpA, playerBHcp: hcpB, aWinPct, bWinPct,
+    aMoneyline: rawToMoneyline(aWinPct), bMoneyline: rawToMoneyline(bWinPct),
+  }
+}
+
+/**
+ * 18-hole odds with linear interpolation between MC data points.
+ * Ensures every whole-stroke tease adjustment produces a distinct, meaningful line.
+ * Used for stroke-adjusted tease display (±5 strokes).
+ */
+function getOddsSmooth(hcpA: number, hcpB: number): MatchupOdds {
+  // Find bracketing data points for hcpA
+  const belowA = [...HCP_SET].filter(h => h <= hcpA).pop() ?? HCP_SET[0]
+  const aboveA = HCP_SET.find(h => h >= hcpA) ?? HCP_SET[HCP_SET.length - 1]
+
+  if (belowA === aboveA) return getOdds(belowA, hcpB)
+
+  const t = (hcpA - belowA) / (aboveA - belowA)   // 0–1 interpolation factor
+  const lo = getOdds(belowA, hcpB)
+  const hi = getOdds(aboveA, hcpB)
+  const aWinPct = lo.aWinPct + t * (hi.aWinPct - lo.aWinPct)
+  const bWinPct = 100 - aWinPct
   return {
     playerAHcp: hcpA, playerBHcp: hcpB, aWinPct, bWinPct,
     aMoneyline: rawToMoneyline(aWinPct), bMoneyline: rawToMoneyline(bWinPct),
@@ -164,8 +187,13 @@ export function teaseOdds(
   betType: 'front' | 'back' | 'overall',
 ): [number, number] {
   const adjA = hcpA + strokes
-  const odds = betType === 'overall' ? getOdds(adjA, hcpB) : getNineHoleOdds(adjA, hcpB)
-  return [odds.aMoneyline, odds.bMoneyline]
+  // Use smooth interpolation so every stroke step produces a distinct line
+  const base = getOddsSmooth(adjA, hcpB)
+  if (betType === 'overall') return [base.aMoneyline, base.bMoneyline]
+  // 9-hole: regress 55% toward 50/50 (same factor as getNineHoleOdds)
+  const aWin = 50 + (base.aWinPct - 50) * 0.55
+  const bWin = 100 - aWin
+  return [rawToMoneyline(aWin), rawToMoneyline(bWin)]
 }
 
 /** @deprecated Use teaseOdds() — this operates on raw moneylines, not stroke math */
