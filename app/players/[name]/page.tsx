@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Player } from '@/lib/scoring'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
-import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, type BetWithPlayers, type Bet } from '@/lib/bets-service'
+import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, type BetWithPlayers, type Bet } from '@/lib/bets-service'
 import { formatMoneyline } from '@/lib/monte-carlo'
 
 function PlayerAvatar({ player }: { player: Player }) {
@@ -373,14 +373,19 @@ export default function PlayerProfilePage() {
               <button onClick={() => setViewBet(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
             <div className="bg-white rounded-xl p-4 space-y-3 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-500">Type</span>
-                <span className="font-semibold">{betTypeLabel(viewBet.bet_type)}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-500">Tease</span>
-                <span className="font-semibold">{viewBet.tease_adjustment === 0 ? 'None' : viewBet.tease_adjustment > 0 ? `+${viewBet.tease_adjustment}` : viewBet.tease_adjustment}</span>
-              </div>
+              {(() => {
+                const s1 = playerDisplayName(viewBet.side1_player)
+                const s2 = playerDisplayName(viewBet.side2_player)
+                const terms = betTermsInfo(viewBet.bet_type, viewBet.tease_adjustment, s1, s2)
+                return (
+                  <div className="bg-[#2a6b7c]/5 border border-[#2a6b7c]/20 rounded-xl p-3 space-y-1.5 text-xs">
+                    <p className="font-bold text-[#2a6b7c] text-sm">📋 Bet Terms</p>
+                    <div className="flex gap-1.5"><span className="text-gray-400 w-16 shrink-0">Segment</span><span className="text-gray-700 font-medium">{terms.segment}</span></div>
+                    <div className="flex gap-1.5"><span className="text-gray-400 w-16 shrink-0">Strokes</span><span className="text-gray-700 font-medium">{terms.stroke}</span></div>
+                    <div className="flex gap-1.5"><span className="text-gray-400 w-16 shrink-0">Winner</span><span className="text-gray-700 font-bold">{terms.winner}</span></div>
+                  </div>
+                )
+              })()}
               <div className="border-t border-gray-100 pt-3">
                 <div className="flex justify-between items-start">
                   <div>

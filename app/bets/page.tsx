@@ -8,7 +8,7 @@ import {
 } from '@/lib/monte-carlo'
 import {
   createBet, acceptBet, getAllBets,
-  playerDisplayName, betTypeLabel, betStatusLabel,
+  playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo,
   type BetWithPlayers, type Bet,
 } from '@/lib/bets-service'
 import type { Player, Match } from '@/lib/scoring'
@@ -74,9 +74,10 @@ function StatusBadge({ status, s1, s2 }: { status: Bet['status']; s1: string; s2
 // ─── Bet Detail / Accept Modal ───────────────────────────────────────────────
 
 function BetDetailModal({
-  bet, viewerPlayerId, onClose, onAccepted,
+  bet, day, viewerPlayerId, onClose, onAccepted,
 }: {
   bet: BetWithPlayers
+  day?: number
   viewerPlayerId: string
   onClose: () => void
   onAccepted: () => void
@@ -117,14 +118,23 @@ function BetDetailModal({
         </div>
 
         <div className="bg-white rounded-xl p-4 space-y-3 text-sm">
-          <div className="flex justify-between">
-            <span className="text-gray-500">Type</span>
-            <span className="font-semibold">{betTypeLabel(bet.bet_type)}</span>
-          </div>
-          <div className="flex justify-between">
-            <span className="text-gray-500">Tease</span>
-            <span className="font-semibold">{bet.tease_adjustment === 0 ? 'None' : bet.tease_adjustment > 0 ? `+${bet.tease_adjustment}` : bet.tease_adjustment}</span>
-          </div>
+          {day ? (() => {
+            const terms = betTermsInfo(bet.bet_type, bet.tease_adjustment, s1, s2, day)
+            return (
+              <div className="bg-[#2a6b7c]/5 border border-[#2a6b7c]/20 rounded-xl p-3 space-y-1.5 text-xs">
+                <p className="font-bold text-[#2a6b7c] text-sm">📋 Bet Terms</p>
+                <div className="flex gap-1.5"><span className="text-gray-400 w-16 shrink-0">Segment</span><span className="text-gray-700 font-medium">{terms.segment}</span></div>
+                <div className="flex gap-1.5"><span className="text-gray-400 w-16 shrink-0">Format</span><span className="text-gray-700 font-medium">{terms.format}</span></div>
+                <div className="flex gap-1.5"><span className="text-gray-400 w-16 shrink-0">Strokes</span><span className="text-gray-700 font-medium">{terms.stroke}</span></div>
+                <div className="flex gap-1.5"><span className="text-gray-400 w-16 shrink-0">Winner</span><span className="text-gray-700 font-bold">{terms.winner}</span></div>
+              </div>
+            )
+          })() : (
+            <div className="flex justify-between">
+              <span className="text-gray-500">Type</span>
+              <span className="font-semibold">{betTypeLabel(bet.bet_type)}{bet.tease_adjustment !== 0 && <span className="text-gray-400 text-xs ml-1">({bet.tease_adjustment > 0 ? '+' : ''}{bet.tease_adjustment} strokes)</span>}</span>
+            </div>
+          )}
           <div className="border-t border-gray-100 pt-3 space-y-2">
             <div className="flex justify-between items-center">
               <div>
@@ -363,11 +373,9 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
               <div className="text-xs font-bold text-emerald-700 uppercase tracking-wide">{label} ✓</div>
               <div className="text-sm font-bold text-gray-800 mt-0.5">
                 ${parseInt(slot.amount).toLocaleString()} · {formatMoneyline(myMl)}
-                {slot.tease !== 0 && (
-                  <span className="text-xs font-normal text-gray-500 ml-1">
-                    ({slot.tease > 0 ? `+${slot.tease}` : slot.tease} strokes to {slot.tease > 0 ? side1Names[0] : side2Names[0]})
-                  </span>
-                )}
+              </div>
+              <div className="text-[11px] text-gray-400 mt-0.5 leading-snug">
+                {betTermsInfo(type, slot.tease, side1Names.join(' & '), side2Names.join(' & '), day).compact}
               </div>
             </div>
             <span className="text-xs text-emerald-600 underline">edit</span>
@@ -455,6 +463,20 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
             <span className={`text-sm font-bold ${mlColor(myMl)}`}>{formatMoneyline(myMl)}</span>
           </div>
         </div>
+
+        {/* Live Bet Terms */}
+        {(() => {
+          const terms = betTermsInfo(type, slot.tease, side1Names.join(' & '), side2Names.join(' & '), day)
+          return (
+            <div className="bg-[#2a6b7c]/5 border border-[#2a6b7c]/20 rounded-xl p-3 text-xs space-y-1.5">
+              <p className="font-bold text-[#2a6b7c] text-sm">📋 Bet Terms</p>
+              <div className="flex gap-1.5"><span className="text-gray-400 shrink-0 w-16">Segment</span><span className="text-gray-700 font-medium">{terms.segment}</span></div>
+              <div className="flex gap-1.5"><span className="text-gray-400 shrink-0 w-16">Format</span><span className="text-gray-700 font-medium">{terms.format}</span></div>
+              <div className="flex gap-1.5"><span className="text-gray-400 shrink-0 w-16">Strokes</span><span className="text-gray-700 font-medium">{terms.stroke}</span></div>
+              <div className="flex gap-1.5"><span className="text-gray-400 shrink-0 w-16">Winner</span><span className="text-gray-700 font-bold">{terms.winner}</span></div>
+            </div>
+          )
+        })()}
 
         {/* Amount */}
         <div>
@@ -791,6 +813,7 @@ export default function BetsPage() {
   const [viewerPlayerId, setViewerPlayerId] = useState('')
   const [addBetTarget, setAddBetTarget] = useState<MatchWithConfig | null>(null)
   const [viewBet, setViewBet] = useState<BetWithPlayers | null>(null)
+  const [viewBetDay, setViewBetDay] = useState<number>(1)
 
   useEffect(() => { loadAll() }, [])
 
@@ -911,7 +934,7 @@ export default function BetsPage() {
             players={players}
             viewerPlayerId={viewerPlayerId}
             onAddBet={() => setAddBetTarget({ dbMatch, side1Names, side2Names })}
-            onViewBet={setViewBet}
+            onViewBet={(bet) => { setViewBet(bet); setViewBetDay(activeDay) }}
           />
         ))}
       </div>
@@ -934,6 +957,7 @@ export default function BetsPage() {
       {viewBet && (
         <BetDetailModal
           bet={viewBet}
+          day={viewBetDay}
           viewerPlayerId={viewerPlayerId}
           onClose={() => setViewBet(null)}
           onAccepted={() => { setViewBet(null); loadAll() }}

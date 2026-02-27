@@ -136,3 +136,32 @@ export function betStatusLabel(status: Bet['status'], side1Name: string, side2Na
     case 'cancelled': return 'Cancelled'
   }
 }
+
+/** Human-readable bet terms for display in modals and summaries. */
+export function betTermsInfo(
+  betType: 'front' | 'back' | 'overall',
+  tease: number,
+  side1Name: string,
+  side2Name: string,
+  day?: number,
+) {
+  const segment =
+    betType === 'front'   ? 'Front 9 (holes 1–9)'   :
+    betType === 'back'    ? 'Back 9 (holes 10–18)'   :
+                            'Overall (18 holes)'
+  const format =
+    day === 1 ? 'Best Ball net strokes' :
+    day === 2 ? 'Stableford net points' :
+    day === 3 ? 'Net stroke play'       :
+                'Net score'
+  const winner = day === 2 ? 'Most points wins' : 'Lowest net score wins'
+  const stroke =
+    tease === 0 ? 'No stroke adjustment — straight up' :
+    tease  >  0 ? `${side1Name} gets +${tease} stroke${tease > 1 ? 's' : ''} — net reduced by ${tease}` :
+                  `${side2Name} gets +${Math.abs(tease)} stroke${Math.abs(tease) > 1 ? 's' : ''} — net reduced by ${Math.abs(tease)}`
+  const compact =
+    tease === 0 ? `${segment} · ${format} · ${winner}` :
+    tease  >  0 ? `${segment} · +${tease} stroke${tease > 1 ? 's' : ''} to ${side1Name} · ${winner}` :
+                  `${segment} · +${Math.abs(tease)} stroke${Math.abs(tease) > 1 ? 's' : ''} to ${side2Name} · ${winner}`
+  return { segment, format, winner, stroke, compact }
+}
