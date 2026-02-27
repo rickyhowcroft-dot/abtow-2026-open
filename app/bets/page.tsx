@@ -237,8 +237,8 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
 
   // ── Step 4 — one slot per bet type
   type SlotStatus = 'idle' | 'active' | 'logged' | 'skipped'
-  interface BetSlot { amount: string; amountError: string; tease: number; status: SlotStatus }
-  const mkSlot = (status: SlotStatus): BetSlot => ({ amount: '', amountError: '', tease: 0, status })
+  interface BetSlot { amount: string; amountError: string; tease: number; status: SlotStatus; showTip?: boolean }
+  const mkSlot = (status: SlotStatus): BetSlot => ({ amount: '', amountError: '', tease: 0, status, showTip: false })
   const [slots, setSlots] = useState<Record<'front' | 'back' | 'overall', BetSlot>>({
     front:   mkSlot('active'),
     back:    mkSlot('idle'),
@@ -403,11 +403,35 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
 
         {/* Tease */}
         <div>
-          <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+          <div className="flex justify-between items-center text-[10px] text-gray-400 mb-0.5">
             <span>← Favor {side2Names[0]}</span>
-            <span className="font-medium text-gray-500">{slot.tease === 0 ? 'Baseline' : `${slot.tease > 0 ? '+' : ''}${slot.tease} pts`}</span>
+            <div className="flex items-center gap-1">
+              <span className="font-medium text-gray-500">{slot.tease === 0 ? 'Baseline' : `${slot.tease > 0 ? '+' : ''}${slot.tease} pts`}</span>
+              <button
+                onClick={() => updateSlot(type, { showTip: !slot.showTip })}
+                className="w-4 h-4 rounded-full bg-gray-200 text-gray-500 hover:bg-[#2a6b7c] hover:text-white transition-colors flex items-center justify-center text-[9px] font-bold shrink-0"
+                title="What is this?"
+              >ℹ</button>
+            </div>
             <span>Favor {side1Names[0]} →</span>
           </div>
+
+          {slot.showTip && (
+            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-2 text-xs text-amber-900 space-y-1.5">
+              <p className="font-bold text-sm">🎰 Adjust the line — trust your vibes.</p>
+              <p className="text-gray-600 italic">The math is good. The math doesn&apos;t know what you know. Ask yourself:</p>
+              <ul className="space-y-1 text-gray-700">
+                <li>🍺 Was someone over-served at dinner last night?</li>
+                <li>😴 Did they look half-dead on the first tee?</li>
+                <li>📱 Is their wife blowing up their phone right now?</li>
+                <li>🎯 Did they just spend 2 hours on the range looking locked in?</li>
+                <li>🤢 Are they nursing a hangover that could floor a horse?</li>
+                <li>🧊 Have they been ice cold all trip and due for a hot round?</li>
+              </ul>
+              <p className="text-gray-500 italic pt-1">Slide left to spot them points. Slide right to squeeze &apos;em. Either way, don&apos;t come crying to Sampson when the vibes don&apos;t hit. 🤷</p>
+            </div>
+          )}
+
           <input
             type="range" min={-50} max={50} step={5}
             value={slot.tease}
