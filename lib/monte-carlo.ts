@@ -127,26 +127,47 @@ export function getOdds(hcpA: number, hcpB: number): MatchupOdds {
 }
 
 /**
- * 18-hole odds with linear interpolation between MC data points.
- * Ensures every whole-stroke tease adjustment produces a distinct, meaningful line.
- * Used for stroke-adjusted tease display (±5 strokes).
+ * 18-hole odds with interpolation + boundary extrapolation.
+ * - Within data range (hcp 4–23): linearly interpolates between bracketing data points.
+ * - Below hcp 4: extrapolates using the hcp4→hcp5 slope (down to hcp -1).
+ * - Above hcp 23: extrapolates using the hcp21→hcp23 slope (up to hcp 28).
+ * Ensures every whole-stroke tease step (±5) produces a distinct, meaningful line.
  */
 function getOddsSmooth(hcpA: number, hcpB: number): MatchupOdds {
-  // Find bracketing data points for hcpA
-  const belowA = [...HCP_SET].filter(h => h <= hcpA).pop() ?? HCP_SET[0]
-  const aboveA = HCP_SET.find(h => h >= hcpA) ?? HCP_SET[HCP_SET.length - 1]
+  const minH = HCP_SET[0]                       // 4
+  const maxH = HCP_SET[HCP_SET.length - 1]      // 23
 
+  const clampedWin = (aWin: number, base: MatchupOdds): MatchupOdds => {
+    const a = Math.max(2, Math.min(98, aWin))
+    return { ...base, aWinPct: a, bWinPct: 100 - a, aMoneyline: rawToMoneyline(a), bMoneyline: rawToMoneyline(100 - a) }
+  }
+
+  if (hcpA < minH) {
+    // Extrapolate below minimum: slope from hcp4 → hcp5
+    const base = getOdds(minH, hcpB)
+    const next = getOdds(HCP_SET[1], hcpB)
+    const slope = (next.aWinPct - base.aWinPct) / (HCP_SET[1] - minH)
+    return clampedWin(base.aWinPct + slope * (hcpA - minH), base)
+  }
+
+  if (hcpA > maxH) {
+    // Extrapolate above maximum: slope from hcp21 → hcp23
+    const base = getOdds(maxH, hcpB)
+    const prev = getOdds(HCP_SET[HCP_SET.length - 2], hcpB)
+    const slope = (base.aWinPct - prev.aWinPct) / (maxH - HCP_SET[HCP_SET.length - 2])
+    return clampedWin(base.aWinPct + slope * (hcpA - maxH), base)
+  }
+
+  // Within range: interpolate between bracketing data points
+  const belowA = [...HCP_SET].filter(h => h <= hcpA).pop() ?? minH
+  const aboveA = HCP_SET.find(h => h >= hcpA) ?? maxH
   if (belowA === aboveA) return getOdds(belowA, hcpB)
 
-  const t = (hcpA - belowA) / (aboveA - belowA)   // 0–1 interpolation factor
+  const t = (hcpA - belowA) / (aboveA - belowA)
   const lo = getOdds(belowA, hcpB)
   const hi = getOdds(aboveA, hcpB)
   const aWinPct = lo.aWinPct + t * (hi.aWinPct - lo.aWinPct)
-  const bWinPct = 100 - aWinPct
-  return {
-    playerAHcp: hcpA, playerBHcp: hcpB, aWinPct, bWinPct,
-    aMoneyline: rawToMoneyline(aWinPct), bMoneyline: rawToMoneyline(bWinPct),
-  }
+  return clampedWin(aWinPct, lo)
 }
 
 /**

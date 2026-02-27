@@ -372,6 +372,60 @@ export default function PlayerProfilePage() {
               <h2 className="text-lg font-bold text-[#2a6b7c]">Bet Details</h2>
               <button onClick={() => setViewBet(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
+
+            {/* Settlement result card */}
+            {['side1_won','side2_won','push'].includes(viewBet.status) && (() => {
+              const s1n = playerDisplayName(viewBet.side1_player)
+              const s2n = playerDisplayName(viewBet.side2_player)
+              const vIs1 = player.id === viewBet.side1_player_id
+              const vIs2 = player.id === viewBet.side2_player_id
+              const vWon  = (vIs1 && viewBet.status === 'side1_won') || (vIs2 && viewBet.status === 'side2_won')
+              const vLost = (vIs1 && viewBet.status === 'side2_won') || (vIs2 && viewBet.status === 'side1_won')
+              const winP  = viewBet.status === 'side1_won' ? viewBet.side1_player : viewBet.side2_player
+              const losP  = viewBet.status === 'side1_won' ? viewBet.side2_player : viewBet.side1_player
+              const winN  = viewBet.status === 'side1_won' ? s1n : s2n
+              const losN  = viewBet.status === 'side1_won' ? s2n : s1n
+              const amt   = viewBet.status === 'side1_won' ? viewBet.side2_amount : viewBet.side1_amount
+              if (viewBet.status === 'push') return (
+                <div className="mb-4 bg-amber-50 border border-amber-200 rounded-2xl p-4 text-center">
+                  <p className="text-2xl mb-1">🤝</p>
+                  <p className="font-bold text-amber-800">Push — all square. No money changes hands.</p>
+                </div>
+              )
+              if (vWon) return (
+                <div className="mb-4 bg-emerald-50 border-2 border-emerald-400 rounded-2xl p-4 text-center">
+                  <p className="text-3xl mb-1">🏆</p>
+                  <p className="font-bold text-emerald-800 text-lg">You won!</p>
+                  <p className="text-sm text-emerald-700 mt-1"><strong>${Number(amt).toLocaleString()}</strong> from {losN}. Your read was right.</p>
+                  {losP.venmo_handle && (
+                    <a href={`https://venmo.com/${losP.venmo_handle}`} target="_blank" rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-[#008CFF] text-white text-sm font-bold rounded-full">
+                      <svg width="14" height="14" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
+                      Request from {losN}
+                    </a>
+                  )}
+                </div>
+              )
+              if (vLost) return (
+                <div className="mb-4 rounded-2xl overflow-hidden border-2 border-red-300">
+                  <img src="/tywin.jpg" alt="Tywin Lannister" className="w-full object-cover max-h-48" style={{objectPosition:'center 20%'}} />
+                  <div className="bg-red-50 p-4 text-center">
+                    <p className="font-bold text-red-900 text-base mb-1">📜 A debt is owed.</p>
+                    <p className="text-sm text-red-800">You owe <strong>{winN}</strong> <strong>${Number(amt).toLocaleString()}</strong>.</p>
+                    <p className="text-sm text-red-700 mt-1 italic">&ldquo;A Lannister always pays their debts.&rdquo;<br/>Be an honorable man — don&apos;t make them ask twice.</p>
+                    {winP.venmo_handle && (
+                      <a href={`https://venmo.com/${winP.venmo_handle}`} target="_blank" rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-[#008CFF] text-white text-sm font-bold rounded-full">
+                        <svg width="14" height="14" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
+                        Pay {winN}
+                      </a>
+                    )}
+                  </div>
+                </div>
+              )
+              return null
+            })()}
+
             <div className="bg-white rounded-xl p-4 space-y-3 text-sm">
               {(() => {
                 const s1 = playerDisplayName(viewBet.side1_player)
