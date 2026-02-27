@@ -909,6 +909,19 @@ export default function BetsPage() {
   const [viewBet, setViewBet] = useState<BetWithPlayers | null>(null)
   const [viewBetDay, setViewBetDay] = useState<number>(1)
 
+  // Restore saved identity on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('abtow_viewer_id')
+    if (saved) setViewerPlayerId(saved)
+  }, [])
+
+  // Persist identity to localStorage whenever it changes
+  function handleViewerChange(id: string) {
+    setViewerPlayerId(id)
+    if (id) localStorage.setItem('abtow_viewer_id', id)
+    else localStorage.removeItem('abtow_viewer_id')
+  }
+
   useEffect(() => { loadAll() }, [])
 
   async function loadAll() {
@@ -971,7 +984,7 @@ export default function BetsPage() {
         <span className="text-xs text-gray-500 shrink-0 font-semibold">You are:</span>
         <select
           value={viewerPlayerId}
-          onChange={e => setViewerPlayerId(e.target.value)}
+          onChange={e => handleViewerChange(e.target.value)}
           className="flex-1 text-sm border-0 bg-transparent focus:outline-none text-gray-700 font-semibold"
         >
           <option value="">— select to see your bets —</option>
@@ -1118,7 +1131,7 @@ export default function BetsPage() {
           side2Names={addBetTarget.side2Names}
           players={players}
           viewerPlayerId={viewerPlayerId}
-          onViewerChange={setViewerPlayerId}
+          onViewerChange={handleViewerChange}
           onClose={() => setAddBetTarget(null)}
           onCreated={() => { setAddBetTarget(null); loadAll() }}
         />

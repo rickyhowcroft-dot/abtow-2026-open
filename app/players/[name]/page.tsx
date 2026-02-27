@@ -75,6 +75,7 @@ export default function PlayerProfilePage() {
   const [playerBets, setPlayerBets] = useState<BetWithPlayers[]>([])
   const [betsLoading, setBetsLoading] = useState(false)
   const [viewBet, setViewBet] = useState<BetWithPlayers | null>(null)
+  const [isMe, setIsMe] = useState(false)
 
   const playerName = decodeURIComponent(params.name as string)
 
@@ -96,6 +97,7 @@ export default function PlayerProfilePage() {
       } else {
         setPlayer(data)
         fetchBets(data.id)
+        setIsMe(localStorage.getItem('abtow_viewer_id') === data.id)
       }
     } catch (error) {
       setNotFound(true)
@@ -159,7 +161,27 @@ export default function PlayerProfilePage() {
           <PlayerAvatar player={player} />
           
           <h1 className="text-3xl mb-2" style={{ fontFamily: 'Georgia, serif' }}>{displayName}</h1>
-          
+
+          {/* Identity pin — tap to remember "You are this player" on Bets page */}
+          <button
+            onClick={() => {
+              if (isMe) {
+                localStorage.removeItem('abtow_viewer_id')
+                setIsMe(false)
+              } else {
+                localStorage.setItem('abtow_viewer_id', player.id)
+                setIsMe(true)
+              }
+            }}
+            className={`mb-3 inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold border transition-colors ${
+              isMe
+                ? 'bg-emerald-100 text-emerald-700 border-emerald-300'
+                : 'bg-gray-100 text-gray-500 border-gray-200 hover:bg-gray-200'
+            }`}
+          >
+            {isMe ? '✓ This is me' : '👤 This is me'}
+          </button>
+
           {player.nickname && (
             <p className="text-lg text-gray-600 italic mb-4">&ldquo;{player.nickname}&rdquo;</p>
           )}
