@@ -409,7 +409,7 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
               <span className="font-medium text-gray-500">{slot.tease === 0 ? 'Baseline' : `${slot.tease > 0 ? '+' : ''}${slot.tease} pts`}</span>
               <button
                 onClick={() => updateSlot(type, { showTip: !slot.showTip })}
-                className="w-4 h-4 rounded-full bg-gray-200 text-gray-500 hover:bg-[#2a6b7c] hover:text-white transition-colors flex items-center justify-center text-[9px] font-bold shrink-0"
+                className={`w-5 h-5 rounded-full transition-colors flex items-center justify-center text-[10px] font-bold shrink-0 ${slot.showTip ? 'bg-amber-400 text-white' : 'bg-gray-200 text-gray-500 hover:bg-[#2a6b7c] hover:text-white'}`}
                 title="What is this?"
               >ℹ</button>
             </div>
@@ -417,10 +417,10 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
           </div>
 
           {slot.showTip && (
-            <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 mb-2 text-xs text-amber-900 space-y-1.5">
-              <p className="font-bold text-sm">🎰 Adjust the line — trust your vibes.</p>
-              <p className="text-gray-600 italic">The math is good. The math doesn&apos;t know what you know. Ask yourself:</p>
-              <ul className="space-y-1 text-gray-700">
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 mb-3 space-y-3">
+              <p className="font-bold text-base text-amber-900">🎰 Adjust the line — trust your vibes.</p>
+              <p className="text-sm text-gray-600 italic">The math is good. The math doesn&apos;t know what you know. Ask yourself:</p>
+              <ul className="space-y-2 text-sm text-gray-800">
                 <li>🍺 Was someone over-served at dinner last night?</li>
                 <li>😴 Did they look half-dead on the first tee?</li>
                 <li>📱 Is their wife blowing up their phone right now?</li>
@@ -428,7 +428,7 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
                 <li>🤢 Are they nursing a hangover that could floor a horse?</li>
                 <li>🧊 Have they been ice cold all trip and due for a hot round?</li>
               </ul>
-              <p className="text-gray-500 italic pt-1">Slide left to spot them points. Slide right to squeeze &apos;em. Either way, don&apos;t come crying to Sampson when the vibes don&apos;t hit. 🤷</p>
+              <p className="text-sm text-gray-500 italic border-t border-amber-200 pt-3">Slide left to spot them points. Slide right to squeeze &apos;em. Either way, don&apos;t come crying to Sampson when the vibes don&apos;t hit. 🤷</p>
             </div>
           )}
 
