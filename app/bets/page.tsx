@@ -224,14 +224,16 @@ interface AddBetModalProps {
   side1Names: string[]
   side2Names: string[]
   players: Player[]
+  viewerPlayerId?: string
+  onViewerChange?: (playerId: string) => void
   onClose: () => void
   onCreated: () => void
 }
 
-function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onClose, onCreated }: AddBetModalProps) {
-  // ── Steps 1–3
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
-  const [myPlayerId, setMyPlayerId] = useState('')
+function AddBetModal({ matchId, day, group, side1Names, side2Names, players, viewerPlayerId = '', onViewerChange, onClose, onCreated }: AddBetModalProps) {
+  // ── Steps 1–3 — skip to step 2 if we already know who the user is
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(viewerPlayerId ? 2 : 1)
+  const [myPlayerId, setMyPlayerId] = useState(viewerPlayerId)
   const [mySide, setMySide] = useState<'side1' | 'side2' | ''>('')
   const [opponentPlayerId, setOpponentPlayerId] = useState('')
 
@@ -493,7 +495,10 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
           <div className="flex justify-between items-start">
             <div>
               <h2 className="text-lg font-bold text-[#2a6b7c]">New Bet</h2>
-              <p className="text-xs text-gray-500">Day {day} · Group {group} · {formatLabel}</p>
+              <p className="text-xs text-gray-500">
+                Day {day} · Group {group} · {formatLabel}
+                {myPlayerName && <span className="ml-1 text-[#2a6b7c] font-semibold">· {myPlayerName}</span>}
+              </p>
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none mt-1">✕</button>
           </div>
@@ -517,7 +522,7 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
                   return (
                     <button
                       key={p.id}
-                      onClick={() => { setMyPlayerId(p.id); setStep(2) }}
+                      onClick={() => { setMyPlayerId(p.id); onViewerChange?.(p.id); setStep(2) }}
                       className="flex items-center gap-2 p-3 rounded-xl border-2 border-gray-200 bg-white hover:border-[#2a6b7c] hover:bg-[#2a6b7c]/5 text-left transition-all"
                     >
                       {p.avatar_url ? (
@@ -657,8 +662,8 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
             </div>
           )}
 
-          {/* Back button for steps 2–3 */}
-          {step > 1 && step < 4 && (
+          {/* Back button for steps 2–3 (don't go back past step 2 if pre-identified) */}
+          {step > (viewerPlayerId ? 2 : 1) && step < 4 && (
             <button onClick={() => setStep(s => (s - 1) as 1|2|3|4)} className="w-full py-2 border border-gray-200 text-gray-500 rounded-xl text-sm hover:bg-gray-50">
               ← Back
             </button>
@@ -909,6 +914,8 @@ export default function BetsPage() {
           side1Names={addBetTarget.side1Names}
           side2Names={addBetTarget.side2Names}
           players={players}
+          viewerPlayerId={viewerPlayerId}
+          onViewerChange={setViewerPlayerId}
           onClose={() => setAddBetTarget(null)}
           onCreated={() => { setAddBetTarget(null); loadAll() }}
         />
