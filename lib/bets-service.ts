@@ -32,6 +32,8 @@ export interface MatchRef {
   day: number
   group_number: number
   format: string
+  team1_players: string[]
+  team2_players: string[]
 }
 
 export interface BetWithPlayers extends Bet {
@@ -44,7 +46,7 @@ const BET_SELECT = `
   *,
   side1_player:side1_player_id(id, name, first_name, last_name, avatar_url, venmo_handle),
   side2_player:side2_player_id(id, name, first_name, last_name, avatar_url, venmo_handle),
-  match:match_id(day, group_number, format)
+  match:match_id(day, group_number, format, team1_players, team2_players)
 `
 
 export async function getBetsForMatch(matchId: string): Promise<BetWithPlayers[]> {
@@ -123,6 +125,20 @@ export async function settleBetsForMatch(matchId: string): Promise<void> {
     p_match_id: matchId,
   })
   if (error) throw error
+}
+
+/** Resolve match team UUIDs to "Hallimen & KOP vs Stewart & Howcroft" */
+export function matchTeamsLabel(
+  match: MatchRef,
+  allPlayers: { id: string; name: string; first_name?: string | null }[],
+): string {
+  const firstName = (id: string) => {
+    const p = allPlayers.find(p => p.id === id)
+    return p ? (p.first_name || p.name.split(' ')[0]) : '?'
+  }
+  const t1 = (match.team1_players ?? []).map(firstName)
+  const t2 = (match.team2_players ?? []).map(firstName)
+  return `${t1.join(' & ')} vs ${t2.join(' & ')}`
 }
 
 export function playerDisplayName(player: PlayerRef): string {

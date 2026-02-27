@@ -8,7 +8,7 @@ import {
 } from '@/lib/monte-carlo'
 import {
   createBet, acceptBet, getAllBets,
-  playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo,
+  playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, matchTeamsLabel,
   type BetWithPlayers, type Bet,
 } from '@/lib/bets-service'
 import type { Player, Match } from '@/lib/scoring'
@@ -74,11 +74,12 @@ function StatusBadge({ status, s1, s2 }: { status: Bet['status']; s1: string; s2
 // ─── Bet Detail / Accept Modal ───────────────────────────────────────────────
 
 function BetDetailModal({
-  bet, day, viewerPlayerId, onClose, onAccepted,
+  bet, day, viewerPlayerId, players, onClose, onAccepted,
 }: {
   bet: BetWithPlayers
   day?: number
   viewerPlayerId: string
+  players: { id: string; name: string; first_name?: string | null }[]
   onClose: () => void
   onAccepted: () => void
 }) {
@@ -128,8 +129,7 @@ function BetDetailModal({
             <h2 className="text-lg font-bold text-[#2a6b7c]">Bet Details</h2>
             {bet.match && (
               <p className="text-xs text-gray-400 mt-0.5">
-                {bet.match.format === 'best_ball' ? 'Best Ball' : bet.match.format === 'stableford' ? 'Stableford' : 'Individual'}
-                {' · '}Day {bet.match.day} · Group {bet.match.group_number}
+                Day {bet.match.day} · {matchTeamsLabel(bet.match, players)}
               </p>
             )}
           </div>
@@ -1150,6 +1150,7 @@ export default function BetsPage() {
           bet={viewBet}
           day={viewBetDay}
           viewerPlayerId={viewerPlayerId}
+          players={players}
           onClose={() => setViewBet(null)}
           onAccepted={() => { setViewBet(null); loadAll() }}
         />

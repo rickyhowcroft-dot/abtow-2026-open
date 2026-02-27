@@ -6,17 +6,8 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Player } from '@/lib/scoring'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
-import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, type BetWithPlayers, type Bet } from '@/lib/bets-service'
+import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, matchTeamsLabel, type BetWithPlayers, type Bet, type MatchRef } from '@/lib/bets-service'
 import { formatMoneyline } from '@/lib/monte-carlo'
-import type { MatchRef } from '@/lib/bets-service'
-
-function matchLabel(match?: MatchRef): string {
-  if (!match) return ''
-  const fmt = match.format === 'best_ball' ? 'Best Ball'
-    : match.format === 'stableford' ? 'Stableford'
-    : 'Individual'
-  return `Day ${match.day} · ${fmt} · G${match.group_number}`
-}
 
 function PlayerAvatar({ player }: { player: Player }) {
   const initials = player.first_name && player.last_name 
@@ -85,11 +76,15 @@ export default function PlayerProfilePage() {
   const [betsLoading, setBetsLoading] = useState(false)
   const [viewBet, setViewBet] = useState<BetWithPlayers | null>(null)
   const [isMe, setIsMe] = useState(false)
+  const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; first_name: string | null }[]>([])
 
   const playerName = decodeURIComponent(params.name as string)
 
   useEffect(() => {
     fetchPlayer()
+    supabase.from('players').select('id, name, first_name').then(({ data }) => {
+      if (data) setAllPlayers(data)
+    })
   }, [playerName])
 
   async function fetchPlayer() {
@@ -410,8 +405,10 @@ export default function PlayerProfilePage() {
                       >
                         <div className="flex justify-between items-start">
                           <div className="min-w-0">
-                            {matchLabel(bet.match) && (
-                              <div className="text-xs text-gray-400 mb-0.5">{matchLabel(bet.match)}</div>
+                            {bet.match && (
+                              <div className="text-xs text-gray-400 mb-0.5">
+                                Day {bet.match.day} · {matchTeamsLabel(bet.match, allPlayers)}
+                              </div>
                             )}
                             <div className="text-sm font-semibold text-gray-800">{betTypeLabel(bet.bet_type)} vs {oppName.split(' ')[0]}</div>
                             <div className="text-xs text-gray-400 mt-0.5">
@@ -466,7 +463,7 @@ export default function PlayerProfilePage() {
                 <h2 className="text-lg font-bold text-[#2a6b7c]">Bet Details</h2>
                 {viewBet.match && (
                   <p className="text-xs text-gray-400 mt-0.5">
-                    {matchLabel(viewBet.match)}
+                    Day {viewBet.match.day} · {matchTeamsLabel(viewBet.match, allPlayers)}
                   </p>
                 )}
               </div>
