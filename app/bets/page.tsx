@@ -611,9 +611,9 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
                 </p>
               </div>
 
-              <BetSlotPanel type="front"   label="Front 9" />
-              <BetSlotPanel type="back"    label="Back 9" />
-              <BetSlotPanel type="overall" label="Overall" />
+              {BetSlotPanel({ type: 'front',   label: 'Front 9' })}
+              {BetSlotPanel({ type: 'back',    label: 'Back 9' })}
+              {BetSlotPanel({ type: 'overall', label: 'Overall' })}
 
               {/* Missing bet prompt */}
               {missingPrompt && (
