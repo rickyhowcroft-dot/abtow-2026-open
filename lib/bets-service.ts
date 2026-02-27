@@ -25,6 +25,7 @@ export interface PlayerRef {
   first_name: string | null
   last_name: string | null
   avatar_url: string | null
+  venmo_handle?: string | null
 }
 
 export interface BetWithPlayers extends Bet {
@@ -34,8 +35,8 @@ export interface BetWithPlayers extends Bet {
 
 const BET_SELECT = `
   *,
-  side1_player:side1_player_id(id, name, first_name, last_name, avatar_url),
-  side2_player:side2_player_id(id, name, first_name, last_name, avatar_url)
+  side1_player:side1_player_id(id, name, first_name, last_name, avatar_url, venmo_handle),
+  side2_player:side2_player_id(id, name, first_name, last_name, avatar_url, venmo_handle)
 `
 
 export async function getBetsForMatch(matchId: string): Promise<BetWithPlayers[]> {

@@ -164,11 +164,27 @@ export default function PlayerProfilePage() {
             <p className="text-lg text-gray-600 italic mb-4">&ldquo;{player.nickname}&rdquo;</p>
           )}
           
-          <div className={`inline-block px-4 py-2 rounded-full text-white font-semibold mb-6 ${
+          <div className={`inline-block px-4 py-2 rounded-full text-white font-semibold mb-4 ${
             player.team === 'Shaft' ? 'bg-team-shafts' : 'bg-team-balls'
           }`}>
             Team {player.team}
           </div>
+
+          {player.venmo_handle && (
+            <div className="mb-5">
+              <a
+                href={`https://venmo.com/${player.venmo_handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3D95CE] text-white font-semibold text-sm hover:bg-[#3182b8] transition-colors shadow-sm"
+              >
+                <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
+                  <path d="M19.5 2c.8 1.3 1.2 2.7 1.2 4.5 0 5.6-4.8 12.9-8.7 18H4.8L2 2.6l6.3-.6 1.6 12.9C11.6 12 13.5 8 13.5 5.2c0-1.7-.3-2.9-.8-3.9L19.5 2z"/>
+                </svg>
+                @{player.venmo_handle}
+              </a>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-8">
             {player.first_name && (
@@ -385,7 +401,8 @@ export default function PlayerProfilePage() {
               <div className="border-t border-gray-100 pt-3 flex justify-between items-center">
                 <span className="text-gray-500">Status</span>
                 <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                  viewBet.status === 'active' ? 'bg-gray-100 text-gray-600' :
+                  viewBet.status === 'pending' ? 'bg-yellow-100 text-yellow-700' :
+                  viewBet.status === 'active' ? 'bg-blue-100 text-blue-700' :
                   viewBet.status === 'side1_won' || viewBet.status === 'side2_won' ? 'bg-emerald-100 text-emerald-700' :
                   viewBet.status === 'push' ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-500'
                 }`}>
@@ -393,7 +410,24 @@ export default function PlayerProfilePage() {
                 </span>
               </div>
             </div>
-            <button onClick={() => setViewBet(null)} className="mt-4 w-full py-2.5 bg-[#2a6b7c] text-white rounded-xl font-semibold text-sm">Close</button>
+            {/* Venmo links */}
+            {(viewBet.side1_player.venmo_handle || viewBet.side2_player.venmo_handle) && (
+              <div className="mt-3 flex gap-2">
+                {[viewBet.side1_player, viewBet.side2_player].map(p => p.venmo_handle ? (
+                  <a
+                    key={p.id}
+                    href={`https://venmo.com/${p.venmo_handle}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#3D95CE] text-white text-xs font-bold hover:bg-[#3182b8] transition-colors"
+                  >
+                    <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 2c.8 1.3 1.2 2.7 1.2 4.5 0 5.6-4.8 12.9-8.7 18H4.8L2 2.6l6.3-.6 1.6 12.9C11.6 12 13.5 8 13.5 5.2c0-1.7-.3-2.9-.8-3.9L19.5 2z"/></svg>
+                    Pay {playerDisplayName(p).split(' ')[0]}
+                  </a>
+                ) : null)}
+              </div>
+            )}
+            <button onClick={() => setViewBet(null)} className="mt-3 w-full py-2.5 bg-[#2a6b7c] text-white rounded-xl font-semibold text-sm">Close</button>
           </div>
         </div>
       )}

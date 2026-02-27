@@ -185,8 +185,26 @@ function BetDetailModal({
           </div>
         )}
 
+        {/* Venmo pay links */}
+        {(bet.side1_player.venmo_handle || bet.side2_player.venmo_handle) && (
+          <div className="mt-3 flex gap-2">
+            {[bet.side1_player, bet.side2_player].map(p => p.venmo_handle ? (
+              <a
+                key={p.id}
+                href={`https://venmo.com/${p.venmo_handle}`}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex-1 flex items-center justify-center gap-1.5 py-2.5 rounded-xl bg-[#3D95CE] text-white text-xs font-bold hover:bg-[#3182b8] transition-colors"
+              >
+                <svg className="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 2c.8 1.3 1.2 2.7 1.2 4.5 0 5.6-4.8 12.9-8.7 18H4.8L2 2.6l6.3-.6 1.6 12.9C11.6 12 13.5 8 13.5 5.2c0-1.7-.3-2.9-.8-3.9L19.5 2z"/></svg>
+                Pay {playerDisplayName(p).split(' ')[0]}
+              </a>
+            ) : null)}
+          </div>
+        )}
+
         {!(isPending && isAcceptor) && (
-          <button onClick={onClose} className="mt-4 w-full py-2.5 bg-[#2a6b7c] text-white rounded-xl font-semibold text-sm">
+          <button onClick={onClose} className="mt-3 w-full py-2.5 bg-[#2a6b7c] text-white rounded-xl font-semibold text-sm">
             Close
           </button>
         )}

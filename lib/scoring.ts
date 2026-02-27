@@ -10,6 +10,7 @@ export interface Player {
   team: 'Shaft' | 'Balls';
   raw_handicap: number;
   playing_handicap: number;
+  venmo_handle?: string | null;
 }
 
 export interface Course {
