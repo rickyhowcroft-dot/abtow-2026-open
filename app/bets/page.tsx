@@ -419,10 +419,11 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
           </div>
 
           {slot.showTip && (
-            <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 mb-3 space-y-3">
-              <p className="font-bold text-base text-amber-900">🎰 Adjust the line — trust your vibes.</p>
-              <p className="text-sm text-gray-600 italic">The math is good. The math doesn&apos;t know what you know. Ask yourself:</p>
-              <ul className="space-y-2 text-sm text-gray-800">
+            <div className="bg-amber-50 border-2 border-amber-300 rounded-2xl p-4 mb-3">
+              <p className="font-bold text-base text-amber-900 mb-3">🎰 Adjust the line — trust your vibes.</p>
+              <p className="text-sm text-gray-600 italic mb-0.5">The math is good.</p>
+              <p className="text-sm text-gray-600 italic mb-3">The math doesn&apos;t know what you know. Ask yourself:</p>
+              <ul className="space-y-2 text-sm text-gray-800 mb-4">
                 <li>🍺 Was someone over-served at dinner last night?</li>
                 <li>🤢 Are they nursing a hangover that could floor a horse?</li>
                 <li>😴 Did they look half-dead on the first tee?</li>
