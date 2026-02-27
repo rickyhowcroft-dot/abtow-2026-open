@@ -286,7 +286,7 @@ export default function PlayerProfilePage() {
                   </div>
                 </div>
 
-                {/* Bets needing acceptance — shown first */}
+                {/* Bets needing acceptance */}
                 {playerBets.filter(b => {
                   if (b.status !== 'pending') return false
                   const acceptorId = b.proposer_side === 'side1' ? b.side2_player_id : b.side1_player_id
@@ -297,6 +297,63 @@ export default function PlayerProfilePage() {
                     <div className="text-xs text-yellow-600">Check the box on each bet to accept.</div>
                   </div>
                 )}
+
+                {/* Settled result alerts */}
+                {playerBets.filter(b => ['side1_won','side2_won','push'].includes(b.status)).map(b => {
+                  const vIs1 = player.id === b.side1_player_id
+                  const vWon  = (vIs1 && b.status === 'side1_won') || (!vIs1 && b.status === 'side2_won')
+                  const vLost = (vIs1 && b.status === 'side2_won') || (!vIs1 && b.status === 'side1_won')
+                  const winP  = b.status === 'side1_won' ? b.side1_player : b.side2_player
+                  const losP  = b.status === 'side1_won' ? b.side2_player : b.side1_player
+                  const winN  = playerDisplayName(winP)
+                  const losN  = playerDisplayName(losP)
+                  const amt   = b.status === 'side1_won' ? b.side2_amount : b.side1_amount
+                  const label = betTypeLabel(b.bet_type)
+
+                  if (b.status === 'push') return (
+                    <div key={b.id} className="bg-amber-50 border border-amber-300 rounded-xl p-3 flex items-center gap-3">
+                      <span className="text-xl">🤝</span>
+                      <div><div className="text-sm font-bold text-amber-800">Push — {label}</div>
+                      <div className="text-xs text-amber-600">No money changes hands</div></div>
+                    </div>
+                  )
+                  if (vWon) return (
+                    <div key={b.id} className="bg-emerald-50 border-2 border-emerald-400 rounded-xl p-3 flex items-center gap-3">
+                      <span className="text-xl shrink-0">🏆</span>
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-bold text-emerald-800">You won — {label}</div>
+                        <div className="text-xs text-emerald-600">${Number(amt).toLocaleString()} from {losN}</div>
+                      </div>
+                      {losP.venmo_handle && (
+                        <a href={`https://venmo.com/${losP.venmo_handle}`} target="_blank" rel="noopener noreferrer"
+                          className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-[#008CFF] text-white text-xs font-bold rounded-full">
+                          <svg width="10" height="10" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
+                          Request
+                        </a>
+                      )}
+                    </div>
+                  )
+                  if (vLost) return (
+                    <div key={b.id} className="rounded-xl overflow-hidden border-2 border-red-300">
+                      <img src="/tywin.jpg" alt="" className="w-full h-24 object-cover" style={{objectPosition:'center 15%'}} />
+                      <div className="bg-red-50 p-3 flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-red-900">📜 You lost — {label}</div>
+                          <div className="text-xs text-red-700">You owe {winN} <strong>${Number(amt).toLocaleString()}</strong></div>
+                          <div className="text-xs text-red-500 italic">&ldquo;A Lannister always pays their debts.&rdquo;</div>
+                        </div>
+                        {winP.venmo_handle && (
+                          <a href={`https://venmo.com/${winP.venmo_handle}`} target="_blank" rel="noopener noreferrer"
+                            className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-[#008CFF] text-white text-xs font-bold rounded-full">
+                            <svg width="10" height="10" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
+                            Pay
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )
+                  return null
+                })}
 
                 {/* Bet list */}
                 {playerBets.map(bet => {
