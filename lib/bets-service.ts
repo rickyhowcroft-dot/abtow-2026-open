@@ -110,17 +110,9 @@ export async function cancelBet(betId: string): Promise<void> {
   if (error) throw error
 }
 
-export async function settleBetsForMatch(
-  matchId: string,
-  frontWinner: 'side1' | 'side2' | 'push',
-  backWinner: 'side1' | 'side2' | 'push',
-  overallWinner: 'side1' | 'side2' | 'push'
-): Promise<void> {
+export async function settleBetsForMatch(matchId: string): Promise<void> {
   const { error } = await supabase.rpc('settle_bets_for_match', {
     p_match_id: matchId,
-    p_front_winner: frontWinner,
-    p_back_winner: backWinner,
-    p_overall_winner: overallWinner,
   })
   if (error) throw error
 }

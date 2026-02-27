@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Layout from '@/app/components/Layout'
+import { settleBetsForMatch } from '@/lib/bets-service'
 
 const ADMIN_PASSWORD = 'FuckCalder'
 const ADMIN_KEY = 'abtow_admin_auth'
@@ -90,6 +91,10 @@ export default function AdminPage() {
     })
     if (!error) {
       setMatches(prev => prev.map(m => m.id === matchId ? { ...m, scores_locked: !currentlyLocked } : m))
+      // Auto-settle bets when locking (scores are final)
+      if (!currentlyLocked) {
+        settleBetsForMatch(matchId).catch(e => console.warn('Bet settlement:', e))
+      }
     }
     setToggling(null)
   }
