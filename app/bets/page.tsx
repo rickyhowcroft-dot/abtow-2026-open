@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import {
-  getOdds, getNineHoleOdds, teamEffectiveHcp, applyTease,
+  getOdds, teamEffectiveHcp, teaseOdds,
   formatMoneyline, PLAYER_HCPS,
 } from '@/lib/monte-carlo'
 import {
@@ -48,10 +48,6 @@ function teamHcp(names: string[]): number {
   return names.length === 1
     ? (PLAYER_HCPS[names[0]] ?? 10)
     : teamEffectiveHcp(names.map(n => PLAYER_HCPS[n] ?? 10))
-}
-
-function getMatchOdds(betType: 'front' | 'back' | 'overall', hcp1: number, hcp2: number) {
-  return betType === 'overall' ? getOdds(hcp1, hcp2) : getNineHoleOdds(hcp1, hcp2)
 }
 
 function mlColor(ml: number) {
@@ -261,9 +257,8 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
   const side1PlayerId = mySide === 'side1' ? myPlayerId : opponentPlayerId
   const side2PlayerId = mySide === 'side2' ? myPlayerId : opponentPlayerId
 
-  function slotMl(type: 'front' | 'back' | 'overall', tease: number) {
-    const base = getMatchOdds(type, hcp1, hcp2)
-    return applyTease(base.aMoneyline, base.bMoneyline, tease)
+  function slotMl(type: 'front' | 'back' | 'overall', strokes: number): [number, number] {
+    return teaseOdds(hcp1, hcp2, strokes, type)
   }
 
   function updateSlot(type: 'front' | 'back' | 'overall', patch: Partial<BetSlot>) {
@@ -366,7 +361,14 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
           <div className="flex justify-between items-center">
             <div>
               <div className="text-xs font-bold text-emerald-700 uppercase tracking-wide">{label} ✓</div>
-              <div className="text-sm font-bold text-gray-800 mt-0.5">${parseInt(slot.amount).toLocaleString()} · line {formatMoneyline(myMl)}{slot.tease !== 0 ? ` (teased ${slot.tease > 0 ? '+' : ''}${slot.tease})` : ''}</div>
+              <div className="text-sm font-bold text-gray-800 mt-0.5">
+                ${parseInt(slot.amount).toLocaleString()} · {formatMoneyline(myMl)}
+                {slot.tease !== 0 && (
+                  <span className="text-xs font-normal text-gray-500 ml-1">
+                    ({slot.tease > 0 ? `+${slot.tease}` : slot.tease} strokes to {slot.tease > 0 ? side1Names[0] : side2Names[0]})
+                  </span>
+                )}
+              </div>
             </div>
             <span className="text-xs text-emerald-600 underline">edit</span>
           </div>
@@ -406,16 +408,22 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
         {/* Tease */}
         <div>
           <div className="flex justify-between items-center text-[10px] text-gray-400 mb-0.5">
-            <span>← Favor {side2Names[0]}</span>
+            <span>← +strokes to {side2Names[0]}</span>
             <div className="flex items-center gap-1">
-              <span className="font-medium text-gray-500">{slot.tease === 0 ? 'Baseline' : `${slot.tease > 0 ? '+' : ''}${slot.tease} pts`}</span>
+              <span className="font-medium text-gray-500">
+                {slot.tease === 0
+                  ? 'No strokes'
+                  : slot.tease > 0
+                    ? `+${slot.tease} to ${side1Names[0]}`
+                    : `+${Math.abs(slot.tease)} to ${side2Names[0]}`}
+              </span>
               <button
                 onClick={() => updateSlot(type, { showTip: !slot.showTip })}
                 className={`w-5 h-5 rounded-full transition-colors flex items-center justify-center text-[10px] font-bold shrink-0 ${slot.showTip ? 'bg-amber-400 text-white' : 'bg-gray-200 text-gray-500 hover:bg-[#2a6b7c] hover:text-white'}`}
                 title="What is this?"
               >ℹ</button>
             </div>
-            <span>Favor {side1Names[0]} →</span>
+            <span>+strokes to {side1Names[0]} →</span>
           </div>
 
           {slot.showTip && (
@@ -437,13 +445,13 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
           )}
 
           <input
-            type="range" min={-50} max={50} step={5}
+            type="range" min={-5} max={5} step={1}
             value={slot.tease}
             onChange={e => updateSlot(type, { tease: Number(e.target.value) })}
             className="w-full accent-[#2a6b7c]"
           />
           <div className="text-center mt-1">
-            <span className="text-[10px] text-gray-400">Your line: </span>
+            <span className="text-[10px] text-gray-400">{slot.tease !== 0 ? 'Adjusted line: ' : 'Your line: '}</span>
             <span className={`text-sm font-bold ${mlColor(myMl)}`}>{formatMoneyline(myMl)}</span>
           </div>
         </div>

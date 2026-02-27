@@ -151,10 +151,24 @@ export function teamEffectiveHcp(hcps: number[]): number {
 }
 
 /**
- * Apply a tease adjustment.
- * tease > 0 improves side1's line (more positive / less negative).
- * side2 gets the opposite adjustment.
+ * Stroke-adjusted odds.
+ * strokes > 0 = extra strokes given to side A (their effective hcp increases → better odds).
+ * strokes < 0 = extra strokes given to side B.
+ * Uses the actual MC lookup so adjustments are grounded in simulation data.
+ * Range: -5 to +5 whole strokes.
  */
+export function teaseOdds(
+  hcpA: number,
+  hcpB: number,
+  strokes: number,
+  betType: 'front' | 'back' | 'overall',
+): [number, number] {
+  const adjA = hcpA + strokes
+  const odds = betType === 'overall' ? getOdds(adjA, hcpB) : getNineHoleOdds(adjA, hcpB)
+  return [odds.aMoneyline, odds.bMoneyline]
+}
+
+/** @deprecated Use teaseOdds() — this operates on raw moneylines, not stroke math */
 export function applyTease(side1Ml: number, side2Ml: number, tease: number): [number, number] {
   const adj1 = Math.round((side1Ml + tease) / 5) * 5
   const adj2 = Math.round((side2Ml - tease) / 5) * 5
