@@ -124,7 +124,15 @@ function BetDetailModal({
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4" onClick={onClose}>
       <div className="bg-[#f5f0e8] rounded-2xl w-full max-w-md shadow-2xl p-5" style={{ fontFamily: 'Georgia, serif' }} onClick={e => e.stopPropagation()}>
         <div className="flex justify-between items-start mb-4">
-          <h2 className="text-lg font-bold text-[#2a6b7c]">Bet Details</h2>
+          <div>
+            <h2 className="text-lg font-bold text-[#2a6b7c]">Bet Details</h2>
+            {bet.match && (
+              <p className="text-xs text-gray-400 mt-0.5">
+                {bet.match.format === 'best_ball' ? 'Best Ball' : bet.match.format === 'stableford' ? 'Stableford' : 'Individual'}
+                {' · '}Day {bet.match.day} · Group {bet.match.group_number}
+              </p>
+            )}
+          </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
         </div>
 

@@ -28,15 +28,23 @@ export interface PlayerRef {
   venmo_handle?: string | null
 }
 
+export interface MatchRef {
+  day: number
+  group_number: number
+  format: string
+}
+
 export interface BetWithPlayers extends Bet {
   side1_player: PlayerRef
   side2_player: PlayerRef
+  match?: MatchRef
 }
 
 const BET_SELECT = `
   *,
   side1_player:side1_player_id(id, name, first_name, last_name, avatar_url, venmo_handle),
-  side2_player:side2_player_id(id, name, first_name, last_name, avatar_url, venmo_handle)
+  side2_player:side2_player_id(id, name, first_name, last_name, avatar_url, venmo_handle),
+  match:match_id(day, group_number, format)
 `
 
 export async function getBetsForMatch(matchId: string): Promise<BetWithPlayers[]> {

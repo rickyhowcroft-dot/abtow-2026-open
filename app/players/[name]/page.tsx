@@ -8,6 +8,15 @@ import type { Player } from '@/lib/scoring'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
 import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, type BetWithPlayers, type Bet } from '@/lib/bets-service'
 import { formatMoneyline } from '@/lib/monte-carlo'
+import type { MatchRef } from '@/lib/bets-service'
+
+function matchLabel(match?: MatchRef): string {
+  if (!match) return ''
+  const fmt = match.format === 'best_ball' ? 'Best Ball'
+    : match.format === 'stableford' ? 'Stableford'
+    : 'Individual'
+  return `Day ${match.day} · ${fmt} · G${match.group_number}`
+}
 
 function PlayerAvatar({ player }: { player: Player }) {
   const initials = player.first_name && player.last_name 
@@ -34,7 +43,7 @@ function PlayerAvatar({ player }: { player: Player }) {
 }
 
 function AcceptBetInline({ bet, s1Name, s2Name, onAccepted }: {
-  bet: BetWithPlayers; s1Name: string; s2Name: string; onAccepted: () => void
+  bet: BetWithPlayers; s1Name: string; s2Name: string; onAccepted: (betId: string) => void
 }) {
   const [checked, setChecked] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -44,7 +53,7 @@ function AcceptBetInline({ bet, s1Name, s2Name, onAccepted }: {
   async function handle() {
     if (!checked) { setErr('Check the box to confirm'); return }
     setLoading(true)
-    try { await acceptBet(bet.id); onAccepted() }
+    try { await acceptBet(bet.id); onAccepted(bet.id) }
     catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Failed') }
     finally { setLoading(false) }
   }
@@ -401,6 +410,9 @@ export default function PlayerProfilePage() {
                       >
                         <div className="flex justify-between items-start">
                           <div className="min-w-0">
+                            {matchLabel(bet.match) && (
+                              <div className="text-xs text-gray-400 mb-0.5">{matchLabel(bet.match)}</div>
+                            )}
                             <div className="text-sm font-semibold text-gray-800">{betTypeLabel(bet.bet_type)} vs {oppName.split(' ')[0]}</div>
                             <div className="text-xs text-gray-400 mt-0.5">
                               Your line: <span className={`font-bold ${mlColorClass}`}>{myLine}</span>
@@ -431,7 +443,9 @@ export default function PlayerProfilePage() {
                       {/* Inline acceptance */}
                       {iNeedToAccept && (
                         <div className="border-t border-yellow-200 bg-yellow-50 px-4 py-3 rounded-b-xl">
-                          <AcceptBetInline bet={bet} s1Name={s1Name} s2Name={s2Name} onAccepted={() => fetchBets(player.id)} />
+                          <AcceptBetInline bet={bet} s1Name={s1Name} s2Name={s2Name} onAccepted={(betId) => {
+                            setPlayerBets(prev => prev.map(b => b.id === betId ? { ...b, status: 'active' } : b))
+                          }} />
                         </div>
                       )}
                     </div>
@@ -448,7 +462,14 @@ export default function PlayerProfilePage() {
         <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4" onClick={() => setViewBet(null)}>
           <div className="bg-[#f5f0e8] rounded-2xl w-full max-w-md shadow-2xl p-5" style={{ fontFamily: 'Georgia, serif' }} onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-start mb-4">
-              <h2 className="text-lg font-bold text-[#2a6b7c]">Bet Details</h2>
+              <div>
+                <h2 className="text-lg font-bold text-[#2a6b7c]">Bet Details</h2>
+                {viewBet.match && (
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {matchLabel(viewBet.match)}
+                  </p>
+                )}
+              </div>
               <button onClick={() => setViewBet(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
 
