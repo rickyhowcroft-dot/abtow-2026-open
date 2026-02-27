@@ -284,9 +284,17 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
   function advanceAfter(type: 'front' | 'back' | 'overall') {
     const idx = BET_ORDER.indexOf(type)
     const next = BET_ORDER[idx + 1]
-    if (next) {
-      setSlots(prev => ({ ...prev, [next]: { ...prev[next], status: 'active' } }))
-    }
+    if (!next) return
+    setSlots(prev => {
+      const patch: Partial<BetSlot> = { status: 'active' }
+      if (next === 'overall') {
+        // Sum strokes from logged front/back bets — overall net is front+back combined
+        const frontTease = prev.front.status === 'logged' ? prev.front.tease : 0
+        const backTease  = prev.back.status  === 'logged' ? prev.back.tease  : 0
+        patch.tease = Math.min(5, Math.max(-5, frontTease + backTease))
+      }
+      return { ...prev, [next]: { ...prev[next], ...patch } }
+    })
   }
 
   function logSlot(type: 'front' | 'back' | 'overall') {
@@ -399,6 +407,17 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
     return (
       <div className="rounded-xl border-2 border-[#2a6b7c] bg-white p-4 space-y-3">
         <div className="text-xs font-bold text-[#2a6b7c] uppercase tracking-wide">{label}</div>
+
+        {/* Auto-set note for Overall */}
+        {type === 'overall' && slot.tease !== 0 && (
+          <div className="flex items-start gap-1.5 bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs text-blue-700">
+            <span className="shrink-0 mt-0.5">🔗</span>
+            <span>
+              Line auto-set from your Front &amp; Back adjustments ({slot.tease > 0 ? '+' : ''}{slot.tease} strokes total).
+              Adjust below if needed.
+            </span>
+          </div>
+        )}
 
         {/* Lines */}
         <div className="flex justify-around text-center bg-gray-50 rounded-lg py-2.5 px-2">
