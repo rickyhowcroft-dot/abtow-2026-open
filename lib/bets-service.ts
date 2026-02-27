@@ -12,7 +12,8 @@ export interface Bet {
   side1_ml: number
   side2_ml: number
   tease_adjustment: number
-  status: 'active' | 'side1_won' | 'side2_won' | 'push' | 'cancelled'
+  proposer_side: 'side1' | 'side2'
+  status: 'pending' | 'active' | 'side1_won' | 'side2_won' | 'push' | 'cancelled'
   settled_at: string | null
   created_at: string
   updated_at: string
@@ -77,6 +78,7 @@ export async function createBet(params: {
   side1Ml: number
   side2Ml: number
   teaseAdjustment?: number
+  proposerSide?: 'side1' | 'side2'
 }): Promise<Bet> {
   const { data, error } = await supabase.rpc('create_bet', {
     p_match_id: params.matchId,
@@ -88,9 +90,15 @@ export async function createBet(params: {
     p_side1_ml: params.side1Ml,
     p_side2_ml: params.side2Ml,
     p_tease_adjustment: params.teaseAdjustment ?? 0,
+    p_proposer_side: params.proposerSide ?? 'side1',
   })
   if (error) throw error
   return data as Bet
+}
+
+export async function acceptBet(betId: string): Promise<void> {
+  const { error } = await supabase.rpc('accept_bet', { p_bet_id: betId })
+  if (error) throw error
 }
 
 export async function cancelBet(betId: string): Promise<void> {
@@ -127,6 +135,7 @@ export function betTypeLabel(type: 'front' | 'back' | 'overall'): string {
 
 export function betStatusLabel(status: Bet['status'], side1Name: string, side2Name: string): string {
   switch (status) {
+    case 'pending': return 'Pending'
     case 'active': return 'Active'
     case 'side1_won': return `${side1Name} Wins`
     case 'side2_won': return `${side2Name} Wins`

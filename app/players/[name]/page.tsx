@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Player } from '@/lib/scoring'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
-import { getBetsForPlayer, playerDisplayName, betTypeLabel, betStatusLabel, type BetWithPlayers, type Bet } from '@/lib/bets-service'
+import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, type BetWithPlayers, type Bet } from '@/lib/bets-service'
 import { formatMoneyline } from '@/lib/monte-carlo'
 
 function PlayerAvatar({ player }: { player: Player }) {
@@ -29,6 +29,37 @@ function PlayerAvatar({ player }: { player: Player }) {
           {initials}
         </div>
       )}
+    </div>
+  )
+}
+
+function AcceptBetInline({ bet, s1Name, s2Name, onAccepted }: {
+  bet: BetWithPlayers; s1Name: string; s2Name: string; onAccepted: () => void
+}) {
+  const [checked, setChecked] = useState(false)
+  const [loading, setLoading] = useState(false)
+  const [err, setErr] = useState('')
+  const proposerName = bet.proposer_side === 'side1' ? s1Name : s2Name
+
+  async function handle() {
+    if (!checked) { setErr('Check the box to confirm'); return }
+    setLoading(true)
+    try { await acceptBet(bet.id); onAccepted() }
+    catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Failed') }
+    finally { setLoading(false) }
+  }
+
+  return (
+    <div className="space-y-2">
+      <p className="text-xs text-yellow-800 font-semibold">{proposerName.split(' ')[0]} wants to bet with you</p>
+      <label className="flex items-start gap-2 cursor-pointer">
+        <input type="checkbox" checked={checked} onChange={e => { setChecked(e.target.checked); setErr('') }} className="mt-0.5 accent-[#2a6b7c]" />
+        <span className="text-xs text-gray-700">I acknowledge and accept this bet</span>
+      </label>
+      {err && <p className="text-red-500 text-xs">{err}</p>}
+      <button onClick={handle} disabled={loading} className="w-full py-2 bg-[#2a6b7c] text-white rounded-lg text-xs font-bold disabled:opacity-50">
+        {loading ? 'Accepting...' : '✓ Accept Bet'}
+      </button>
     </div>
   )
 }
@@ -239,11 +270,22 @@ export default function PlayerProfilePage() {
                   </div>
                 </div>
 
+                {/* Bets needing acceptance — shown first */}
+                {playerBets.filter(b => {
+                  if (b.status !== 'pending') return false
+                  const acceptorId = b.proposer_side === 'side1' ? b.side2_player_id : b.side1_player_id
+                  return acceptorId === player.id
+                }).length > 0 && (
+                  <div className="bg-yellow-50 border border-yellow-300 rounded-xl p-3">
+                    <div className="text-sm font-bold text-yellow-800 mb-1">⏳ Bets awaiting your acceptance</div>
+                    <div className="text-xs text-yellow-600">Check the box on each bet to accept.</div>
+                  </div>
+                )}
+
                 {/* Bet list */}
                 {playerBets.map(bet => {
                   const isS1 = bet.side1_player_id === player.id
                   const myMl = isS1 ? bet.side1_ml : bet.side2_ml
-                  const oppMl = isS1 ? bet.side2_ml : bet.side1_ml
                   const myAmount = isS1 ? bet.side1_amount : bet.side2_amount
                   const opponent = isS1 ? bet.side2_player : bet.side1_player
                   const oppName = playerDisplayName(opponent)
@@ -251,38 +293,53 @@ export default function PlayerProfilePage() {
                   const s2Name = playerDisplayName(bet.side2_player)
                   const myLine = formatMoneyline(myMl)
                   const mlColorClass = myMl < -110 ? 'text-emerald-600' : myMl > 110 ? 'text-amber-500' : 'text-gray-600'
+                  const isPending = bet.status === 'pending'
+                  const acceptorId = bet.proposer_side === 'side1' ? bet.side2_player_id : bet.side1_player_id
+                  const iNeedToAccept = isPending && acceptorId === player.id
+                  const iProposed = isPending && acceptorId !== player.id
 
                   return (
-                    <button
-                      key={bet.id}
-                      onClick={() => setViewBet(bet)}
-                      className="w-full text-left bg-white rounded-xl p-4 shadow-sm border border-gray-100 hover:border-[#2a6b7c]/30 transition-colors"
-                    >
-                      <div className="flex justify-between items-start">
-                        <div className="min-w-0">
-                          <div className="text-sm font-semibold text-gray-800">{betTypeLabel(bet.bet_type)} vs {oppName.split(' ')[0]}</div>
-                          <div className="text-xs text-gray-400 mt-0.5">
-                            Your line: <span className={`font-bold ${mlColorClass}`}>{myLine}</span>
-                            {bet.tease_adjustment !== 0 && <span className="ml-1 text-gray-300">(teased {bet.tease_adjustment > 0 ? `+${bet.tease_adjustment}` : bet.tease_adjustment})</span>}
+                    <div key={bet.id} className={`bg-white rounded-xl shadow-sm border transition-colors ${iNeedToAccept ? 'border-yellow-300' : 'border-gray-100'}`}>
+                      <button
+                        onClick={() => setViewBet(bet)}
+                        className="w-full text-left p-4"
+                      >
+                        <div className="flex justify-between items-start">
+                          <div className="min-w-0">
+                            <div className="text-sm font-semibold text-gray-800">{betTypeLabel(bet.bet_type)} vs {oppName.split(' ')[0]}</div>
+                            <div className="text-xs text-gray-400 mt-0.5">
+                              Your line: <span className={`font-bold ${mlColorClass}`}>{myLine}</span>
+                              {bet.tease_adjustment !== 0 && <span className="ml-1 text-gray-300">(teased {bet.tease_adjustment > 0 ? `+${bet.tease_adjustment}` : bet.tease_adjustment})</span>}
+                            </div>
+                          </div>
+                          <div className="text-right shrink-0 ml-3">
+                            <div className="text-base font-bold text-gray-900">${Number(myAmount).toLocaleString()}</div>
+                            <div className="mt-1">
+                              <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
+                                isPending ? 'bg-yellow-100 text-yellow-700' :
+                                bet.status === 'active' ? 'bg-blue-100 text-blue-700' :
+                                (bet.status === 'side1_won' && isS1) || (bet.status === 'side2_won' && !isS1) ? 'bg-emerald-100 text-emerald-700' :
+                                bet.status === 'push' ? 'bg-amber-100 text-amber-700' :
+                                'bg-red-100 text-red-600'
+                              }`}>
+                                {iProposed ? 'Awaiting acceptance' :
+                                 iNeedToAccept ? 'Needs your OK' :
+                                 bet.status === 'active' ? 'Active' :
+                                 (bet.status === 'side1_won' && isS1) || (bet.status === 'side2_won' && !isS1) ? '✓ Won' :
+                                 bet.status === 'push' ? 'Push' : '✗ Lost'}
+                              </span>
+                            </div>
                           </div>
                         </div>
-                        <div className="text-right shrink-0 ml-3">
-                          <div className="text-base font-bold text-gray-900">${Number(myAmount).toLocaleString()}</div>
-                          <div className="mt-1">
-                            <span className={`text-xs px-2 py-0.5 rounded-full font-medium ${
-                              bet.status === 'active' ? 'bg-gray-100 text-gray-600' :
-                              (bet.status === 'side1_won' && isS1) || (bet.status === 'side2_won' && !isS1) ? 'bg-emerald-100 text-emerald-700' :
-                              bet.status === 'push' ? 'bg-amber-100 text-amber-700' :
-                              'bg-red-100 text-red-600'
-                            }`}>
-                              {bet.status === 'active' ? 'Active' :
-                               (bet.status === 'side1_won' && isS1) || (bet.status === 'side2_won' && !isS1) ? '✓ Won' :
-                               bet.status === 'push' ? 'Push' : '✗ Lost'}
-                            </span>
-                          </div>
+                      </button>
+
+                      {/* Inline acceptance */}
+                      {iNeedToAccept && (
+                        <div className="border-t border-yellow-200 bg-yellow-50 px-4 py-3 rounded-b-xl">
+                          <AcceptBetInline bet={bet} s1Name={s1Name} s2Name={s2Name} onAccepted={() => fetchBets(player.id)} />
                         </div>
-                      </div>
-                    </button>
+                      )}
+                    </div>
                   )
                 })}
               </>
