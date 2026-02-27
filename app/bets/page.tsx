@@ -215,6 +215,8 @@ function BetDetailModal({
 
 // ─── Add Bet Modal — 4-step wizard ──────────────────────────────────────────
 
+// ─── Add Bet Modal — sequential accordion flow ──────────────────────────────
+
 interface AddBetModalProps {
   matchId: string
   day: number
@@ -227,84 +229,233 @@ interface AddBetModalProps {
 }
 
 function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onClose, onCreated }: AddBetModalProps) {
-  const [step, setStep] = useState(1)
-
-  // Step 1: who are you
+  // ── Steps 1–3
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
   const [myPlayerId, setMyPlayerId] = useState('')
-
-  // Step 2: which side are you backing
   const [mySide, setMySide] = useState<'side1' | 'side2' | ''>('')
-
-  // Step 3: who are you betting with (from the OTHER side)
   const [opponentPlayerId, setOpponentPlayerId] = useState('')
 
-  // Step 4: bet details
-  const [betType, setBetType] = useState<'front' | 'back' | 'overall'>('overall')
-  const [tease, setTease] = useState(0)
-  const [myAmount, setMyAmount] = useState('')
-  const [myAmountError, setMyAmountError] = useState('')
+  // ── Step 4 — one slot per bet type
+  type SlotStatus = 'idle' | 'active' | 'logged' | 'skipped'
+  interface BetSlot { amount: string; amountError: string; tease: number; status: SlotStatus }
+  const mkSlot = (status: SlotStatus): BetSlot => ({ amount: '', amountError: '', tease: 0, status })
+  const [slots, setSlots] = useState<Record<'front' | 'back' | 'overall', BetSlot>>({
+    front:   mkSlot('active'),
+    back:    mkSlot('idle'),
+    overall: mkSlot('idle'),
+  })
+  const [missingPrompt, setMissingPrompt] = useState(false)
   const [submitting, setSubmitting] = useState(false)
   const [submitError, setSubmitError] = useState('')
 
+  const BET_ORDER: ('front' | 'back' | 'overall')[] = ['front', 'back', 'overall']
   const isTeam = side1Names.length > 1
   const hcp1 = teamHcp(side1Names)
   const hcp2 = teamHcp(side2Names)
-  const baseOdds = getMatchOdds(betType, hcp1, hcp2)
-  const [side1Ml, side2Ml] = applyTease(baseOdds.aMoneyline, baseOdds.bMoneyline, tease)
-  const myMl = mySide === 'side1' ? side1Ml : side2Ml
-  const oppMl = mySide === 'side1' ? side2Ml : side1Ml
 
   const myPlayer = players.find(p => p.id === myPlayerId)
-  // Any player can bet on any match — opponent = anyone except yourself
-  const opponentPlayers = players.filter(p => p.id !== myPlayerId)
-
-  // Side 1 and 2 player IDs for the DB
+  const myPlayerName = myPlayer ? (myPlayer.first_name && myPlayer.last_name ? `${myPlayer.first_name} ${myPlayer.last_name}` : myPlayer.name) : ''
+  const opponentPlayers = players.filter(p => p.id !== myPlayerId).sort((a, b) => (a.first_name ?? a.name).localeCompare(b.first_name ?? b.name))
   const side1PlayerId = mySide === 'side1' ? myPlayerId : opponentPlayerId
   const side2PlayerId = mySide === 'side2' ? myPlayerId : opponentPlayerId
 
-  function validateAmount(val: string) {
-    const cleaned = val.replace(/[^0-9]/g, '')
-    setMyAmount(cleaned)
-    if (val !== cleaned) { setMyAmountError('Numbers only — no letters or symbols'); return }
-    if (cleaned.length > 5) { setMyAmountError('Max $99,999'); return }
-    setMyAmountError('')
+  function slotMl(type: 'front' | 'back' | 'overall', tease: number) {
+    const base = getMatchOdds(type, hcp1, hcp2)
+    return applyTease(base.aMoneyline, base.bMoneyline, tease)
   }
 
-  function canAdvance() {
-    if (step === 1) return !!myPlayerId
-    if (step === 2) return !!mySide
-    if (step === 3) return !!opponentPlayerId
-    return true
+  function updateSlot(type: 'front' | 'back' | 'overall', patch: Partial<BetSlot>) {
+    setSlots(prev => ({ ...prev, [type]: { ...prev[type], ...patch } }))
   }
+
+  function validateAmount(val: string, type: 'front' | 'back' | 'overall') {
+    const cleaned = val.replace(/[^0-9]/g, '')
+    const err = val !== cleaned ? 'Numbers only' : cleaned.length > 5 ? 'Max $99,999' : ''
+    updateSlot(type, { amount: cleaned, amountError: err })
+  }
+
+  function advanceAfter(type: 'front' | 'back' | 'overall') {
+    const idx = BET_ORDER.indexOf(type)
+    const next = BET_ORDER[idx + 1]
+    if (next) {
+      setSlots(prev => ({ ...prev, [next]: { ...prev[next], status: 'active' } }))
+    }
+  }
+
+  function logSlot(type: 'front' | 'back' | 'overall') {
+    const slot = slots[type]
+    const amt = parseInt(slot.amount)
+    if (!slot.amount || isNaN(amt) || amt < 1) {
+      updateSlot(type, { amountError: 'Enter an amount to add this bet' })
+      return
+    }
+    updateSlot(type, { status: 'logged', amountError: '' })
+    advanceAfter(type)
+  }
+
+  function skipSlot(type: 'front' | 'back' | 'overall') {
+    updateSlot(type, { status: 'skipped', amount: '', amountError: '' })
+    advanceAfter(type)
+  }
+
+  function reactivateSlot(type: 'front' | 'back' | 'overall') {
+    updateSlot(type, { status: 'active' })
+  }
+
+  const loggedSlots = BET_ORDER.filter(t => slots[t].status === 'logged')
+  const allResolved = BET_ORDER.every(t => slots[t].status === 'logged' || slots[t].status === 'skipped')
+  const onlyOverall = loggedSlots.length === 1 && slots.overall.status === 'logged' && slots.front.status === 'skipped' && slots.back.status === 'skipped'
 
   async function handleSubmit() {
-    const amt = parseInt(myAmount)
-    if (!myAmount || isNaN(amt) || amt < 1) { setMyAmountError('Enter a valid amount'); return }
+    if (loggedSlots.length === 0) { setSubmitError('Log at least one bet first'); return }
+    if (onlyOverall && !missingPrompt) { setMissingPrompt(true); return }
     setSubmitting(true)
     setSubmitError('')
     try {
-      await createBet({
-        matchId,
-        betType,
-        side1PlayerId,
-        side1Amount: amt,
-        side2PlayerId,
-        side2Amount: amt,
-        side1Ml,
-        side2Ml,
-        teaseAdjustment: tease,
-        proposerSide: mySide as 'side1' | 'side2',
-      })
+      await Promise.all(loggedSlots.map(type => {
+        const slot = slots[type]
+        const [s1Ml, s2Ml] = slotMl(type, slot.tease)
+        return createBet({
+          matchId, betType: type,
+          side1PlayerId, side1Amount: parseInt(slot.amount),
+          side2PlayerId, side2Amount: parseInt(slot.amount),
+          side1Ml: s1Ml, side2Ml: s2Ml,
+          teaseAdjustment: slot.tease,
+          proposerSide: mySide as 'side1' | 'side2',
+        })
+      }))
       onCreated()
     } catch (e: unknown) {
-      setSubmitError(e instanceof Error ? e.message : 'Failed to create bet')
+      setSubmitError(e instanceof Error ? e.message : 'Failed to submit')
     } finally {
       setSubmitting(false)
     }
   }
 
+  function addMissingSlots() {
+    setMissingPrompt(false)
+    setSlots(prev => ({
+      ...prev,
+      front: prev.front.status === 'skipped' ? { ...prev.front, status: 'active', amount: '', amountError: '' } : prev.front,
+      back:  prev.back.status === 'skipped'  ? { ...prev.back,  status: 'active', amount: '', amountError: '' } : prev.back,
+    }))
+  }
+
   const formatLabel = isTeam ? (day === 1 ? 'Best Ball' : 'Stableford') : 'Individual'
-  const myPlayerName = myPlayer ? (myPlayer.first_name && myPlayer.last_name ? `${myPlayer.first_name} ${myPlayer.last_name}` : myPlayer.name) : ''
+  const mySideLabel = mySide === 'side1' ? side1Names.join(' & ') : mySide === 'side2' ? side2Names.join(' & ') : ''
+
+  // ── Slot accordion component
+  function BetSlotPanel({ type, label }: { type: 'front' | 'back' | 'overall'; label: string }) {
+    const slot = slots[type]
+    const [s1Ml, s2Ml] = slotMl(type, slot.tease)
+    const myMl = mySide === 'side1' ? s1Ml : s2Ml
+
+    if (slot.status === 'idle') {
+      return (
+        <div className="rounded-xl border border-gray-100 bg-gray-50 px-4 py-3 opacity-40">
+          <div className="text-xs font-bold text-gray-400 uppercase tracking-wide">{label}</div>
+        </div>
+      )
+    }
+
+    if (slot.status === 'logged') {
+      return (
+        <button onClick={() => reactivateSlot(type)} className="w-full text-left rounded-xl border-2 border-emerald-300 bg-emerald-50 px-4 py-3">
+          <div className="flex justify-between items-center">
+            <div>
+              <div className="text-xs font-bold text-emerald-700 uppercase tracking-wide">{label} ✓</div>
+              <div className="text-sm font-bold text-gray-800 mt-0.5">${parseInt(slot.amount).toLocaleString()} · line {formatMoneyline(myMl)}{slot.tease !== 0 ? ` (teased ${slot.tease > 0 ? '+' : ''}${slot.tease})` : ''}</div>
+            </div>
+            <span className="text-xs text-emerald-600 underline">edit</span>
+          </div>
+        </button>
+      )
+    }
+
+    if (slot.status === 'skipped') {
+      return (
+        <button onClick={() => reactivateSlot(type)} className="w-full text-left rounded-xl border border-dashed border-gray-300 bg-white px-4 py-3">
+          <div className="flex justify-between items-center">
+            <div className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{label} — skipped</div>
+            <span className="text-xs text-[#2a6b7c] underline">add bet</span>
+          </div>
+        </button>
+      )
+    }
+
+    // active
+    return (
+      <div className="rounded-xl border-2 border-[#2a6b7c] bg-white p-4 space-y-3">
+        <div className="text-xs font-bold text-[#2a6b7c] uppercase tracking-wide">{label}</div>
+
+        {/* Lines */}
+        <div className="flex justify-around text-center bg-gray-50 rounded-lg py-2.5 px-2">
+          <div>
+            <div className="text-[10px] text-gray-400 mb-0.5 truncate max-w-[90px]">{side1Names.join(' & ')}</div>
+            <div className={`text-base font-bold ${mlColor(s1Ml)}`}>{formatMoneyline(s1Ml)}</div>
+          </div>
+          <div className="text-gray-300 self-center text-sm">vs</div>
+          <div>
+            <div className="text-[10px] text-gray-400 mb-0.5 truncate max-w-[90px]">{side2Names.join(' & ')}</div>
+            <div className={`text-base font-bold ${mlColor(s2Ml)}`}>{formatMoneyline(s2Ml)}</div>
+          </div>
+        </div>
+
+        {/* Tease */}
+        <div>
+          <div className="flex justify-between text-[10px] text-gray-400 mb-0.5">
+            <span>← Favor {side2Names[0]}</span>
+            <span className="font-medium text-gray-500">{slot.tease === 0 ? 'Baseline' : `${slot.tease > 0 ? '+' : ''}${slot.tease} pts`}</span>
+            <span>Favor {side1Names[0]} →</span>
+          </div>
+          <input
+            type="range" min={-50} max={50} step={5}
+            value={slot.tease}
+            onChange={e => updateSlot(type, { tease: Number(e.target.value) })}
+            className="w-full accent-[#2a6b7c]"
+          />
+          <div className="text-center mt-1">
+            <span className="text-[10px] text-gray-400">Your line: </span>
+            <span className={`text-sm font-bold ${mlColor(myMl)}`}>{formatMoneyline(myMl)}</span>
+          </div>
+        </div>
+
+        {/* Amount */}
+        <div>
+          <input
+            type="text" inputMode="numeric" pattern="[0-9]*"
+            placeholder="$ amount"
+            maxLength={5}
+            value={slot.amount}
+            onChange={e => validateAmount(e.target.value, type)}
+            onKeyDown={e => { if (e.key === 'Enter') logSlot(type) }}
+            autoFocus
+            className="w-full border-2 border-gray-200 rounded-xl px-4 py-2.5 text-lg font-bold text-center focus:outline-none focus:border-[#2a6b7c]"
+          />
+          {slot.amountError && <p className="text-red-500 text-xs text-center mt-1">{slot.amountError}</p>}
+        </div>
+
+        {/* Actions */}
+        <div className="flex gap-2">
+          {type !== 'overall' ? (
+            <button onClick={() => skipSlot(type)} className="flex-1 py-2 border border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:bg-gray-50">
+              Skip →
+            </button>
+          ) : (
+            <button onClick={() => skipSlot(type)} className="flex-1 py-2 border border-gray-200 text-gray-500 rounded-xl text-sm font-semibold hover:bg-gray-50">
+              Skip
+            </button>
+          )}
+          <button
+            onClick={() => logSlot(type)}
+            className="flex-1 py-2 bg-[#2a6b7c] text-white rounded-xl text-sm font-bold hover:bg-[#235a68] transition-colors"
+          >
+            Add {label} Bet
+          </button>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-end sm:items-center justify-center bg-black/60 p-4" onClick={onClose}>
@@ -322,9 +473,8 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
             </div>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none mt-1">✕</button>
           </div>
-          {/* Step progress */}
           <div className="flex gap-1 mt-3">
-            {[1, 2, 3, 4].map(s => (
+            {[1,2,3,4].map(s => (
               <div key={s} className={`h-1 flex-1 rounded-full transition-colors ${s <= step ? 'bg-[#2a6b7c]' : 'bg-gray-200'}`} />
             ))}
           </div>
@@ -336,55 +486,54 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
           {step === 1 && (
             <div>
               <h3 className="text-base font-bold text-gray-800 mb-1">Who are you?</h3>
-              <p className="text-xs text-gray-400 mb-4">Select your name to get started.</p>
+              <p className="text-xs text-gray-400 mb-3">Tap your name to continue.</p>
               <div className="grid grid-cols-2 gap-2">
-                {players
-                  .sort((a, b) => (a.first_name ?? a.name).localeCompare(b.first_name ?? b.name))
-                  .map(p => {
-                    const name = p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : p.name
-                    const selected = myPlayerId === p.id
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => setMyPlayerId(p.id)}
-                        className={`flex items-center gap-2 p-3 rounded-xl border-2 text-left transition-all ${selected ? 'border-[#2a6b7c] bg-[#2a6b7c]/10' : 'border-gray-200 bg-white hover:border-gray-300'}`}
-                      >
-                        {p.avatar_url ? (
-                          <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-gray-200">
-                            <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
-                          </div>
-                        ) : (
-                          <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white ${p.team === 'Shaft' ? 'bg-blue-500' : 'bg-red-500'}`}>
-                            {(p.first_name?.charAt(0) ?? '') + (p.last_name?.charAt(0) ?? '')}
-                          </div>
-                        )}
-                        <span className="text-xs font-semibold text-gray-800 leading-tight">{name}</span>
-                      </button>
-                    )
-                  })}
+                {players.sort((a, b) => (a.first_name ?? a.name).localeCompare(b.first_name ?? b.name)).map(p => {
+                  const name = p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : p.name
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => { setMyPlayerId(p.id); setStep(2) }}
+                      className="flex items-center gap-2 p-3 rounded-xl border-2 border-gray-200 bg-white hover:border-[#2a6b7c] hover:bg-[#2a6b7c]/5 text-left transition-all"
+                    >
+                      {p.avatar_url ? (
+                        <div className="w-8 h-8 rounded-full overflow-hidden shrink-0 border border-gray-200">
+                          <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
+                        </div>
+                      ) : (
+                        <div className={`w-8 h-8 rounded-full shrink-0 flex items-center justify-center text-xs font-bold text-white ${p.team === 'Shaft' ? 'bg-blue-500' : 'bg-red-500'}`}>
+                          {(p.first_name?.charAt(0) ?? '') + (p.last_name?.charAt(0) ?? '')}
+                        </div>
+                      )}
+                      <span className="text-xs font-semibold text-gray-800 leading-tight">{name}</span>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
 
-          {/* ── Step 2: Who are you backing? ── */}
+          {/* ── Step 2: Which side? ── */}
           {step === 2 && (
             <div>
               <h3 className="text-base font-bold text-gray-800 mb-1">Who are you backing?</h3>
-              <p className="text-xs text-gray-400 mb-4">Pick the side you&apos;re betting <em>on</em>.</p>
+              <p className="text-xs text-gray-400 mb-3">Tap the side you&apos;re betting on.</p>
               <div className="space-y-3">
-                {([['side1', side1Names, hcp1], ['side2', side2Names, hcp2]] as const).map(([sideKey, names, hcp]) => {
-                  const selected = mySide === sideKey
-                  const ml = sideKey === 'side1' ? side1Ml : side2Ml
+                {(['side1', 'side2'] as const).map(sideKey => {
+                  const names = sideKey === 'side1' ? side1Names : side2Names
+                  const hcp = sideKey === 'side1' ? hcp1 : hcp2
+                  const [s1Ml] = slotMl('overall', 0)
+                  const [, s2Ml] = slotMl('overall', 0)
+                  const ml = sideKey === 'side1' ? s1Ml : s2Ml
                   return (
                     <button
                       key={sideKey}
-                      onClick={() => setMySide(sideKey)}
-                      className={`w-full flex justify-between items-center p-4 rounded-xl border-2 text-left transition-all ${selected ? 'border-[#2a6b7c] bg-[#2a6b7c]/10' : 'border-gray-200 bg-white hover:border-gray-300'}`}
+                      onClick={() => { setMySide(sideKey); setStep(3) }}
+                      className="w-full flex justify-between items-center p-4 rounded-xl border-2 border-gray-200 bg-white hover:border-[#2a6b7c] hover:bg-[#2a6b7c]/5 text-left transition-all"
                     >
                       <div>
                         <div className="font-bold text-gray-800">{names.join(' & ')}</div>
                         {isTeam && <div className="text-xs text-gray-400">eff. hcp {hcp}</div>}
-                        <div className="text-xs text-gray-400 mt-1">Overall line</div>
                       </div>
                       <div className={`text-xl font-bold ml-3 ${mlColor(ml)}`}>{formatMoneyline(ml)}</div>
                     </button>
@@ -398,143 +547,103 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
           {step === 3 && (
             <div>
               <h3 className="text-base font-bold text-gray-800 mb-1">Who are you betting with?</h3>
-              <p className="text-xs text-gray-400 mb-4">
-                Anyone in the tournament can be your opponent — they&apos;ll need to accept.
-              </p>
+              <p className="text-xs text-gray-400 mb-3">Tap your opponent — they&apos;ll need to accept.</p>
               <div className="space-y-2">
-                {opponentPlayers
-                  .sort((a, b) => (a.first_name ?? a.name).localeCompare(b.first_name ?? b.name))
-                  .map(p => {
-                    const name = p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : p.name
-                    const selected = opponentPlayerId === p.id
-                    return (
-                      <button
-                        key={p.id}
-                        onClick={() => setOpponentPlayerId(p.id)}
-                        className={`w-full flex items-center gap-3 p-3 rounded-xl border-2 text-left transition-all ${selected ? 'border-[#2a6b7c] bg-[#2a6b7c]/10' : 'border-gray-200 bg-white hover:border-gray-300'}`}
-                      >
-                        {p.avatar_url ? (
-                          <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border border-gray-200">
-                            <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
-                          </div>
-                        ) : (
-                          <div className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white ${p.team === 'Shaft' ? 'bg-blue-500' : 'bg-red-500'}`}>
-                            {(p.first_name?.charAt(0) ?? '') + (p.last_name?.charAt(0) ?? '')}
-                          </div>
-                        )}
-                        <div>
-                          <div className="font-semibold text-sm text-gray-800">{name}</div>
-                          <div className="text-xs text-gray-400">Hcp {PLAYER_HCPS[p.name] ?? '?'}</div>
+                {opponentPlayers.map(p => {
+                  const name = p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : p.name
+                  return (
+                    <button
+                      key={p.id}
+                      onClick={() => { setOpponentPlayerId(p.id); setStep(4) }}
+                      className="w-full flex items-center gap-3 p-3 rounded-xl border-2 border-gray-200 bg-white hover:border-[#2a6b7c] hover:bg-[#2a6b7c]/5 text-left transition-all"
+                    >
+                      {p.avatar_url ? (
+                        <div className="w-9 h-9 rounded-full overflow-hidden shrink-0 border border-gray-200">
+                          <img src={p.avatar_url} alt={name} className="w-full h-full object-cover" style={{ objectPosition: p.avatar_position || 'center 30%' }} />
                         </div>
-                        {selected && <div className="ml-auto text-[#2a6b7c] font-bold">✓</div>}
-                      </button>
-                    )
-                  })}
+                      ) : (
+                        <div className={`w-9 h-9 rounded-full shrink-0 flex items-center justify-center text-sm font-bold text-white ${p.team === 'Shaft' ? 'bg-blue-500' : 'bg-red-500'}`}>
+                          {(p.first_name?.charAt(0) ?? '') + (p.last_name?.charAt(0) ?? '')}
+                        </div>
+                      )}
+                      <div>
+                        <div className="font-semibold text-sm text-gray-800">{name}</div>
+                        <div className="text-xs text-gray-400">Hcp {PLAYER_HCPS[p.name] ?? '?'}</div>
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
 
-          {/* ── Step 4: Bet details ── */}
+          {/* ── Step 4: Bet entry ── */}
           {step === 4 && (
-            <div className="space-y-4">
+            <div className="space-y-3">
               <div>
-                <h3 className="text-base font-bold text-gray-800 mb-0.5">Bet details</h3>
+                <h3 className="text-base font-bold text-gray-800 mb-0.5">Set your bets</h3>
                 <p className="text-xs text-gray-400">
-                  {myPlayerName} backing <strong>{mySide === 'side1' ? side1Names.join(' & ') : side2Names.join(' & ')}</strong>
+                  {myPlayerName} backing <strong>{mySideLabel}</strong> · up to 3 bets
                 </p>
               </div>
 
-              {/* Bet type tabs */}
-              <div>
-                <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide block mb-2">What are you betting on?</label>
-                <div className="flex rounded-lg overflow-hidden border border-gray-300">
-                  {(['front', 'back', 'overall'] as const).map(t => (
+              <BetSlotPanel type="front"   label="Front 9" />
+              <BetSlotPanel type="back"    label="Back 9" />
+              <BetSlotPanel type="overall" label="Overall" />
+
+              {/* Missing bet prompt */}
+              {missingPrompt && (
+                <div className="bg-amber-50 border border-amber-300 rounded-xl p-4">
+                  <p className="text-sm font-bold text-amber-800 mb-1">Want to also bet Front 9 or Back 9?</p>
+                  <p className="text-xs text-amber-600 mb-3">You only have an Overall bet logged.</p>
+                  <div className="flex gap-2">
                     <button
-                      key={t}
-                      onClick={() => setBetType(t)}
-                      className={`flex-1 py-2 text-xs font-semibold transition-colors ${betType === t ? 'bg-[#2a6b7c] text-white' : 'bg-white text-gray-500 hover:bg-gray-50'}`}
+                      onClick={addMissingSlots}
+                      className="flex-1 py-2 bg-amber-500 text-white rounded-xl text-sm font-bold hover:bg-amber-600"
                     >
-                      {betTypeLabel(t)}
+                      Yes, add them
                     </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* Lines */}
-              <div className="bg-white rounded-xl p-4">
-                <p className="text-xs text-gray-400 text-center mb-3">Lines · drag slider to tease</p>
-                <div className="flex justify-around mb-4">
-                  <div className="text-center">
-                    <div className="text-xs text-gray-500 mb-1 truncate max-w-[100px]">{side1Names.join(' & ')}</div>
-                    <div className={`text-xl font-bold ${mlColor(side1Ml)}`}>{formatMoneyline(side1Ml)}</div>
-                    <div className="text-[10px] text-gray-300">Side 1</div>
-                  </div>
-                  <div className="text-gray-300 self-center text-sm">vs</div>
-                  <div className="text-center">
-                    <div className="text-xs text-gray-500 mb-1 truncate max-w-[100px]">{side2Names.join(' & ')}</div>
-                    <div className={`text-xl font-bold ${mlColor(side2Ml)}`}>{formatMoneyline(side2Ml)}</div>
-                    <div className="text-[10px] text-gray-300">Side 2</div>
+                    <button
+                      onClick={handleSubmit}
+                      disabled={submitting}
+                      className="flex-1 py-2 bg-[#2a6b7c] text-white rounded-xl text-sm font-bold hover:bg-[#235a68] disabled:opacity-50"
+                    >
+                      {submitting ? 'Sending...' : 'No, lock it in'}
+                    </button>
                   </div>
                 </div>
-                <div className="text-[10px] flex justify-between text-gray-400 mb-1">
-                  <span>← Favor {side2Names[0]}</span>
-                  <span className="text-gray-500 font-medium">{tease === 0 ? 'Baseline' : tease > 0 ? `+${tease} → ${side1Names[0]}` : `${tease} → ${side2Names[0]}`}</span>
-                  <span>Favor {side1Names[0]} →</span>
-                </div>
-                <input type="range" min={-50} max={50} step={5} value={tease} onChange={e => setTease(Number(e.target.value))} className="w-full accent-[#2a6b7c]" />
-                <div className="mt-3 p-2.5 bg-[#2a6b7c]/5 rounded-lg text-center">
-                  <span className="text-xs text-gray-500">Your line: </span>
-                  <span className={`text-base font-bold ${mlColor(myMl)}`}>{formatMoneyline(myMl)}</span>
-                </div>
-              </div>
-
-              {/* Amount */}
-              <div>
-                <label className="text-xs text-gray-500 font-semibold uppercase tracking-wide block mb-2">Your bet amount ($)</label>
-                <input
-                  type="text"
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  placeholder="e.g. 100"
-                  maxLength={5}
-                  value={myAmount}
-                  onChange={e => validateAmount(e.target.value)}
-                  className="w-full border-2 border-gray-200 rounded-xl px-4 py-3 text-lg font-bold focus:outline-none focus:border-[#2a6b7c] text-center"
-                />
-                {myAmountError && <p className="text-red-500 text-xs mt-1 text-center">{myAmountError}</p>}
-                <p className="text-xs text-gray-400 text-center mt-1">Numbers only · max $99,999</p>
-              </div>
+              )}
 
               {submitError && <p className="text-red-500 text-sm text-center">{submitError}</p>}
 
-              <button
-                onClick={handleSubmit}
-                disabled={submitting}
-                className="w-full py-3 bg-[#2a6b7c] text-white rounded-xl font-bold text-sm hover:bg-[#235a68] disabled:opacity-50 transition-colors"
-              >
-                {submitting ? 'Sending...' : '📨 Send Bet to Opponent'}
-              </button>
-              <p className="text-center text-xs text-gray-400">Opponent will need to accept before it goes active.</p>
+              {/* Lock In — shown when at least 1 logged and all active resolved */}
+              {!missingPrompt && (loggedSlots.length > 0) && (
+                <button
+                  onClick={handleSubmit}
+                  disabled={submitting}
+                  className="w-full py-3 bg-[#2a6b7c] text-white rounded-xl font-bold text-sm hover:bg-[#235a68] disabled:opacity-50 transition-colors"
+                >
+                  {submitting
+                    ? 'Sending...'
+                    : `📨 Send ${loggedSlots.length} Bet${loggedSlots.length > 1 ? 's' : ''} to Opponent`}
+                </button>
+              )}
+
+              <p className="text-center text-xs text-gray-400 pb-1">Opponent must accept before bets go active.</p>
             </div>
           )}
 
-          {/* Navigation */}
-          <div className="flex gap-3 pt-2 pb-1">
-            {step > 1 && (
-              <button onClick={() => setStep(s => s - 1)} className="flex-1 py-2.5 border border-gray-300 text-gray-600 rounded-xl text-sm font-semibold hover:bg-gray-50">
-                ← Back
-              </button>
-            )}
-            {step < 4 && (
-              <button
-                onClick={() => canAdvance() && setStep(s => s + 1)}
-                disabled={!canAdvance()}
-                className="flex-1 py-2.5 bg-[#2a6b7c] text-white rounded-xl text-sm font-semibold disabled:opacity-40 hover:bg-[#235a68] transition-colors"
-              >
-                Next →
-              </button>
-            )}
-          </div>
+          {/* Back button for steps 2–3 */}
+          {step > 1 && step < 4 && (
+            <button onClick={() => setStep(s => (s - 1) as 1|2|3|4)} className="w-full py-2 border border-gray-200 text-gray-500 rounded-xl text-sm hover:bg-gray-50">
+              ← Back
+            </button>
+          )}
+          {step === 4 && loggedSlots.length === 0 && !missingPrompt && (
+            <button onClick={() => setStep(3)} className="w-full py-2 border border-gray-200 text-gray-500 rounded-xl text-sm hover:bg-gray-50">
+              ← Back
+            </button>
+          )}
         </div>
       </div>
     </div>
