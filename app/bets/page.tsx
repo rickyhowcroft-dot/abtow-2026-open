@@ -236,11 +236,9 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
   const myMl = mySide === 'side1' ? side1Ml : side2Ml
   const oppMl = mySide === 'side1' ? side2Ml : side1Ml
 
-  // Players on each side (from DB)
-  const side1Players = players.filter(p => side1Names.includes(p.name))
-  const side2Players = players.filter(p => side2Names.includes(p.name))
   const myPlayer = players.find(p => p.id === myPlayerId)
-  const opponentPlayers = mySide === 'side1' ? side2Players : side1Players
+  // Any player can bet on any match — opponent = anyone except yourself
+  const opponentPlayers = players.filter(p => p.id !== myPlayerId)
 
   // Side 1 and 2 player IDs for the DB
   const side1PlayerId = mySide === 'side1' ? myPlayerId : opponentPlayerId
@@ -323,7 +321,6 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
               <p className="text-xs text-gray-400 mb-4">Select your name to get started.</p>
               <div className="grid grid-cols-2 gap-2">
                 {players
-                  .filter(p => [...side1Names, ...side2Names].includes(p.name))
                   .sort((a, b) => (a.first_name ?? a.name).localeCompare(b.first_name ?? b.name))
                   .map(p => {
                     const name = p.first_name && p.last_name ? `${p.first_name} ${p.last_name}` : p.name
@@ -384,7 +381,7 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, onC
             <div>
               <h3 className="text-base font-bold text-gray-800 mb-1">Who are you betting with?</h3>
               <p className="text-xs text-gray-400 mb-4">
-                Select the person on the other side — they&apos;ll need to accept.
+                Anyone in the tournament can be your opponent — they&apos;ll need to accept.
               </p>
               <div className="space-y-2">
                 {opponentPlayers
