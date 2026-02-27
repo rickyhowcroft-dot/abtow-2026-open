@@ -8,7 +8,7 @@ import {
 } from '@/lib/monte-carlo'
 import {
   createBet, acceptBet, getAllBets,
-  playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, matchTeamsLabel,
+  playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, matchTeamsLabel, matchTeamsParts,
   type BetWithPlayers, type Bet,
 } from '@/lib/bets-service'
 import type { Player, Match } from '@/lib/scoring'
@@ -127,11 +127,22 @@ function BetDetailModal({
         <div className="flex justify-between items-start mb-4">
           <div>
             <h2 className="text-lg font-bold text-[#2a6b7c]">Bet Details</h2>
-            {bet.match && (
-              <p className="text-xs text-gray-400 mt-0.5">
-                Day {bet.match.day} · {matchTeamsLabel(bet.match, players)}
-              </p>
-            )}
+            {bet.match && (() => {
+              const vIs1 = viewerPlayerId === bet.side1_player_id
+              const [t1, t2] = matchTeamsParts(bet.match, players)
+              const myT  = vIs1 ? t1 : t2
+              const oppT = vIs1 ? t2 : t1
+              const hasViewer = !!viewerPlayerId && (viewerPlayerId === bet.side1_player_id || viewerPlayerId === bet.side2_player_id)
+              return (
+                <p className="text-xs text-gray-400 mt-0.5">
+                  Day {bet.match.day} ·{' '}
+                  {hasViewer
+                    ? <><span className="font-semibold text-gray-600">✓ {myT}</span> vs {oppT}</>
+                    : matchTeamsLabel(bet.match, players)
+                  }
+                </p>
+              )
+            })()}
           </div>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
         </div>

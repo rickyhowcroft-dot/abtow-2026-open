@@ -6,7 +6,7 @@ import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Player } from '@/lib/scoring'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
-import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, matchTeamsLabel, type BetWithPlayers, type Bet, type MatchRef } from '@/lib/bets-service'
+import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, matchTeamsLabel, matchTeamsParts, type BetWithPlayers, type Bet, type MatchRef } from '@/lib/bets-service'
 import { formatMoneyline } from '@/lib/monte-carlo'
 
 function PlayerAvatar({ player }: { player: Player }) {
@@ -405,11 +405,16 @@ export default function PlayerProfilePage() {
                       >
                         <div className="flex justify-between items-start">
                           <div className="min-w-0">
-                            {bet.match && (
-                              <div className="text-xs text-gray-400 mb-0.5">
-                                Day {bet.match.day} · {matchTeamsLabel(bet.match, allPlayers)}
-                              </div>
-                            )}
+                            {bet.match && (() => {
+                              const [t1, t2] = matchTeamsParts(bet.match, allPlayers)
+                              const myTeam  = isS1 ? t1 : t2
+                              const oppTeam = isS1 ? t2 : t1
+                              return (
+                                <div className="text-xs text-gray-400 mb-0.5">
+                                  Day {bet.match.day} · <span className="font-semibold text-gray-600">✓ {myTeam}</span> vs {oppTeam}
+                                </div>
+                              )
+                            })()}
                             <div className="text-sm font-semibold text-gray-800">{betTypeLabel(bet.bet_type)} vs {oppName.split(' ')[0]}</div>
                             <div className="text-xs text-gray-400 mt-0.5">
                               Your line: <span className={`font-bold ${mlColorClass}`}>{myLine}</span>
@@ -461,11 +466,17 @@ export default function PlayerProfilePage() {
             <div className="flex justify-between items-start mb-4">
               <div>
                 <h2 className="text-lg font-bold text-[#2a6b7c]">Bet Details</h2>
-                {viewBet.match && (
-                  <p className="text-xs text-gray-400 mt-0.5">
-                    Day {viewBet.match.day} · {matchTeamsLabel(viewBet.match, allPlayers)}
-                  </p>
-                )}
+                {viewBet.match && (() => {
+                  const vIs1 = player.id === viewBet.side1_player_id
+                  const [t1, t2] = matchTeamsParts(viewBet.match, allPlayers)
+                  const myT  = vIs1 ? t1 : t2
+                  const oppT = vIs1 ? t2 : t1
+                  return (
+                    <p className="text-xs text-gray-400 mt-0.5">
+                      Day {viewBet.match.day} · <span className="font-semibold text-gray-600">✓ {myT}</span> vs {oppT}
+                    </p>
+                  )
+                })()}
               </div>
               <button onClick={() => setViewBet(null)} className="text-gray-400 hover:text-gray-600 text-xl leading-none">✕</button>
             </div>
