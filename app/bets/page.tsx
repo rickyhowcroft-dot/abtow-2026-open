@@ -424,10 +424,10 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
               <p className="text-sm text-gray-600 italic">The math is good. The math doesn&apos;t know what you know. Ask yourself:</p>
               <ul className="space-y-2 text-sm text-gray-800">
                 <li>🍺 Was someone over-served at dinner last night?</li>
+                <li>🤢 Are they nursing a hangover that could floor a horse?</li>
                 <li>😴 Did they look half-dead on the first tee?</li>
                 <li>📱 Is their wife blowing up their phone right now?</li>
                 <li>🎯 Did they just spend 2 hours on the range looking locked in?</li>
-                <li>🤢 Are they nursing a hangover that could floor a horse?</li>
                 <li>🧊 Have they been ice cold all trip and due for a hot round?</li>
               </ul>
               <p className="text-sm text-gray-500 italic border-t border-amber-200 pt-3">Slide left to spot them points. Slide right to squeeze &apos;em. Either way, don&apos;t come crying to Sampson when the vibes don&apos;t hit. 🤷</p>
