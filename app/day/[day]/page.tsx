@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { supabase } from '@/lib/supabase';
 import { calculateBestBallResults, calculateStablefordResults, calculateIndividualResults } from '@/lib/scoring';
 import type { Player, Match, Score, Course, MatchResult } from '@/lib/scoring';
+import { getOdds, teamEffectiveHcp, formatMoneyline, PLAYER_HCPS } from '@/lib/monte-carlo';
 
 export default function DayDetail() {
   const params = useParams();
@@ -132,6 +133,26 @@ export default function DayDetail() {
           format: '',
           rules: [] as string[]
         };
+    }
+  }
+
+  function getMatchOddsLine(match: Match): { side1Label: string; side2Label: string; side1Ml: number; side2Ml: number } {
+    const t1 = match.team1_players
+    const t2 = match.team2_players
+    let hcp1: number, hcp2: number
+    if (t1.length > 1) {
+      hcp1 = teamEffectiveHcp(t1.map(n => PLAYER_HCPS[n] ?? 10))
+      hcp2 = teamEffectiveHcp(t2.map(n => PLAYER_HCPS[n] ?? 10))
+    } else {
+      hcp1 = PLAYER_HCPS[t1[0]] ?? 10
+      hcp2 = PLAYER_HCPS[t2[0]] ?? 10
+    }
+    const odds = getOdds(hcp1, hcp2)
+    return {
+      side1Label: t1.join(' & '),
+      side2Label: t2.join(' & '),
+      side1Ml: odds.aMoneyline,
+      side2Ml: odds.bMoneyline,
     }
   }
 
@@ -265,6 +286,24 @@ export default function DayDetail() {
                   </div>
                 </div>
               </div>
+
+              {/* Pre-match odds */}
+              {(() => {
+                const { side1Label, side2Label, side1Ml, side2Ml } = getMatchOddsLine(match)
+                const ml1Color = side1Ml < -110 ? 'text-emerald-600' : side1Ml > 110 ? 'text-amber-500' : 'text-gray-500'
+                const ml2Color = side2Ml < -110 ? 'text-emerald-600' : side2Ml > 110 ? 'text-amber-500' : 'text-gray-500'
+                return (
+                  <div className="flex items-center justify-center gap-1 text-xs text-gray-400 mb-3 flex-wrap">
+                    <span>📊</span>
+                    <span className="font-medium text-gray-500">{side1Label.split(' & ')[0]}</span>
+                    <span className={`font-bold ${ml1Color}`}>{formatMoneyline(side1Ml)}</span>
+                    <span className="text-gray-300">·</span>
+                    <span className="font-medium text-gray-500">{side2Label.split(' & ')[0]}</span>
+                    <span className={`font-bold ${ml2Color}`}>{formatMoneyline(side2Ml)}</span>
+                    <a href="/bets" className="text-[#2a6b7c] underline ml-1">Bet</a>
+                  </div>
+                )
+              })()}
 
               {/* Match Actions */}
               <div className="flex justify-center space-x-3">
