@@ -10,7 +10,8 @@ Run this before **March 16th, 2026** to wipe all test data and start clean.
 | `bets` | All bet records | `DELETE FROM bets;` |
 | `game_participants` | Game opt-ins | `DELETE FROM game_participants;` |
 | `game_day_locks` | Admin game lock overrides | `DELETE FROM game_day_locks;` |
-| `player_round_stats` | Computed round stats | `DELETE FROM player_round_stats;` |
+| `player_daily_stats` | Computed per-day stats | `DELETE FROM player_daily_stats;` |
+| `player_hole_stats` | Per-hole stats | `DELETE FROM player_hole_stats;` |
 | `player_stats` | Aggregated player stats | `DELETE FROM player_stats;` |
 
 ## Flags to reset
@@ -34,7 +35,8 @@ DELETE FROM scores;
 DELETE FROM bets;
 DELETE FROM game_participants;
 DELETE FROM game_day_locks;
-DELETE FROM player_round_stats;
+DELETE FROM player_daily_stats;
+DELETE FROM player_hole_stats;
 DELETE FROM player_stats;
 UPDATE matches SET scores_locked = false;
 ```
