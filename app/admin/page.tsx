@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Layout from '@/app/components/Layout'
 import { settleBetsForMatch } from '@/lib/bets-service'
+import { getAllGameDayLocks, setGameDayLock, type GameDayLock } from '@/lib/games-service'
 
 const ADMIN_PASSWORD = 'FuckCalder'
 const ADMIN_KEY = 'abtow_admin_auth'
@@ -39,6 +40,8 @@ export default function AdminPage() {
   const [venmoEdits, setVenmoEdits] = useState<Record<string, string>>({})
   const [venmoSaving, setVenmoSaving] = useState<string | null>(null)
   const [venmoSaved, setVenmoSaved] = useState<string | null>(null)
+  const [gameLocks, setGameLocks] = useState<GameDayLock[]>([])
+  const [gameLockToggling, setGameLockToggling] = useState<string | null>(null)
 
   useEffect(() => {
     const stored = sessionStorage.getItem(ADMIN_KEY)
@@ -50,7 +53,7 @@ export default function AdminPage() {
 
   async function fetchData() {
     setLoading(true)
-    const [matchRes, playerRes] = await Promise.all([
+    const [matchRes, playerRes, locks] = await Promise.all([
       supabase
         .from('matches')
         .select('id, day, format, group_access_token, scores_locked, team1_players, team2_players')
@@ -59,16 +62,17 @@ export default function AdminPage() {
         .from('players')
         .select('id, name, first_name, last_name, venmo_handle')
         .order('name'),
+      getAllGameDayLocks(),
     ])
     if (!matchRes.error && matchRes.data) setMatches(matchRes.data as MatchRow[])
     if (!playerRes.error && playerRes.data) {
       const p = playerRes.data as PlayerRow[]
       setPlayers(p)
-      // Seed edit state with current values
       const edits: Record<string, string> = {}
       p.forEach(pl => { edits[pl.id] = pl.venmo_handle ?? '' })
       setVenmoEdits(edits)
     }
+    setGameLocks(locks)
     setLoading(false)
   }
 
@@ -120,6 +124,36 @@ export default function AdminPage() {
       setTimeout(() => setVenmoSaved(null), 2000)
     }
     setVenmoSaving(null)
+  }
+
+  async function toggleGameLock(gameId: string, day: number) {
+    const key = `${gameId}-${day}`
+    setGameLockToggling(key)
+    const existing = gameLocks.find(l => l.game_id === gameId && l.day === day)
+    // Cycle: no override → locked → open (unlocked override) → no override → ...
+    // Simpler: if currently locked (override=true), set open (override=false); else lock
+    const newLocked = !(existing?.locked ?? false)
+    try {
+      await setGameDayLock(gameId, day, newLocked)
+      setGameLocks(prev => {
+        const filtered = prev.filter(l => !(l.game_id === gameId && l.day === day))
+        return [...filtered, { game_id: gameId, day, locked: newLocked, updated_at: new Date().toISOString() }]
+      })
+    } finally {
+      setGameLockToggling(null)
+    }
+  }
+
+  async function clearGameLock(gameId: string, day: number) {
+    // Remove override entirely — falls back to automatic logic
+    const { error } = await supabase
+      .from('game_day_locks')
+      .delete()
+      .eq('game_id', gameId)
+      .eq('day', day)
+    if (!error) {
+      setGameLocks(prev => prev.filter(l => !(l.game_id === gameId && l.day === day)))
+    }
   }
 
   function logout() {
@@ -231,6 +265,74 @@ export default function AdminPage() {
                   </div>
                 )
               })}
+
+              {/* ── Game Day Access ── */}
+              <div className="mb-8">
+                <h2 className="text-base font-semibold text-[#2a6b7c] uppercase tracking-wide mb-1">
+                  🎮 Game Day Access
+                </h2>
+                <p className="text-xs text-gray-400 mb-3">
+                  Override the automatic date/completion logic. <strong>Lock</strong> closes a day for new opt-ins but keeps results viewable. <strong>Auto</strong> restores normal date-based behaviour.
+                </p>
+                {[
+                  { id: 'handicap', name: '🎯 Handicap Game' },
+                ].map(game => (
+                  <div key={game.id} className="bg-white rounded-xl border border-gray-200 overflow-hidden mb-3">
+                    <div className="px-4 py-2 bg-gray-50 border-b border-gray-100">
+                      <span className="text-sm font-semibold text-gray-700">{game.name}</span>
+                    </div>
+                    <div className="divide-y divide-gray-50">
+                      {[1, 2, 3].map(day => {
+                        const lock = gameLocks.find(l => l.game_id === game.id && l.day === day)
+                        const hasOverride = !!lock
+                        const isLocked = lock?.locked ?? false
+                        const key = `${game.id}-${day}`
+                        const isToggling = gameLockToggling === key
+                        const dayLabel = day === 1 ? 'Day 1 — Ritz Carlton' : day === 2 ? 'Day 2 — Southern Dunes' : 'Day 3 — Champions Gate'
+                        const tourneyDate = ['Mar 16', 'Mar 17', 'Mar 18'][day - 1]
+                        return (
+                          <div key={day} className="flex items-center gap-3 px-4 py-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="text-sm font-medium text-gray-800">{dayLabel}</div>
+                              <div className="text-xs text-gray-400 mt-0.5">
+                                {hasOverride
+                                  ? isLocked
+                                    ? '🔒 Admin locked — results viewable, opt-in closed'
+                                    : '🔓 Admin unlocked — open regardless of date'
+                                  : `⚙️ Auto — unlocks ${tourneyDate}, locks when admin closes round`
+                                }
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-2 shrink-0">
+                              {/* Clear override back to auto */}
+                              {hasOverride && (
+                                <button
+                                  onClick={() => clearGameLock(game.id, day)}
+                                  className="text-xs px-2 py-1 rounded-lg bg-gray-100 text-gray-500 hover:bg-gray-200 transition-colors"
+                                >
+                                  Auto
+                                </button>
+                              )}
+                              {/* Lock / Unlock toggle */}
+                              <button
+                                onClick={() => toggleGameLock(game.id, day)}
+                                disabled={!!isToggling}
+                                className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors disabled:opacity-60 ${
+                                  isLocked
+                                    ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                    : 'bg-red-100 text-red-700 hover:bg-red-200'
+                                }`}
+                              >
+                                {isToggling ? '…' : isLocked ? '🔓 Unlock' : '🔒 Lock'}
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                ))}
+              </div>
 
               {/* ── Venmo Handles ── */}
               <div className="mb-8">

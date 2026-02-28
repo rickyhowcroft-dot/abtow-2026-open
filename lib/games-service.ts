@@ -127,17 +127,57 @@ export async function isDayComplete(day: number): Promise<boolean> {
   return data.every(m => m.scores_locked === true)
 }
 
+// ─── Admin game-day lock overrides ────────────────────────────────────────────
+
+export interface GameDayLock {
+  game_id: string
+  day: number
+  locked: boolean
+  updated_at: string
+}
+
+/** Fetch all game-day lock overrides */
+export async function getAllGameDayLocks(): Promise<GameDayLock[]> {
+  const { data } = await supabase.from('game_day_locks').select('*')
+  return (data ?? []) as GameDayLock[]
+}
+
+/** Set a game-day lock override from the admin panel */
+export async function setGameDayLock(gameId: string, day: number, locked: boolean): Promise<void> {
+  const { error } = await supabase
+    .from('game_day_locks')
+    .upsert({ game_id: gameId, day, locked, updated_at: new Date().toISOString() },
+             { onConflict: 'game_id,day' })
+  if (error) throw error
+}
+
 /**
  * Get the full status of a game day:
- * - locked_date: today is before the tournament date
- * - open: today >= tournament date AND round is not yet complete
- * - locked_complete: round complete (all matches locked by admin)
+ * - Checks admin override first (game_day_locks table)
+ * - Falls back to date-based + match-completion logic
+ *
+ * States:
+ * - locked_date: before tournament date (or admin forced-locked)
+ * - open: tournament date reached, round in progress
+ * - locked_complete: all matches locked OR admin forced-complete
  */
-export async function getDayStatus(day: number): Promise<DayStatus> {
+export async function getDayStatus(day: number, gameId = 'handicap'): Promise<DayStatus> {
+  const [lockRow, matchDone] = await Promise.all([
+    supabase.from('game_day_locks').select('locked').eq('game_id', gameId).eq('day', day).maybeSingle(),
+    isDayComplete(day),
+  ])
+
+  // Admin override takes priority
+  if (lockRow.data !== null) {
+    if (lockRow.data.locked) return 'locked_complete'
+    // Admin explicitly unlocked — allow access regardless of date
+    return 'open'
+  }
+
+  // Automatic logic
   const now = new Date()
   if (now < TOURNAMENT_DATES[day]) return 'locked_date'
-  const complete = await isDayComplete(day)
-  return complete ? 'locked_complete' : 'open'
+  return matchDone ? 'locked_complete' : 'open'
 }
 
 /** Fetch handicap game results for a given day */
