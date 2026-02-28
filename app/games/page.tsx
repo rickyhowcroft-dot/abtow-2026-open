@@ -1,7 +1,7 @@
 'use client'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import { isDayComplete } from '@/lib/games-service'
+import { getDayStatus, type DayStatus } from '@/lib/games-service'
 
 interface Game {
   id: string
@@ -21,20 +21,18 @@ const GAMES: Game[] = [
   },
 ]
 
+const DAY_COURSE = ['Ritz Carlton', 'Southern Dunes', 'Champions Gate']
+
 export default function GamesPage() {
-  const [day1Done, setDay1Done] = useState(false)
-  const [day2Done, setDay2Done] = useState(false)
+  const [statuses, setStatuses] = useState<DayStatus[]>(['locked_date', 'locked_date', 'locked_date'])
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    Promise.all([isDayComplete(1), isDayComplete(2)]).then(([d1, d2]) => {
-      setDay1Done(d1)
-      setDay2Done(d2)
+    Promise.all([getDayStatus(1), getDayStatus(2), getDayStatus(3)]).then(results => {
+      setStatuses(results)
       setLoading(false)
     })
   }, [])
-
-  const dayUnlocked = [true, day1Done, day2Done] // index 0 = Day 1, 1 = Day 2, 2 = Day 3
 
   return (
     <div className="max-w-xl mx-auto px-4 py-6" style={{ fontFamily: 'Georgia, serif', backgroundColor: '#f5f0e8', minHeight: '100vh' }}>
@@ -43,18 +41,21 @@ export default function GamesPage() {
         <p className="text-xs text-gray-400 mt-1">Side games running alongside the tournament</p>
       </div>
 
-      {/* Day unlock status */}
+      {/* Day status pills */}
       {!loading && (
         <div className="flex gap-2 justify-center mb-6">
-          {[1, 2, 3].map(d => (
-            <div key={d} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
-              dayUnlocked[d - 1]
-                ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
-                : 'bg-gray-100 text-gray-400 border-gray-200'
-            }`}>
-              {dayUnlocked[d - 1] ? '🔓' : '🔒'} Day {d}
-            </div>
-          ))}
+          {[1, 2, 3].map(d => {
+            const s = statuses[d - 1]
+            return (
+              <div key={d} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold border ${
+                s === 'open'             ? 'bg-emerald-50 text-emerald-700 border-emerald-300' :
+                s === 'locked_complete'  ? 'bg-blue-50 text-blue-600 border-blue-200' :
+                                           'bg-gray-100 text-gray-400 border-gray-200'
+              }`}>
+                {s === 'open' ? '🔓' : s === 'locked_complete' ? '✓' : '🔒'} Day {d}
+              </div>
+            )
+          })}
         </div>
       )}
 
@@ -72,29 +73,35 @@ export default function GamesPage() {
               </div>
             </div>
 
-            {/* Day tiles */}
             <div className="grid grid-cols-3 divide-x divide-gray-100">
               {[1, 2, 3].map(d => {
-                const unlocked = dayUnlocked[d - 1]
-                const label = d === 1 ? 'Ritz Carlton' : d === 2 ? 'Southern Dunes' : 'Champions Gate'
+                const s = loading ? 'locked_date' : statuses[d - 1]
+                const canView   = s === 'open' || s === 'locked_complete'
+                const isComplete = s === 'locked_complete'
+                const isLocked   = s === 'locked_date'
+
+                const tile = (
+                  <div className={`flex flex-col items-center py-4 px-2 ${canView ? 'hover:bg-[#2a6b7c]/5 active:bg-[#2a6b7c]/10' : 'opacity-40 cursor-not-allowed'} transition-colors`}>
+                    <span className="text-sm font-bold text-[#2a6b7c]">{isLocked ? '🔒' : ''} Day {d}</span>
+                    <span className="text-[10px] text-gray-400 text-center leading-tight mt-0.5">{DAY_COURSE[d - 1]}</span>
+                    {isLocked && (
+                      <span className="mt-2 text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-semibold">Locked</span>
+                    )}
+                    {s === 'open' && (
+                      <span className="mt-2 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">Open →</span>
+                    )}
+                    {isComplete && (
+                      <span className="mt-2 text-[10px] bg-blue-100 text-blue-600 px-2 py-0.5 rounded-full font-semibold">🔒 View →</span>
+                    )}
+                  </div>
+                )
+
                 return (
                   <div key={d}>
-                    {unlocked ? (
-                      <Link
-                        href={`${game.href}?day=${d}`}
-                        className="flex flex-col items-center py-4 px-2 hover:bg-[#2a6b7c]/5 active:bg-[#2a6b7c]/10 transition-colors"
-                      >
-                        <span className="text-sm font-bold text-[#2a6b7c]">Day {d}</span>
-                        <span className="text-[10px] text-gray-400 text-center leading-tight mt-0.5">{label}</span>
-                        <span className="mt-2 text-[10px] bg-emerald-100 text-emerald-700 px-2 py-0.5 rounded-full font-semibold">Open →</span>
-                      </Link>
-                    ) : (
-                      <div className="flex flex-col items-center py-4 px-2 opacity-40 cursor-not-allowed">
-                        <span className="text-sm font-bold text-gray-500">Day {d}</span>
-                        <span className="text-[10px] text-gray-400 text-center leading-tight mt-0.5">{label}</span>
-                        <span className="mt-2 text-[10px] bg-gray-100 text-gray-500 px-2 py-0.5 rounded-full font-semibold">🔒 Locked</span>
-                      </div>
-                    )}
+                    {canView
+                      ? <Link href={`${game.href}?day=${d}`}>{tile}</Link>
+                      : tile
+                    }
                   </div>
                 )
               })}
@@ -103,12 +110,13 @@ export default function GamesPage() {
         ))}
       </div>
 
-      {/* Unlock legend */}
+      {/* Legend */}
       <div className="mt-6 bg-white/60 rounded-xl p-4 text-xs text-gray-500 space-y-1">
-        <p className="font-semibold text-gray-600 mb-1">Unlock schedule</p>
-        <p>🔓 Day 1 — Always available</p>
-        <p>🔓 Day 2 — Unlocks after Day 1 scores are locked by admin</p>
-        <p>🔓 Day 3 — Unlocks after Day 2 scores are locked by admin</p>
+        <p className="font-semibold text-gray-600 mb-1">Day unlock schedule</p>
+        <p>🔓 Day 1 — Unlocks March 16th</p>
+        <p>🔓 Day 2 — Unlocks March 17th</p>
+        <p>🔓 Day 3 — Unlocks March 18th</p>
+        <p className="text-gray-400 pt-1">🔒 View → Round complete — results viewable, scoring closed</p>
       </div>
     </div>
   )

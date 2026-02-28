@@ -103,9 +103,20 @@ export function holePointsLabel(scoreVsPar: number): string {
   return 'Double Bogey+'
 }
 
+/** Tournament dates (midnight ET) */
+export const TOURNAMENT_DATES: Record<number, Date> = {
+  1: new Date('2026-03-16T00:00:00-05:00'),
+  2: new Date('2026-03-17T00:00:00-05:00'),
+  3: new Date('2026-03-18T00:00:00-05:00'),
+}
+
+export type DayStatus =
+  | 'locked_date'      // before tournament date — locked, no access
+  | 'open'             // tournament date reached, round in progress — full access
+  | 'locked_complete'  // all matches locked by admin — viewable but no new opt-ins
+
 /**
  * Check whether all matches for a given day are locked.
- * Used to determine if the NEXT day's game is unlocked.
  */
 export async function isDayComplete(day: number): Promise<boolean> {
   const { data, error } = await supabase
@@ -114,6 +125,19 @@ export async function isDayComplete(day: number): Promise<boolean> {
     .eq('day', day)
   if (error || !data || data.length === 0) return false
   return data.every(m => m.scores_locked === true)
+}
+
+/**
+ * Get the full status of a game day:
+ * - locked_date: today is before the tournament date
+ * - open: today >= tournament date AND round is not yet complete
+ * - locked_complete: round complete (all matches locked by admin)
+ */
+export async function getDayStatus(day: number): Promise<DayStatus> {
+  const now = new Date()
+  if (now < TOURNAMENT_DATES[day]) return 'locked_date'
+  const complete = await isDayComplete(day)
+  return complete ? 'locked_complete' : 'open'
 }
 
 /** Fetch handicap game results for a given day */

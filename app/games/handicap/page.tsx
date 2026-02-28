@@ -4,9 +4,9 @@ import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import {
-  getHandicapGameResults, isDayComplete,
+  getHandicapGameResults, getDayStatus,
   getGameParticipants, optInToGame, optOutOfGame,
-  type HandicapGamePlayer,
+  type HandicapGamePlayer, type DayStatus,
 } from '@/lib/games-service'
 
 const GAME_ID = 'handicap'
@@ -204,7 +204,7 @@ function HandicapGameContent() {
   const [results, setResults] = useState<Awaited<ReturnType<typeof getHandicapGameResults>> | null>(null)
   const [loading, setLoading] = useState(true)
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null)
-  const [dayUnlocked, setDayUnlocked] = useState([true, false, false])
+  const [dayStatuses, setDayStatuses] = useState<DayStatus[]>(['locked_date', 'locked_date', 'locked_date'])
 
   // Identity + opt-in state
   const [viewerPlayerId, setViewerPlayerId] = useState('')
@@ -218,8 +218,8 @@ function HandicapGameContent() {
     supabase.from('players').select('id, name, first_name').order('first_name').then(({ data }) => {
       if (data) setPlayers(data as { id: string; name: string; first_name: string | null }[])
     })
-    Promise.all([isDayComplete(1), isDayComplete(2)]).then(([d1, d2]) => {
-      setDayUnlocked([true, d1, d2])
+    Promise.all([getDayStatus(1), getDayStatus(2), getDayStatus(3)]).then(statuses => {
+      setDayStatuses(statuses)
     })
   }, [])
 
@@ -272,19 +272,25 @@ function HandicapGameContent() {
       {/* Day tabs */}
       <div className="flex gap-1 bg-white rounded-xl p-1 shadow-sm mb-5">
         {[1, 2, 3].map(d => {
-          const unlocked = dayUnlocked[d - 1]
+          const s = dayStatuses[d - 1]
+          const canView = s === 'open' || s === 'locked_complete'
+          const isActive = activeDay === d
           return (
             <button
               key={d}
-              onClick={() => unlocked && setActiveDay(d)}
-              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors ${
-                !unlocked ? 'text-gray-300 cursor-not-allowed' :
-                activeDay === d
-                  ? 'bg-[#2a6b7c] text-white shadow-sm'
-                  : 'text-gray-600 hover:bg-gray-100'
+              onClick={() => canView && setActiveDay(d)}
+              className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-colors relative ${
+                !canView          ? 'text-gray-300 cursor-not-allowed' :
+                isActive          ? 'bg-[#2a6b7c] text-white shadow-sm' :
+                                    'text-gray-600 hover:bg-gray-100'
               }`}
             >
-              {!unlocked ? '🔒' : ''} Day {d}
+              {s === 'locked_date' && '🔒 '}
+              {s === 'locked_complete' && !isActive && '🔒 '}
+              Day {d}
+              {s === 'locked_complete' && (
+                <span className="absolute -top-1 -right-1 w-3 h-3 bg-blue-400 rounded-full border-2 border-white" title="Round complete" />
+              )}
             </button>
           )
         })}
@@ -316,7 +322,7 @@ function HandicapGameContent() {
               </option>
             ))}
           </select>
-          {viewerPlayerId && (
+          {viewerPlayerId && dayStatuses[activeDay - 1] !== 'locked_complete' && (
             <button
               onClick={handleOptToggle}
               disabled={optingIn}
@@ -328,6 +334,9 @@ function HandicapGameContent() {
             >
               {optingIn ? '…' : viewerOptedIn ? '✓ Opted In' : 'Opt In'}
             </button>
+          )}
+          {viewerPlayerId && dayStatuses[activeDay - 1] === 'locked_complete' && viewerOptedIn && (
+            <span className="shrink-0 px-3 py-1.5 rounded-full text-xs font-bold bg-emerald-50 text-emerald-600 border border-emerald-200">✓ Entered</span>
           )}
         </div>
         {participants.length > 0 && (
