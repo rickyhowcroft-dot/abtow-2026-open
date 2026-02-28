@@ -37,6 +37,53 @@ export interface HandicapGameResult {
   scoresEntered: boolean     // true when any scores exist at all
 }
 
+// ─── Opt-in ───────────────────────────────────────────────────────────────────
+
+export interface GameParticipant {
+  id: string
+  game_id: string
+  day: number
+  player_id: string
+  opted_in_at: string
+}
+
+export async function getGameParticipants(gameId: string, day: number): Promise<GameParticipant[]> {
+  const { data } = await supabase
+    .from('game_participants')
+    .select('*')
+    .eq('game_id', gameId)
+    .eq('day', day)
+  return (data ?? []) as GameParticipant[]
+}
+
+export async function getPlayerGameParticipation(playerId: string): Promise<GameParticipant[]> {
+  const { data } = await supabase
+    .from('game_participants')
+    .select('*')
+    .eq('player_id', playerId)
+    .order('day')
+  return (data ?? []) as GameParticipant[]
+}
+
+export async function optInToGame(gameId: string, day: number, playerId: string): Promise<void> {
+  const { error } = await supabase
+    .from('game_participants')
+    .insert({ game_id: gameId, day, player_id: playerId })
+  if (error && !error.message.includes('duplicate')) throw error
+}
+
+export async function optOutOfGame(gameId: string, day: number, playerId: string): Promise<void> {
+  const { error } = await supabase
+    .from('game_participants')
+    .delete()
+    .eq('game_id', gameId)
+    .eq('day', day)
+    .eq('player_id', playerId)
+  if (error) throw error
+}
+
+// ─── Scoring ──────────────────────────────────────────────────────────────────
+
 /** Points for a hole based on score vs par */
 export function holePoints(scoreVsPar: number): number {
   if (scoreVsPar <= -3) return 16 // Double eagle

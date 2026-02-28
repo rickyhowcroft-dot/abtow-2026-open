@@ -8,6 +8,7 @@ import type { Player } from '@/lib/scoring'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
 import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, matchTeamsLabel, matchTeamsParts, type BetWithPlayers, type Bet, type MatchRef } from '@/lib/bets-service'
 import { formatMoneyline } from '@/lib/monte-carlo'
+import { getPlayerGameParticipation, getHandicapGameResults, type GameParticipant, type HandicapGamePlayer } from '@/lib/games-service'
 
 function PlayerAvatar({ player }: { player: Player }) {
   const initials = player.first_name && player.last_name 
@@ -77,6 +78,7 @@ export default function PlayerProfilePage() {
   const [viewBet, setViewBet] = useState<BetWithPlayers | null>(null)
   const [isMe, setIsMe] = useState(false)
   const [allPlayers, setAllPlayers] = useState<{ id: string; name: string; first_name: string | null }[]>([])
+  const [gameEntries, setGameEntries] = useState<{ participation: GameParticipant; playerResult: HandicapGamePlayer; rank: number; totalPlayers: number }[]>([])
 
   const playerName = decodeURIComponent(params.name as string)
 
@@ -102,6 +104,7 @@ export default function PlayerProfilePage() {
         setPlayer(data)
         fetchBets(data.id)
         setIsMe(localStorage.getItem('abtow_viewer_id') === data.id)
+        fetchGameEntries(data.id)
       }
     } catch (error) {
       setNotFound(true)
@@ -119,6 +122,38 @@ export default function PlayerProfilePage() {
       console.error('Failed to fetch bets', e)
     } finally {
       setBetsLoading(false)
+    }
+  }
+
+  async function fetchGameEntries(playerId: string) {
+    try {
+      const parts = await getPlayerGameParticipation(playerId)
+      if (parts.length === 0) { setGameEntries([]); return }
+      // Fetch results for each unique game+day combo
+      const daySet = Array.from(new Set(parts.map(p => p.day)))
+      const resultsMap: Record<number, Awaited<ReturnType<typeof getHandicapGameResults>>> = {}
+      await Promise.all(daySet.map(async day => {
+        resultsMap[day] = await getHandicapGameResults(day)
+      }))
+      const entries = parts.map(part => {
+        const res = resultsMap[part.day]
+        if (!res) return null
+        const playerResult = res.players.find(p => p.playerId === playerId)
+        if (!playerResult) return null
+        const eligiblePlayers = res.players.filter(p => p.eligible)
+        let rank = 0
+        if (playerResult.eligible) {
+          rank = 1
+          for (const ep of eligiblePlayers) {
+            if (ep.playerId === playerId) break
+            if (ep.surplus > playerResult.surplus) rank++
+          }
+        }
+        return { participation: part, playerResult, rank, totalPlayers: res.players.length }
+      }).filter(Boolean) as typeof gameEntries
+      setGameEntries(entries)
+    } catch (e) {
+      console.error('Failed to fetch game entries', e)
     }
   }
 
@@ -262,7 +297,58 @@ export default function PlayerProfilePage() {
 
         {/* Overview tab */}
         {profileTab === 'overview' && (
-          <div className="mt-6">
+          <div className="mt-6 space-y-5">
+            {/* Active games */}
+            {gameEntries.length > 0 && (
+              <div>
+                <h3 className="text-xs font-bold text-gray-500 uppercase tracking-wide mb-2 px-1">🎮 Active Games</h3>
+                <div className="space-y-2">
+                  {gameEntries.map(entry => {
+                    const { playerResult: pr, rank } = entry
+                    const day = entry.participation.day
+                    const dayLabel = day === 1 ? 'Ritz Carlton' : day === 2 ? 'Southern Dunes' : 'Champions Gate'
+                    const surplusStr = pr.surplus >= 0 ? `+${pr.surplus}` : `${pr.surplus}`
+                    return (
+                      <a
+                        key={`${entry.participation.game_id}-${day}`}
+                        href={`/games/${entry.participation.game_id}?day=${day}`}
+                        className="block bg-white rounded-xl shadow-sm border border-gray-100 p-4 hover:bg-gray-50 transition-colors"
+                      >
+                        <div className="flex items-center justify-between">
+                          <div>
+                            <div className="text-sm font-bold text-gray-900">🎯 Handicap Game</div>
+                            <div className="text-xs text-gray-400 mt-0.5">Day {day} · {dayLabel}</div>
+                          </div>
+                          <div className="text-right">
+                            {pr.holesPlayed === 0 ? (
+                              <div className="text-xs text-gray-400">No scores yet</div>
+                            ) : pr.eligible ? (
+                              <>
+                                <div className="text-base font-bold text-emerald-700">#{rank}</div>
+                                <div className="text-xs text-emerald-600">{pr.totalPoints} pts · {surplusStr}</div>
+                              </>
+                            ) : (
+                              <>
+                                <div className="text-xs font-semibold text-red-400">Not eligible</div>
+                                <div className="text-xs text-gray-400">{pr.totalPoints} / {pr.targetPoints} pts</div>
+                              </>
+                            )}
+                          </div>
+                        </div>
+                        {pr.holesPlayed > 0 && pr.holesPlayed < 18 && (
+                          <div className="mt-2 w-full h-1 bg-gray-100 rounded-full overflow-hidden">
+                            <div className="h-full bg-[#2a6b7c]/40 rounded-full" style={{ width: `${(pr.holesPlayed / 18) * 100}%` }} />
+                          </div>
+                        )}
+                      </a>
+                    )
+                  })}
+                </div>
+                <p className="text-[10px] text-gray-400 mt-2 px-1 text-center">
+                  Tap to view full leaderboard →
+                </p>
+              </div>
+            )}
             <TeamMembersSection currentPlayer={player} />
           </div>
         )}

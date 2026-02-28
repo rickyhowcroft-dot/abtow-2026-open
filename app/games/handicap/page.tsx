@@ -2,7 +2,14 @@
 import { useEffect, useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import Link from 'next/link'
-import { getHandicapGameResults, holePoints, isDayComplete, type HandicapGamePlayer, type ParData } from '@/lib/games-service'
+import { supabase } from '@/lib/supabase'
+import {
+  getHandicapGameResults, isDayComplete,
+  getGameParticipants, optInToGame, optOutOfGame,
+  type HandicapGamePlayer,
+} from '@/lib/games-service'
+
+const GAME_ID = 'handicap'
 
 const DAY_LABELS = ['Ritz Carlton GC', 'Southern Dunes', 'Champions Gate']
 const DAY_FORMATS = ['Best Ball', 'Stableford', 'Individual']
@@ -28,13 +35,14 @@ function SurplusBar({ surplus, max }: { surplus: number; max: number }) {
 }
 
 function PlayerRow({
-  player, rank, maxSurplus, onSelect, isSelected,
+  player, rank, maxSurplus, onSelect, isSelected, isOptedIn,
 }: {
   player: HandicapGamePlayer
   rank: number
   maxSurplus: number
   onSelect: () => void
   isSelected: boolean
+  isOptedIn: boolean
 }) {
   const surplusStr = player.surplus >= 0 ? `+${player.surplus}` : `${player.surplus}`
   const firstName = player.displayName.split(' ')[0]
@@ -56,6 +64,7 @@ function PlayerRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-1.5">
             <span className="text-sm font-semibold text-gray-900 truncate">{firstName}</span>
+            {isOptedIn && <span className="text-[10px] bg-[#2a6b7c]/10 text-[#2a6b7c] px-1.5 py-0.5 rounded-full font-semibold shrink-0">In</span>}
             {player.holesPlayed > 0 && player.holesPlayed < 18 && (
               <span className="text-[10px] text-gray-400">({player.holesPlayed} holes)</span>
             )}
@@ -197,7 +206,18 @@ function HandicapGameContent() {
   const [selectedPlayer, setSelectedPlayer] = useState<string | null>(null)
   const [dayUnlocked, setDayUnlocked] = useState([true, false, false])
 
+  // Identity + opt-in state
+  const [viewerPlayerId, setViewerPlayerId] = useState('')
+  const [players, setPlayers] = useState<{ id: string; name: string; first_name: string | null }[]>([])
+  const [participants, setParticipants] = useState<string[]>([]) // player_ids opted in for activeDay
+  const [optingIn, setOptingIn] = useState(false)
+
   useEffect(() => {
+    const saved = localStorage.getItem('abtow_viewer_id')
+    if (saved) setViewerPlayerId(saved)
+    supabase.from('players').select('id, name, first_name').order('first_name').then(({ data }) => {
+      if (data) setPlayers(data as { id: string; name: string; first_name: string | null }[])
+    })
     Promise.all([isDayComplete(1), isDayComplete(2)]).then(([d1, d2]) => {
       setDayUnlocked([true, d1, d2])
     })
@@ -206,11 +226,33 @@ function HandicapGameContent() {
   useEffect(() => {
     setLoading(true)
     setSelectedPlayer(null)
-    getHandicapGameResults(activeDay).then(r => {
+    Promise.all([
+      getHandicapGameResults(activeDay),
+      getGameParticipants(GAME_ID, activeDay),
+    ]).then(([r, parts]) => {
       setResults(r)
+      setParticipants(parts.map(p => p.player_id))
       setLoading(false)
     })
   }, [activeDay])
+
+  const viewerOptedIn = viewerPlayerId ? participants.includes(viewerPlayerId) : false
+
+  async function handleOptToggle() {
+    if (!viewerPlayerId) return
+    setOptingIn(true)
+    try {
+      if (viewerOptedIn) {
+        await optOutOfGame(GAME_ID, activeDay, viewerPlayerId)
+        setParticipants(prev => prev.filter(id => id !== viewerPlayerId))
+      } else {
+        await optInToGame(GAME_ID, activeDay, viewerPlayerId)
+        setParticipants(prev => [...prev, viewerPlayerId])
+      }
+    } finally {
+      setOptingIn(false)
+    }
+  }
 
   const eligiblePlayers = results?.players.filter(p => p.eligible) ?? []
   const ineligiblePlayers = results?.players.filter(p => !p.eligible) ?? []
@@ -251,6 +293,48 @@ function HandicapGameContent() {
       {/* Day info */}
       <div className="text-center text-xs text-gray-400 mb-4">
         {DAY_LABELS[activeDay - 1]} · {DAY_FORMATS[activeDay - 1]} · Gross scoring
+      </div>
+
+      {/* Identity + opt-in */}
+      <div className="bg-white rounded-xl p-3 mb-4 shadow-sm">
+        <div className="flex items-center gap-3">
+          <span className="text-xs text-gray-500 shrink-0 font-semibold">You are:</span>
+          <select
+            value={viewerPlayerId}
+            onChange={e => {
+              const id = e.target.value
+              setViewerPlayerId(id)
+              if (id) localStorage.setItem('abtow_viewer_id', id)
+              else localStorage.removeItem('abtow_viewer_id')
+            }}
+            className="flex-1 text-sm border-0 bg-transparent focus:outline-none text-gray-700 font-semibold"
+          >
+            <option value="">— select to opt in —</option>
+            {players.map(p => (
+              <option key={p.id} value={p.id}>
+                {p.first_name || p.name.split(' ')[0]} {p.name.split(' ').slice(1).join(' ')}
+              </option>
+            ))}
+          </select>
+          {viewerPlayerId && (
+            <button
+              onClick={handleOptToggle}
+              disabled={optingIn}
+              className={`shrink-0 px-3 py-1.5 rounded-full text-xs font-bold transition-colors ${
+                viewerOptedIn
+                  ? 'bg-emerald-100 text-emerald-700 border border-emerald-300 hover:bg-emerald-200'
+                  : 'bg-[#2a6b7c] text-white hover:bg-[#235a6b]'
+              }`}
+            >
+              {optingIn ? '…' : viewerOptedIn ? '✓ Opted In' : 'Opt In'}
+            </button>
+          )}
+        </div>
+        {participants.length > 0 && (
+          <p className="text-[10px] text-gray-400 mt-2 pl-1">
+            {participants.length} player{participants.length !== 1 ? 's' : ''} opted in for Day {activeDay}
+          </p>
+        )}
       </div>
 
       {/* Rules overview card */}
@@ -349,6 +433,7 @@ function HandicapGameContent() {
                       <PlayerRow
                         player={p} rank={rank}
                         maxSurplus={maxSurplus}
+                        isOptedIn={participants.includes(p.playerId)}
                         onSelect={() => setSelectedPlayer(selectedPlayer === p.playerId ? null : p.playerId)}
                         isSelected={selectedPlayer === p.playerId}
                       />
@@ -369,6 +454,7 @@ function HandicapGameContent() {
                     <PlayerRow
                       player={p} rank={0}
                       maxSurplus={maxSurplus}
+                      isOptedIn={participants.includes(p.playerId)}
                       onSelect={() => setSelectedPlayer(selectedPlayer === p.playerId ? null : p.playerId)}
                       isSelected={selectedPlayer === p.playerId}
                     />
