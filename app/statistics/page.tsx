@@ -5,6 +5,7 @@ import Link from 'next/link'
 import Layout from '@/app/components/Layout'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
 import StatsService, { type PlayerStatsOverview } from '@/lib/stats-service'
+import { getMvpStandings, type MvpPlayer } from '@/lib/mvp-service'
 import { TrendingDown, Award } from 'lucide-react'
 
 export default function StatisticsPage() {
@@ -16,6 +17,8 @@ export default function StatisticsPage() {
   const [teamFilter, setTeamFilter] = useState<'all' | 'Shaft' | 'Balls'>('all')
   const [infoModal, setInfoModal] = useState<{ title: string; description: string } | null>(null)
   const [nightmareRound, setNightmareRound] = useState<{ playerNightmareRounds: Array<{ playerId: string; playerName: string; nightmareGross: number; nightmareNet: number }> } | null>(null)
+  const [mvpStandings, setMvpStandings] = useState<MvpPlayer[]>([])
+  const [mvpExpanded, setMvpExpanded] = useState(false)
 
   const InfoBtn = ({ title, description }: { title: string; description: string }) => (
     <button
@@ -33,14 +36,16 @@ export default function StatisticsPage() {
 
   const loadAllStats = async () => {
     try {
-      const [stats, dream, nightmare] = await Promise.all([
+      const [stats, dream, nightmare, mvp] = await Promise.all([
         StatsService.getAllPlayersStats(),
         StatsService.getDreamRound(),
-        StatsService.getNightmareRound()
+        StatsService.getNightmareRound(),
+        getMvpStandings(),
       ])
       setAllStats(stats)
       setDreamRound(dream)
       setNightmareRound(nightmare)
+      setMvpStandings(mvp)
     } catch (error) {
       console.error('Error loading statistics:', error)
     } finally {
@@ -121,6 +126,140 @@ export default function StatisticsPage() {
             <h1 className="text-4xl font-bold text-gray-900 mb-1">Tournament Statistics</h1>
             <p className="text-lg text-gray-600">ABTOW 2026 Open Performance Analysis</p>
           </div>
+
+          {/* ── Tournament MVP ── */}
+          {mvpStandings.some(p => p.daysPlayed > 0) && (
+            <div className="mb-8">
+              <h2 className="text-xl font-semibold mb-3 flex items-center gap-2">
+                🏆 Tournament MVP
+              </h2>
+
+              {/* Top card — current leader */}
+              {(() => {
+                const top = mvpStandings[0]
+                const tied = mvpStandings.filter(
+                  p => p.matchPoints === top.matchPoints &&
+                       p.netAggregate === top.netAggregate &&
+                       p.birdies === top.birdies
+                )
+                const allDone = top.daysPlayed === 3
+                return (
+                  <div className="bg-gradient-to-br from-amber-50 to-yellow-50 border-2 border-amber-400 rounded-xl p-4 mb-3 shadow-sm">
+                    <div className="flex items-start justify-between">
+                      <div>
+                        <p className="text-xs font-semibold text-amber-600 uppercase tracking-wide mb-1">
+                          {allDone ? '🏆 Tournament MVP' : '⏳ Current Leader'}
+                        </p>
+                        {tied.map(p => (
+                          <p key={p.playerId} className="text-xl font-bold text-gray-900 leading-tight">
+                            {p.displayName.split(' ')[0]}
+                          </p>
+                        ))}
+                        {tied.length > 1 && (
+                          <p className="text-xs text-amber-600 mt-0.5">Tied · {tied.length} players</p>
+                        )}
+                      </div>
+                      <div className="text-right">
+                        <p className="text-2xl font-black text-amber-700">{top.matchPoints}<span className="text-sm font-normal text-amber-500"> pts</span></p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {top.netAggregate !== null ? `Net ${top.netAggregate > 0 ? '+' : ''}${top.netAggregate}` : '—'}
+                          {' · '}{top.birdies} 🐦
+                        </p>
+                      </div>
+                    </div>
+                    {/* Match result pips */}
+                    <div className="flex gap-2 mt-3">
+                      {[1, 2, 3].map(day => {
+                        const res = top.matchResults.find(r => r.day === day)
+                        return (
+                          <div key={day} className={`flex-1 rounded-lg py-1.5 text-center text-xs font-bold ${
+                            !res ? 'bg-gray-100 text-gray-300' :
+                            res.points === 2 ? 'bg-emerald-100 text-emerald-700' :
+                            res.points === 1 ? 'bg-amber-100 text-amber-700' :
+                            'bg-red-100 text-red-500'
+                          }`}>
+                            {!res ? `D${day}` : res.points === 2 ? `D${day} W` : res.points === 1 ? `D${day} D` : `D${day} L`}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
+
+              {/* Full standings table */}
+              <div className="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100">
+                <div className="flex items-center justify-between px-4 py-2 bg-gray-50 border-b border-gray-100">
+                  <span className="text-xs font-semibold text-gray-500 uppercase tracking-wide">Full Standings</span>
+                  <button
+                    onClick={() => setMvpExpanded(e => !e)}
+                    className="text-xs text-[#2a6b7c] font-semibold"
+                  >
+                    {mvpExpanded ? 'Show less ↑' : 'Show all ↓'}
+                  </button>
+                </div>
+                {/* Column headers */}
+                <div className="grid grid-cols-12 gap-1 px-3 py-1.5 text-[10px] text-gray-400 font-semibold uppercase tracking-wide border-b border-gray-50">
+                  <div className="col-span-1">#</div>
+                  <div className="col-span-4">Player</div>
+                  <div className="col-span-2 text-center">Pts</div>
+                  <div className="col-span-2 text-center">Net</div>
+                  <div className="col-span-1 text-center">🐦</div>
+                  <div className="col-span-2 text-center">D1 D2 D3</div>
+                </div>
+                {(mvpExpanded ? mvpStandings : mvpStandings.slice(0, 5)).map((p, i) => {
+                  // Determine display rank (accounting for ties)
+                  let rank = 1
+                  for (let j = 0; j < i; j++) {
+                    const prev = mvpStandings[j]
+                    if (
+                      prev.matchPoints !== p.matchPoints ||
+                      prev.netAggregate !== p.netAggregate ||
+                      prev.birdies !== p.birdies
+                    ) rank = i + 1
+                  }
+                  const isLeader = i === 0
+                  return (
+                    <div key={p.playerId} className={`grid grid-cols-12 gap-1 px-3 py-2.5 items-center border-b border-gray-50 last:border-0 text-sm ${isLeader ? 'bg-amber-50/40' : ''}`}>
+                      <div className="col-span-1 font-bold text-xs text-gray-400">
+                        {rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : rank}
+                      </div>
+                      <div className="col-span-4 font-semibold text-gray-800 truncate text-xs">
+                        {p.displayName.split(' ')[0]}
+                      </div>
+                      <div className={`col-span-2 text-center font-bold text-sm ${isLeader ? 'text-amber-700' : 'text-gray-800'}`}>
+                        {p.matchPoints}
+                      </div>
+                      <div className="col-span-2 text-center text-xs text-gray-600 font-medium">
+                        {p.netAggregate !== null
+                          ? (p.netAggregate > 0 ? `+${p.netAggregate}` : `${p.netAggregate}`)
+                          : '—'}
+                      </div>
+                      <div className="col-span-1 text-center text-xs text-gray-600">{p.birdies}</div>
+                      <div className="col-span-2 flex gap-0.5 justify-center">
+                        {[1, 2, 3].map(day => {
+                          const res = p.matchResults.find(r => r.day === day)
+                          return (
+                            <span key={day} className={`w-5 h-5 rounded text-[9px] font-black flex items-center justify-center ${
+                              !res         ? 'bg-gray-100 text-gray-300' :
+                              res.points === 2 ? 'bg-emerald-400 text-white' :
+                              res.points === 1 ? 'bg-amber-300 text-white' :
+                                                 'bg-red-300 text-white'
+                            }`}>
+                              {!res ? '·' : res.points === 2 ? 'W' : res.points === 1 ? 'D' : 'L'}
+                            </span>
+                          )
+                        })}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+              <p className="text-[10px] text-gray-400 text-center mt-2">
+                Match pts → Net aggregate (lower better) → Birdies
+              </p>
+            </div>
+          )}
 
           {/* Tournament Leaders */}
           <div className="mb-6">
