@@ -14,7 +14,7 @@ interface Game {
 const GAMES: Game[] = [
   {
     id: 'handicap',
-    name: 'Handicap Game',
+    name: 'Handicap Game — $10/player',
     emoji: '🎯',
     tagline: 'Earn points on every hole. Beat your target to be eligible to win.',
     href: '/games/handicap',
