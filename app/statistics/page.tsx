@@ -121,12 +121,6 @@ export default function StatisticsPage() {
     <Layout>
       <div className="min-h-screen bg-gray-50 py-6">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Header */}
-          <div className="text-center mb-6">
-            <h1 className="text-4xl font-bold text-gray-900 mb-1">Tournament Statistics</h1>
-            <p className="text-lg text-gray-600">ABTOW 2026 Open Performance Analysis</p>
-          </div>
-
           {/* ── Tournament MVP ── */}
           {mvpStandings.some(p => p.daysPlayed > 0) && (
             <div className="mb-8">
@@ -260,6 +254,12 @@ export default function StatisticsPage() {
               </p>
             </div>
           )}
+
+          {/* Header */}
+          <div className="text-center mb-6">
+            <h1 className="text-4xl font-bold text-gray-900 mb-1">Tournament Statistics</h1>
+            <p className="text-lg text-gray-600">ABTOW 2026 Open Performance Analysis</p>
+          </div>
 
           {/* Tournament Leaders */}
           <div className="mb-6">
