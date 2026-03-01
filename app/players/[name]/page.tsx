@@ -397,8 +397,8 @@ export default function PlayerProfilePage() {
                   </div>
                 </div>
 
-                {/* Bets needing acceptance */}
-                {playerBets.filter(b => {
+                {/* Bets needing acceptance — only shown to the player themselves */}
+                {isMe && playerBets.filter(b => {
                   if (b.status !== 'pending') return false
                   const acceptorId = b.proposer_side === 'side1' ? b.side2_player_id : b.side1_player_id
                   return acceptorId === player.id
@@ -519,7 +519,7 @@ export default function PlayerProfilePage() {
                                 'bg-red-100 text-red-600'
                               }`}>
                                 {iProposed ? 'Awaiting acceptance' :
-                                 iNeedToAccept ? 'Needs your OK' :
+                                 iNeedToAccept ? (isMe ? 'Needs your OK' : 'Pending acceptance') :
                                  bet.status === 'active' ? 'Active' :
                                  (bet.status === 'side1_won' && isS1) || (bet.status === 'side2_won' && !isS1) ? '✓ Won' :
                                  bet.status === 'push' ? 'Push' : '✗ Lost'}
@@ -529,8 +529,8 @@ export default function PlayerProfilePage() {
                         </div>
                       </button>
 
-                      {/* Inline acceptance */}
-                      {iNeedToAccept && (
+                      {/* Inline acceptance — only rendered for the player themselves */}
+                      {iNeedToAccept && isMe && (
                         <div className="border-t border-yellow-200 bg-yellow-50 px-4 py-3 rounded-b-xl">
                           <AcceptBetInline bet={bet} s1Name={s1Name} s2Name={s2Name} onAccepted={(betId) => {
                             setPlayerBets(prev => prev.map(b => b.id === betId ? { ...b, status: 'active' } : b))
