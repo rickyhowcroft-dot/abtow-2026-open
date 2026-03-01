@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { supabase } from '@/lib/supabase'
 
 function normalizePhone(raw: string): string {
   // TextBelt accepts 10-digit US numbers — strip everything but digits
@@ -19,11 +19,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ skipped: true, reason: 'TextBelt not configured' })
     }
 
-    // Look up phone number server-side (client created inside handler — safe at build time)
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-    )
+    // Look up phone number using shared client (has hardcoded fallback values)
     const { data: player } = await supabase
       .from('players')
       .select('phone_number')
