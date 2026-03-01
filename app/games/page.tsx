@@ -68,7 +68,9 @@ export default function GamesPage() {
                 <span className="text-3xl">{game.emoji}</span>
                 <div>
                   <h2 className="text-base font-bold text-gray-900">{game.name}</h2>
-                  <p className="text-xs text-gray-500 mt-0.5">{game.tagline}</p>
+                  {game.tagline.split('. ').map((s, i) => (
+                    <p key={i} className="text-xs text-gray-500 mt-0.5">{s}{i < game.tagline.split('. ').length - 1 ? '.' : ''}</p>
+                  ))}
                 </div>
               </div>
             </div>
