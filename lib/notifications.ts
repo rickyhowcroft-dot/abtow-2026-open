@@ -106,7 +106,7 @@ export function notifyBetSettled(params: {
 
   notifyPlayer(
     winnerId,
-    `${HEADER}\n\n🏆 Congratulations on that masterpiece of a bet, you won ${betTypeLabel} vs ${loserFirstName}! +$${winnerAmount}\nIt's up to you how to spend the money. 💸${venmoRequest}\n${BASE_URL}/bets`,
+    `${HEADER}\n\n🏆 Congratulations on that masterpiece of a bet, you won ${betTypeLabel} vs ${loserFirstName}! +$${winnerAmount}\n\nIt's up to you how to spend the money. 💸${venmoRequest}\n${BASE_URL}/bets`,
     WINNER_URL
   )
   notifyPlayer(
