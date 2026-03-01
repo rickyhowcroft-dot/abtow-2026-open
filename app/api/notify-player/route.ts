@@ -1,12 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Server-side only — API key never reaches the client
-const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-)
-
 function normalizePhone(raw: string): string {
   // TextBelt accepts 10-digit US numbers — strip everything but digits
   return raw.replace(/\D/g, '').slice(-10)
@@ -25,7 +19,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ skipped: true, reason: 'TextBelt not configured' })
     }
 
-    // Look up phone number server-side
+    // Look up phone number server-side (client created inside handler — safe at build time)
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+    )
     const { data: player } = await supabase
       .from('players')
       .select('phone_number')
