@@ -156,17 +156,20 @@ export async function getMvpStandings(): Promise<MvpPlayer[]> {
       t2Pts = s2Holes > s1Holes ? 2 : s1Holes === s2Holes ? 1 : 0
 
     } else {
-      // Day 1: Best Ball — full handicap net, min net per hole per team
-      let s1Total = 0, s2Total = 0
+      // Day 1: Best Ball — hole-by-hole wins (matching live scorecard)
+      // Each hole: team with lower best-ball net wins; ties = 0.5 each
+      let s1Holes = 0, s2Holes = 0
       for (let h = 1; h <= 18; h++) {
         const si = parData[`hole_${h}`]?.handicap ?? h
         const t1Nets = t1.map(pid => { const g = matchScores[pid]?.[h]; return g == null ? Infinity : netHoleScore(g, playerMap.get(pid)?.playing_handicap ?? 0, si) })
         const t2Nets = t2.map(pid => { const g = matchScores[pid]?.[h]; return g == null ? Infinity : netHoleScore(g, playerMap.get(pid)?.playing_handicap ?? 0, si) })
-        s1Total += Math.min(...t1Nets)
-        s2Total += Math.min(...t2Nets)
+        const best1 = Math.min(...t1Nets), best2 = Math.min(...t2Nets)
+        if (best1 < best2)      { s1Holes += 1 }
+        else if (best2 < best1) { s2Holes += 1 }
+        else                    { s1Holes += 0.5; s2Holes += 0.5 }
       }
-      t1Pts = s1Total < s2Total ? 2 : s1Total === s2Total ? 1 : 0
-      t2Pts = s2Total < s1Total ? 2 : s1Total === s2Total ? 1 : 0
+      t1Pts = s1Holes > s2Holes ? 2 : s1Holes === s2Holes ? 1 : 0
+      t2Pts = s2Holes > s1Holes ? 2 : s1Holes === s2Holes ? 1 : 0
     }
 
     // Opponent name labels
