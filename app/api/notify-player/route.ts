@@ -1,17 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-// Server-side only — Twilio credentials never reach the client
+// Server-side only — API key never reaches the client
 const supabase = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
 )
 
-function toE164(raw: string): string | null {
-  const digits = raw.replace(/\D/g, '')
-  if (digits.length === 10) return `+1${digits}`
-  if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`
-  return null
+function normalizePhone(raw: string): string {
+  // TextBelt accepts 10-digit US numbers — strip everything but digits
+  return raw.replace(/\D/g, '').slice(-10)
 }
 
 export async function POST(request: NextRequest) {
@@ -21,16 +19,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing playerId or message' }, { status: 400 })
     }
 
-    const accountSid = process.env.TWILIO_ACCOUNT_SID
-    const authToken  = process.env.TWILIO_AUTH_TOKEN
-    const fromNumber = process.env.TWILIO_FROM_NUMBER
-
-    if (!accountSid || !authToken || !fromNumber) {
-      // Twilio not configured — silently skip (dev/staging)
-      return NextResponse.json({ skipped: true, reason: 'Twilio not configured' })
+    const apiKey = process.env.TEXTBELT_API_KEY
+    if (!apiKey) {
+      // Not configured — silently skip (dev / before tournament setup)
+      return NextResponse.json({ skipped: true, reason: 'TextBelt not configured' })
     }
 
-    // Look up phone number
+    // Look up phone number server-side
     const { data: player } = await supabase
       .from('players')
       .select('phone_number')
@@ -41,32 +36,25 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ skipped: true, reason: 'No phone number on file' })
     }
 
-    const to = toE164(player.phone_number)
-    if (!to) {
-      return NextResponse.json({ error: 'Invalid phone number format' }, { status: 400 })
+    const phone = normalizePhone(player.phone_number)
+    if (phone.length !== 10) {
+      return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
     }
 
-    // Send via Twilio REST API — no SDK dependency needed
-    const creds = Buffer.from(`${accountSid}:${authToken}`).toString('base64')
-    const res = await fetch(
-      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Basic ${creds}`,
-          'Content-Type': 'application/x-www-form-urlencoded',
-        },
-        body: new URLSearchParams({ Body: message, From: fromNumber, To: to }).toString(),
-      }
-    )
+    // TextBelt REST API — single POST, no SDK needed
+    const res = await fetch('https://textbelt.com/text', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ phone, message, key: apiKey }),
+    })
 
     const result = await res.json()
-    if (!res.ok) {
-      console.error('Twilio error:', result)
-      return NextResponse.json({ error: result.message ?? 'SMS failed' }, { status: 500 })
+    if (!result.success) {
+      console.error('TextBelt error:', result)
+      return NextResponse.json({ error: result.error ?? 'SMS failed' }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, sid: result.sid })
+    return NextResponse.json({ success: true, textId: result.textId, quotaRemaining: result.quotaRemaining })
   } catch (e) {
     console.error('notify-player error:', e)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
