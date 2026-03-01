@@ -26,6 +26,7 @@ export interface PlayerRef {
   last_name: string | null
   avatar_url: string | null
   venmo_handle?: string | null
+  playing_handicap?: number | null
 }
 
 export interface MatchRef {
@@ -44,8 +45,8 @@ export interface BetWithPlayers extends Bet {
 
 const BET_SELECT = `
   *,
-  side1_player:side1_player_id(id, name, first_name, last_name, avatar_url, venmo_handle),
-  side2_player:side2_player_id(id, name, first_name, last_name, avatar_url, venmo_handle),
+  side1_player:side1_player_id(id, name, first_name, last_name, avatar_url, venmo_handle, playing_handicap),
+  side2_player:side2_player_id(id, name, first_name, last_name, avatar_url, venmo_handle, playing_handicap),
   match:match_id(day, group_number, format, team1_players, team2_players)
 `
 
@@ -127,24 +128,27 @@ export async function settleBetsForMatch(matchId: string): Promise<void> {
   if (error) throw error
 }
 
-type PlayerLookup = { id: string; name: string; first_name?: string | null }[]
+type PlayerLookup = { id: string; name: string; first_name?: string | null; playing_handicap?: number | null }[]
 
-function resolveFirstName(id: string, allPlayers: PlayerLookup): string {
+function resolvePlayerLabel(id: string, allPlayers: PlayerLookup): string {
   const p = allPlayers.find(p => p.id === id)
-  return p ? (p.first_name || p.name.split(' ')[0]) : '?'
+  if (!p) return '?'
+  const name = p.first_name || p.name.split(' ')[0]
+  const hcp = p.playing_handicap != null ? ` (${p.playing_handicap})` : ''
+  return `${name}${hcp}`
 }
 
-/** Resolve match team UUIDs to "Hallimen & KOP vs Stewart & Howcroft" */
+/** Resolve match team UUIDs to "Hallimen (4) & KOP (16) vs Stewart (8) & Howcroft (11)" */
 export function matchTeamsLabel(match: MatchRef, allPlayers: PlayerLookup): string {
-  const t1 = (match.team1_players ?? []).map(id => resolveFirstName(id, allPlayers))
-  const t2 = (match.team2_players ?? []).map(id => resolveFirstName(id, allPlayers))
+  const t1 = (match.team1_players ?? []).map(id => resolvePlayerLabel(id, allPlayers))
+  const t2 = (match.team2_players ?? []).map(id => resolvePlayerLabel(id, allPlayers))
   return `${t1.join(' & ')} vs ${t2.join(' & ')}`
 }
 
-/** Resolve match teams as two separate name strings for styled rendering */
+/** Resolve match teams as two separate label strings for styled rendering */
 export function matchTeamsParts(match: MatchRef, allPlayers: PlayerLookup): [string, string] {
-  const t1 = (match.team1_players ?? []).map(id => resolveFirstName(id, allPlayers)).join(' & ')
-  const t2 = (match.team2_players ?? []).map(id => resolveFirstName(id, allPlayers)).join(' & ')
+  const t1 = (match.team1_players ?? []).map(id => resolvePlayerLabel(id, allPlayers)).join(' & ')
+  const t2 = (match.team2_players ?? []).map(id => resolvePlayerLabel(id, allPlayers)).join(' & ')
   return [t1, t2]
 }
 

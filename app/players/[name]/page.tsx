@@ -85,7 +85,7 @@ export default function PlayerProfilePage() {
 
   useEffect(() => {
     fetchPlayer()
-    supabase.from('players').select('id, name, first_name').then(({ data }) => {
+    supabase.from('players').select('id, name, first_name, playing_handicap').then(({ data }) => {
       if (data) setAllPlayers(data)
     })
   }, [playerName])
