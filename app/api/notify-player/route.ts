@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing playerId or message' }, { status: 400 })
     }
 
-    const apiKey = process.env.TEXTBELT_API_KEY
+    const apiKey = process.env.TEXTBELT_API_KEY?.trim()
     if (!apiKey) {
       // Not configured — silently skip (dev / before tournament setup)
       return NextResponse.json({ skipped: true, reason: 'TextBelt not configured' })
