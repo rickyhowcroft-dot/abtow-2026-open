@@ -3,7 +3,8 @@
 import { useState, useEffect } from 'react'
 import { supabase } from '@/lib/supabase'
 import Layout from '@/app/components/Layout'
-import { settleBetsForMatch } from '@/lib/bets-service'
+import { settleBetsForMatch, getBetsForMatch, betTypeLabel, playerDisplayName } from '@/lib/bets-service'
+import { notifyBetSettled } from '@/lib/notifications'
 import { getAllGameDayLocks, setGameDayLock, type GameDayLock } from '@/lib/games-service'
 
 const ADMIN_PASSWORD = 'FuckCalder'
@@ -25,6 +26,7 @@ interface PlayerRow {
   first_name: string | null
   last_name: string | null
   venmo_handle: string | null
+  phone_number: string | null
 }
 
 export default function AdminPage() {
@@ -40,6 +42,10 @@ export default function AdminPage() {
   const [venmoEdits, setVenmoEdits] = useState<Record<string, string>>({})
   const [venmoSaving, setVenmoSaving] = useState<string | null>(null)
   const [venmoSaved, setVenmoSaved] = useState<string | null>(null)
+  // Phone editing state: playerId → draft phone string
+  const [phoneEdits, setPhoneEdits] = useState<Record<string, string>>({})
+  const [phoneSaving, setPhoneSaving] = useState<string | null>(null)
+  const [phoneSaved, setPhoneSaved] = useState<string | null>(null)
   const [gameLocks, setGameLocks] = useState<GameDayLock[]>([])
   const [gameLockToggling, setGameLockToggling] = useState<string | null>(null)
 
@@ -60,7 +66,7 @@ export default function AdminPage() {
         .order('day'),
       supabase
         .from('players')
-        .select('id, name, first_name, last_name, venmo_handle')
+        .select('id, name, first_name, last_name, venmo_handle, phone_number')
         .order('name'),
       getAllGameDayLocks(),
     ])
@@ -69,8 +75,13 @@ export default function AdminPage() {
       const p = playerRes.data as PlayerRow[]
       setPlayers(p)
       const edits: Record<string, string> = {}
-      p.forEach(pl => { edits[pl.id] = pl.venmo_handle ?? '' })
+      const phones: Record<string, string> = {}
+      p.forEach(pl => {
+        edits[pl.id] = pl.venmo_handle ?? ''
+        phones[pl.id] = pl.phone_number ?? ''
+      })
       setVenmoEdits(edits)
+      setPhoneEdits(phones)
     }
     setGameLocks(locks)
     setLoading(false)
@@ -95,9 +106,35 @@ export default function AdminPage() {
     })
     if (!error) {
       setMatches(prev => prev.map(m => m.id === matchId ? { ...m, scores_locked: !currentlyLocked } : m))
-      // Auto-settle bets when locking (scores are final)
+      // Auto-settle bets when locking (scores are final), then notify players
       if (!currentlyLocked) {
-        settleBetsForMatch(matchId).catch(e => console.warn('Bet settlement:', e))
+        settleBetsForMatch(matchId)
+          .then(() => getBetsForMatch(matchId))
+          .then(bets => {
+            bets.forEach(bet => {
+              if (!['side1_won', 'side2_won', 'push'].includes(bet.status)) return
+              const s1First = (bet.side1_player.first_name ?? bet.side1_player.name).split(' ')[0]
+              const s2First = (bet.side2_player.first_name ?? bet.side2_player.name).split(' ')[0]
+              const s1Won = bet.status === 'side1_won'
+              notifyBetSettled({
+                status: bet.status as 'side1_won' | 'side2_won' | 'push',
+                winnerId:  bet.status === 'push' ? null : s1Won ? bet.side1_player_id : bet.side2_player_id,
+                loserId:   bet.status === 'push' ? null : s1Won ? bet.side2_player_id : bet.side1_player_id,
+                side1Id:   bet.side1_player_id,
+                side2Id:   bet.side2_player_id,
+                winnerFirstName: s1Won ? s1First : s2First,
+                loserFirstName:  s1Won ? s2First : s1First,
+                side1FirstName:  s1First,
+                side2FirstName:  s2First,
+                betTypeLabel:  betTypeLabel(bet.bet_type),
+                winnerAmount:  Number(s1Won ? bet.side2_amount : bet.side1_amount),
+                loserAmount:   Number(s1Won ? bet.side1_amount : bet.side2_amount),
+                winnerVenmoHandle: s1Won ? bet.side1_player.venmo_handle : bet.side2_player.venmo_handle,
+                loserVenmoHandle:  s1Won ? bet.side2_player.venmo_handle : bet.side1_player.venmo_handle,
+              })
+            })
+          })
+          .catch(e => console.warn('Bet settlement/notification error:', e))
       }
     }
     setToggling(null)
@@ -124,6 +161,24 @@ export default function AdminPage() {
       setTimeout(() => setVenmoSaved(null), 2000)
     }
     setVenmoSaving(null)
+  }
+
+  async function savePhone(playerId: string) {
+    const raw = (phoneEdits[playerId] ?? '').trim()
+    const digits = raw.replace(/\D/g, '')
+    const phone = digits.length >= 10 ? digits : ''
+    setPhoneSaving(playerId)
+    const { error } = await supabase.rpc('set_player_phone', {
+      p_player_id: playerId,
+      p_phone: phone || null,
+    })
+    if (!error) {
+      setPlayers(prev => prev.map(p => p.id === playerId ? { ...p, phone_number: phone || null } : p))
+      setPhoneEdits(prev => ({ ...prev, [playerId]: phone }))
+      setPhoneSaved(playerId)
+      setTimeout(() => setPhoneSaved(null), 2000)
+    }
+    setPhoneSaving(null)
   }
 
   async function toggleGameLock(gameId: string, day: number) {
@@ -332,6 +387,59 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* ── Phone Numbers ── */}
+              <div className="mb-8">
+                <h2 className="text-base font-semibold text-[#2a6b7c] uppercase tracking-wide mb-1">
+                  📱 Phone Numbers
+                </h2>
+                <p className="text-xs text-gray-400 mb-3">10-digit US number — used to SMS players when bets are proposed, accepted, or settled.</p>
+                <div className="bg-white rounded-xl shadow-sm overflow-hidden divide-y divide-gray-100">
+                  {players
+                    .sort((a, b) => {
+                      const aName = a.first_name ?? a.name
+                      const bName = b.first_name ?? b.name
+                      return aName.localeCompare(bName)
+                    })
+                    .map(player => {
+                      const displayName = player.first_name && player.last_name
+                        ? `${player.first_name} ${player.last_name}`
+                        : player.name
+                      const isDirty = (phoneEdits[player.id] ?? '') !== (player.phone_number ?? '')
+                      const isSaving = phoneSaving === player.id
+                      const isSaved = phoneSaved === player.id
+                      const hasPhone = !!(player.phone_number)
+
+                      return (
+                        <div key={player.id} className="flex items-center gap-3 px-4 py-3">
+                          <span className="text-sm font-medium text-gray-700 w-28 shrink-0 truncate">{displayName}</span>
+                          <div className="flex-1 flex items-center gap-2">
+                            {hasPhone && !isDirty && <span className="text-green-500 text-xs shrink-0">✓</span>}
+                            <input
+                              type="tel"
+                              value={phoneEdits[player.id] ?? ''}
+                              onChange={e => setPhoneEdits(prev => ({ ...prev, [player.id]: e.target.value }))}
+                              onKeyDown={e => e.key === 'Enter' && savePhone(player.id)}
+                              placeholder="555-867-5309"
+                              className="flex-1 text-sm border border-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-[#2a6b7c]/30 min-w-0"
+                            />
+                          </div>
+                          <button
+                            onClick={() => savePhone(player.id)}
+                            disabled={isSaving || !isDirty}
+                            className={`text-xs px-3 py-1.5 rounded-lg font-medium shrink-0 transition-colors ${
+                              isSaved ? 'bg-green-500 text-white' :
+                              isDirty ? 'bg-[#2a6b7c] text-white hover:bg-[#235a68]' :
+                              'bg-gray-100 text-gray-400'
+                            } disabled:opacity-60`}
+                          >
+                            {isSaving ? '…' : isSaved ? '✓' : 'Save'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                </div>
               </div>
 
               {/* ── Venmo Handles ── */}

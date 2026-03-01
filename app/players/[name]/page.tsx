@@ -8,6 +8,7 @@ import type { Player } from '@/lib/scoring'
 import { openVenmo } from '@/lib/venmo'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
 import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, matchTeamsLabel, matchTeamsParts, type BetWithPlayers, type Bet, type MatchRef } from '@/lib/bets-service'
+import { notifyBetAccepted } from '@/lib/notifications'
 import { formatMoneyline } from '@/lib/monte-carlo'
 import { getPlayerGameParticipation, getHandicapGameResults, type GameParticipant, type HandicapGamePlayer } from '@/lib/games-service'
 
@@ -46,7 +47,19 @@ function AcceptBetInline({ bet, s1Name, s2Name, onAccepted }: {
   async function handle() {
     if (!checked) { setErr('Check the box to confirm'); return }
     setLoading(true)
-    try { await acceptBet(bet.id); onAccepted(bet.id) }
+    try {
+      await acceptBet(bet.id)
+      // Notify the proposer their bet was accepted
+      const proposerId = bet.proposer_side === 'side1' ? bet.side1_player_id : bet.side2_player_id
+      const acceptorPlayer = bet.proposer_side === 'side1' ? bet.side2_player : bet.side1_player
+      const acceptorFirst = acceptorPlayer.first_name ?? acceptorPlayer.name.split(' ')[0]
+      notifyBetAccepted({
+        proposerPlayerId: proposerId,
+        acceptorFirstName: acceptorFirst,
+        betTypeLabel: betTypeLabel(bet.bet_type),
+      })
+      onAccepted(bet.id)
+    }
     catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Failed') }
     finally { setLoading(false) }
   }

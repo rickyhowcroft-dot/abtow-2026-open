@@ -18,25 +18,40 @@ export type Database = {
         Row: {
           id: string
           name: string
+          first_name: string | null
+          last_name: string | null
+          nickname: string | null
           team: 'Shaft' | 'Balls'
           raw_handicap: number
           playing_handicap: number
+          venmo_handle: string | null
+          phone_number: string | null
           created_at: string
         }
         Insert: {
           id?: string
           name: string
+          first_name?: string | null
+          last_name?: string | null
+          nickname?: string | null
           team: 'Shaft' | 'Balls'
           raw_handicap: number
           playing_handicap: number
+          venmo_handle?: string | null
+          phone_number?: string | null
           created_at?: string
         }
         Update: {
           id?: string
           name?: string
+          first_name?: string | null
+          last_name?: string | null
+          nickname?: string | null
           team?: 'Shaft' | 'Balls'
           raw_handicap?: number
           playing_handicap?: number
+          venmo_handle?: string | null
+          phone_number?: string | null
           created_at?: string
         }
       }
