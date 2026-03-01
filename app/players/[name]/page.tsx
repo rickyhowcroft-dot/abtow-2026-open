@@ -5,6 +5,7 @@ import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { supabase } from '@/lib/supabase'
 import type { Player } from '@/lib/scoring'
+import { openVenmo } from '@/lib/venmo'
 import PlayerStatsModal from '@/app/components/PlayerStatsModal'
 import { getBetsForPlayer, acceptBet, playerDisplayName, betTypeLabel, betStatusLabel, betTermsInfo, matchTeamsLabel, matchTeamsParts, type BetWithPlayers, type Bet, type MatchRef } from '@/lib/bets-service'
 import { formatMoneyline } from '@/lib/monte-carlo'
@@ -233,17 +234,15 @@ export default function PlayerProfilePage() {
 
           {player.venmo_handle && (
             <div className="mb-5">
-              <a
-                href={`https://venmo.com/${player.venmo_handle}`}
-                target="_blank"
-                rel="noopener noreferrer"
+              <button
+                onClick={() => openVenmo(player.venmo_handle!, 'pay', 'ABTOW 2026')}
                 className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[#3D95CE] text-white font-semibold text-sm hover:bg-[#3182b8] transition-colors shadow-sm"
               >
                 <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                   <path d="M19.5 2c.8 1.3 1.2 2.7 1.2 4.5 0 5.6-4.8 12.9-8.7 18H4.8L2 2.6l6.3-.6 1.6 12.9C11.6 12 13.5 8 13.5 5.2c0-1.7-.3-2.9-.8-3.9L19.5 2z"/>
                 </svg>
                 @{player.venmo_handle}
-              </a>
+              </button>
             </div>
           )}
 
@@ -437,11 +436,12 @@ export default function PlayerProfilePage() {
                         <div className="text-xs text-emerald-600">${Number(amt).toLocaleString()} from {losN}</div>
                       </div>
                       {losP.venmo_handle && (
-                        <a href={`https://venmo.com/${losP.venmo_handle}`} target="_blank" rel="noopener noreferrer"
+                        <button
+                          onClick={() => openVenmo(losP.venmo_handle!, 'charge', 'ABTOW 2026 Bet')}
                           className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-[#008CFF] text-white text-xs font-bold rounded-full">
                           <svg width="10" height="10" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
                           Request
-                        </a>
+                        </button>
                       )}
                     </div>
                   )
@@ -455,11 +455,12 @@ export default function PlayerProfilePage() {
                           <div className="text-xs text-red-500 italic">&ldquo;A Lannister always pays their debts.&rdquo;</div>
                         </div>
                         {winP.venmo_handle && (
-                          <a href={`https://venmo.com/${winP.venmo_handle}`} target="_blank" rel="noopener noreferrer"
+                          <button
+                            onClick={() => openVenmo(winP.venmo_handle!, 'pay', 'ABTOW 2026 Bet')}
                             className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-[#008CFF] text-white text-xs font-bold rounded-full">
                             <svg width="10" height="10" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
                             Pay
-                          </a>
+                          </button>
                         )}
                       </div>
                     </div>
@@ -592,11 +593,12 @@ export default function PlayerProfilePage() {
                   <p className="font-bold text-emerald-800 text-lg">You won!</p>
                   <p className="text-sm text-emerald-700 mt-1"><strong>${Number(amt).toLocaleString()}</strong> from {losN}. Your read was right.</p>
                   {losP.venmo_handle && (
-                    <a href={`https://venmo.com/${losP.venmo_handle}`} target="_blank" rel="noopener noreferrer"
+                    <button
+                      onClick={() => openVenmo(losP.venmo_handle!, 'charge', 'ABTOW 2026 Bet')}
                       className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-[#008CFF] text-white text-sm font-bold rounded-full">
                       <svg width="14" height="14" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
                       Request from {losN}
-                    </a>
+                    </button>
                   )}
                 </div>
               )
@@ -608,11 +610,12 @@ export default function PlayerProfilePage() {
                     <p className="text-sm text-red-800">You owe <strong>{winN}</strong> <strong>${Number(amt).toLocaleString()}</strong>.</p>
                     <p className="text-sm text-red-700 mt-1 italic">&ldquo;A Lannister always pays their debts.&rdquo;<br/>Be an honorable man — don&apos;t make them ask twice.</p>
                     {winP.venmo_handle && (
-                      <a href={`https://venmo.com/${winP.venmo_handle}`} target="_blank" rel="noopener noreferrer"
+                      <button
+                        onClick={() => openVenmo(winP.venmo_handle!, 'pay', 'ABTOW 2026 Bet')}
                         className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-[#008CFF] text-white text-sm font-bold rounded-full">
                         <svg width="14" height="14" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
                         Pay {winN}
-                      </a>
+                      </button>
                     )}
                   </div>
                 </div>
@@ -667,16 +670,14 @@ export default function PlayerProfilePage() {
             {(viewBet.side1_player.venmo_handle || viewBet.side2_player.venmo_handle) && (
               <div className="mt-3 flex gap-2">
                 {[viewBet.side1_player, viewBet.side2_player].map(p => p.venmo_handle ? (
-                  <a
+                  <button
                     key={p.id}
-                    href={`https://venmo.com/${p.venmo_handle}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
+                    onClick={() => openVenmo(p.venmo_handle!, 'pay', 'ABTOW 2026 Bet')}
                     className="flex-1 flex items-center justify-center gap-1.5 py-2 rounded-xl bg-[#3D95CE] text-white text-xs font-bold hover:bg-[#3182b8] transition-colors"
                   >
                     <svg className="w-3 h-3" viewBox="0 0 24 24" fill="currentColor"><path d="M19.5 2c.8 1.3 1.2 2.7 1.2 4.5 0 5.6-4.8 12.9-8.7 18H4.8L2 2.6l6.3-.6 1.6 12.9C11.6 12 13.5 8 13.5 5.2c0-1.7-.3-2.9-.8-3.9L19.5 2z"/></svg>
                     Pay {playerDisplayName(p).split(' ')[0]}
-                  </a>
+                  </button>
                 ) : null)}
               </div>
             )}
