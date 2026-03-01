@@ -288,6 +288,8 @@ export type Database = {
           hole_number: number
           times_played: number
           total_gross_strokes: number
+          net_score: number | null
+          stableford_points: number | null
           eagles: number
           birdies: number
           pars: number
@@ -305,6 +307,8 @@ export type Database = {
           hole_number: number
           times_played?: number
           total_gross_strokes?: number
+          net_score?: number | null
+          stableford_points?: number | null
           eagles?: number
           birdies?: number
           pars?: number
@@ -322,6 +326,8 @@ export type Database = {
           hole_number?: number
           times_played?: number
           total_gross_strokes?: number
+          net_score?: number | null
+          stableford_points?: number | null
           eagles?: number
           birdies?: number
           pars?: number

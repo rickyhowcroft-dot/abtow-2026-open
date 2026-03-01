@@ -20,6 +20,7 @@ export interface PlayerScoreCard {
     grossScore: number
     par: number
     netScore: number
+    stablefordPoints: number
   }>
 }
 
@@ -62,7 +63,7 @@ export class StatsService {
     let totalGrossStrokes = 0
     let totalNetStrokes = 0
     
-    scores.forEach(({ holeNumber, grossScore, par, netScore }) => {
+    scores.forEach(({ holeNumber, grossScore, par, netScore, stablefordPoints }) => {
       totalGrossStrokes += grossScore
       totalNetStrokes += netScore
       
@@ -96,6 +97,8 @@ export class StatsService {
         hole_number: holeNumber,
         times_played: 1, // Will be incremented in upsert
         total_gross_strokes: grossScore,
+        net_score: netScore,
+        stableford_points: stablefordPoints,
         eagles: strokesToPar <= -2 ? 1 : 0,
         birdies: strokesToPar === -1 ? 1 : 0,
         pars: strokesToPar === 0 ? 1 : 0,
@@ -160,6 +163,8 @@ export class StatsService {
           p_player_id: holeStat.player_id,
           p_hole_number: holeStat.hole_number,
           p_gross_score: holeStat.total_gross_strokes,
+          p_net_score: holeStat.net_score ?? 0,
+          p_stableford_pts: holeStat.stableford_points ?? 0,
           p_eagles: holeStat.eagles,
           p_birdies: holeStat.birdies,
           p_pars: holeStat.pars,

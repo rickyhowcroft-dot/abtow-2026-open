@@ -60,41 +60,31 @@ export class PostRoundProcessor {
       }
       
       const course = match.courses as Course
-      const parData = course.par_data
-      
+      const parData = course.par_data as Record<string, { par: number; handicap: number }>
+      const hcp = player.playing_handicap ?? 0
+
       // Build scorecard data
       const scoreCardScores = completedScores.map(score => {
         const holeNumber = score.hole_number
-        const par = parData[holeNumber - 1] || 4 // Default to par 4 if missing
+        const holeKey = `hole_${holeNumber}`
+        const holeData = parData[holeKey] ?? { par: 4, handicap: holeNumber }
+        const par = holeData.par
+        const strokeIndex = holeData.handicap   // stroke index (1 = hardest)
         const grossScore = score.gross_score!
-        
-        // Calculate net score (gross - handicap strokes for this hole)
-        let handicapStroke = 0
-        const holesReceivingStrokes = Math.abs(player.playing_handicap)
-        if (player.playing_handicap > 0) {
-          // Player receives strokes - distribute them across holes 1-18 by difficulty
-          // For simplicity, give strokes to holes 1 through handicap value
-          if (holeNumber <= holesReceivingStrokes) {
-            handicapStroke = 1
-            // If handicap > 18, some holes get 2 strokes
-            if (player.playing_handicap > 18 && holeNumber <= (player.playing_handicap - 18)) {
-              handicapStroke = 2
-            }
-          }
-        } else if (player.playing_handicap < 0) {
-          // Player gives strokes (plus handicap)
-          if (holeNumber <= Math.abs(player.playing_handicap)) {
-            handicapStroke = -1
-          }
-        }
-        
-        const netScore = grossScore - handicapStroke
-        
+
+        // Correct net score: strokes given based on stroke index
+        const strokesGiven = Math.floor(hcp / 18) + (strokeIndex <= (hcp % 18) ? 1 : 0)
+        const netScore = grossScore - strokesGiven
+
+        // Stableford points: max(0, 2 + par - net)
+        const stablefordPoints = Math.max(0, 2 + par - netScore)
+
         return {
           holeNumber,
           grossScore,
           par,
-          netScore
+          netScore,
+          stablefordPoints,
         }
       })
       
