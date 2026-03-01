@@ -5,6 +5,7 @@
  */
 
 const BASE_URL = 'https://abtow.golf'
+const HEADER = '🏌️ ABTOW 2026 Open'
 
 // ─── Core sender ─────────────────────────────────────────────────────────────
 
@@ -38,7 +39,7 @@ export function notifyBetProposed(params: {
   const url = `${BASE_URL}/players/${encodeURIComponent(acceptorProfileSlug)}`
   notifyPlayer(
     acceptorPlayerId,
-    `⛳ ${proposerFirstName} sent you a bet on ABTOW!\n${typeStr} · $${totalAmount}\nTap to accept: ${url}`
+    `${HEADER}\n\n⛳ ${proposerFirstName} wants to bet you!\n${typeStr} · $${totalAmount}\nAccept here: ${url}`
   )
 }
 
@@ -54,7 +55,7 @@ export function notifyBetAccepted(params: {
   const { proposerPlayerId, acceptorFirstName, betTypeLabel } = params
   notifyPlayer(
     proposerPlayerId,
-    `✅ ${acceptorFirstName} accepted your ${betTypeLabel} bet on ABTOW. It's on!\n${BASE_URL}/bets`
+    `${HEADER}\n\n✅ ${acceptorFirstName} accepted your ${betTypeLabel} bet. It's on!\n${BASE_URL}/bets`
   )
 }
 
@@ -86,27 +87,27 @@ export function notifyBetSettled(params: {
   } = params
 
   if (status === 'push') {
-    const pushMsg = `🤝 Your ${betTypeLabel} bet pushed — no money changes hands.\n${BASE_URL}/bets`
+    const pushMsg = `${HEADER}\n\n🤝 Your ${betTypeLabel} bet vs ${side2FirstName} pushed — no money changes hands.\n${BASE_URL}/bets`
     notifyPlayer(side1Id, pushMsg)
-    notifyPlayer(side2Id, pushMsg)
+    notifyPlayer(side2Id, `${HEADER}\n\n🤝 Your ${betTypeLabel} bet vs ${side1FirstName} pushed — no money changes hands.\n${BASE_URL}/bets`)
     return
   }
 
   if (!winnerId || !loserId) return
 
   const venmoRequest = winnerVenmoHandle
-    ? `\nRequest Venmo: venmo.com/${winnerVenmoHandle}`
+    ? `\nRequest on Venmo: venmo.com/${winnerVenmoHandle}`
     : ''
   const venmoPay = loserVenmoHandle
-    ? `\nPay Venmo: venmo.com/${loserVenmoHandle}`
+    ? `\nPay on Venmo: venmo.com/${loserVenmoHandle}`
     : ''
 
   notifyPlayer(
     winnerId,
-    `🏆 You won your ${betTypeLabel} bet vs ${loserFirstName} on ABTOW! +$${winnerAmount}${venmoRequest}\n${BASE_URL}/bets`
+    `${HEADER}\n\n🏆 You won your ${betTypeLabel} bet vs ${loserFirstName}! +$${winnerAmount}${venmoRequest}\n${BASE_URL}/bets`
   )
   notifyPlayer(
     loserId,
-    `📜 You lost your ${betTypeLabel} bet vs ${winnerFirstName} on ABTOW. -$${loserAmount}.\n"A Lannister always pays their debts."${venmoPay}\n${BASE_URL}/bets`
+    `${HEADER}\n\n📜 You lost your ${betTypeLabel} bet vs ${winnerFirstName}. -$${loserAmount}\n"A Lannister always pays their debts."${venmoPay}\n${BASE_URL}/bets`
   )
 }
