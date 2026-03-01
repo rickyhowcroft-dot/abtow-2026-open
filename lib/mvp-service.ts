@@ -109,55 +109,62 @@ export async function getMvpStandings(): Promise<MvpPlayer[]> {
     })
     if (!hasFullScores) return
 
-    // Compute per-hole team score
-    let s1Total = 0, s2Total = 0
+    const isMatchPlay = match.format === 'individual'
 
-    for (let h = 1; h <= 18; h++) {
-      const key = `hole_${h}`
-      const par = parData[key]?.par ?? 4
-      const si  = parData[key]?.handicap ?? h
-
-      if (isStableford) {
-        const t1Pts = t1.map(pid => {
-          const g = matchScores[pid]?.[h]
-          if (g == null) return 0
-          const hcp = playerMap.get(pid)?.playing_handicap ?? 0
-          return stablefordPts(g, par, hcp, si)
-        })
-        const t2Pts = t2.map(pid => {
-          const g = matchScores[pid]?.[h]
-          if (g == null) return 0
-          const hcp = playerMap.get(pid)?.playing_handicap ?? 0
-          return stablefordPts(g, par, hcp, si)
-        })
-        // Combined: sum both players' points per hole
-        s1Total += t1Pts.reduce((a, b) => a + b, 0)
-        s2Total += t2Pts.reduce((a, b) => a + b, 0)
-      } else {
-        // Net stroke play — Best Ball (min net) or Individual
-        const t1Nets = t1.map(pid => {
-          const g = matchScores[pid]?.[h]
-          if (g == null) return Infinity
-          const hcp = playerMap.get(pid)?.playing_handicap ?? 0
-          return netHoleScore(g, hcp, si)
-        })
-        const t2Nets = t2.map(pid => {
-          const g = matchScores[pid]?.[h]
-          if (g == null) return Infinity
-          const hcp = playerMap.get(pid)?.playing_handicap ?? 0
-          return netHoleScore(g, hcp, si)
-        })
-        s1Total += t1.length > 1 ? Math.min(...t1Nets) : t1Nets[0]
-        s2Total += t2.length > 1 ? Math.min(...t2Nets) : t2Nets[0]
-      }
-    }
-
-    // Determine result
+    // Compute match result per format
     let t1Pts: number, t2Pts: number
+
     if (isStableford) {
+      // Day 2: Combined Stableford — sum both players' points per hole
+      let s1Total = 0, s2Total = 0
+      for (let h = 1; h <= 18; h++) {
+        const par = parData[`hole_${h}`]?.par ?? 4
+        const si  = parData[`hole_${h}`]?.handicap ?? h
+        s1Total += t1.reduce((sum, pid) => {
+          const g = matchScores[pid]?.[h]; if (g == null) return sum
+          return sum + stablefordPts(g, par, playerMap.get(pid)?.playing_handicap ?? 0, si)
+        }, 0)
+        s2Total += t2.reduce((sum, pid) => {
+          const g = matchScores[pid]?.[h]; if (g == null) return sum
+          return sum + stablefordPts(g, par, playerMap.get(pid)?.playing_handicap ?? 0, si)
+        }, 0)
+      }
       t1Pts = s1Total > s2Total ? 2 : s1Total === s2Total ? 1 : 0
       t2Pts = s2Total > s1Total ? 2 : s1Total === s2Total ? 1 : 0
+
+    } else if (isMatchPlay) {
+      // Day 3: Individual match play — delta strokes on lowest SI holes, hole-by-hole
+      const pid1 = t1[0], pid2 = t2[0]
+      const hcp1 = playerMap.get(pid1)?.playing_handicap ?? 0
+      const hcp2 = playerMap.get(pid2)?.playing_handicap ?? 0
+      const delta = Math.abs(hcp1 - hcp2)
+      let s1Holes = 0, s2Holes = 0
+
+      for (let h = 1; h <= 18; h++) {
+        const si = parData[`hole_${h}`]?.handicap ?? h
+        const g1 = matchScores[pid1]?.[h], g2 = matchScores[pid2]?.[h]
+        if (g1 == null || g2 == null) continue
+        // Only the higher hcp player gets strokes (delta only, not full hcp)
+        const extra1 = hcp1 >= hcp2 ? Math.floor(delta / 18) + (si <= (delta % 18) ? 1 : 0) : 0
+        const extra2 = hcp2 >  hcp1 ? Math.floor(delta / 18) + (si <= (delta % 18) ? 1 : 0) : 0
+        const net1 = g1 - extra1, net2 = g2 - extra2
+        if (net1 < net2)      { s1Holes += 1 }
+        else if (net2 < net1) { s2Holes += 1 }
+        else                  { s1Holes += 0.5; s2Holes += 0.5 }
+      }
+      t1Pts = s1Holes > s2Holes ? 2 : s1Holes === s2Holes ? 1 : 0
+      t2Pts = s2Holes > s1Holes ? 2 : s1Holes === s2Holes ? 1 : 0
+
     } else {
+      // Day 1: Best Ball — full handicap net, min net per hole per team
+      let s1Total = 0, s2Total = 0
+      for (let h = 1; h <= 18; h++) {
+        const si = parData[`hole_${h}`]?.handicap ?? h
+        const t1Nets = t1.map(pid => { const g = matchScores[pid]?.[h]; return g == null ? Infinity : netHoleScore(g, playerMap.get(pid)?.playing_handicap ?? 0, si) })
+        const t2Nets = t2.map(pid => { const g = matchScores[pid]?.[h]; return g == null ? Infinity : netHoleScore(g, playerMap.get(pid)?.playing_handicap ?? 0, si) })
+        s1Total += Math.min(...t1Nets)
+        s2Total += Math.min(...t2Nets)
+      }
       t1Pts = s1Total < s2Total ? 2 : s1Total === s2Total ? 1 : 0
       t2Pts = s2Total < s1Total ? 2 : s1Total === s2Total ? 1 : 0
     }
