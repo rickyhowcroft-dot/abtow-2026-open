@@ -6,7 +6,8 @@
 
 const BASE_URL = 'https://abtow.golf'
 const HEADER = '🏌️ ABTOW 2026 Open'
-const TYWIN_URL = `${BASE_URL}/tywin.jpg`
+const TYWIN_URL  = `${BASE_URL}/tywin.jpg`
+const WINNER_URL = `${BASE_URL}/winner.jpg`
 
 // ─── Core sender ─────────────────────────────────────────────────────────────
 
@@ -105,7 +106,8 @@ export function notifyBetSettled(params: {
 
   notifyPlayer(
     winnerId,
-    `${HEADER}\n\n🏆 You won your ${betTypeLabel} bet vs ${loserFirstName}! +$${winnerAmount}${venmoRequest}\n${BASE_URL}/bets`
+    `${HEADER}\n\n🏆 You won your ${betTypeLabel} bet vs ${loserFirstName}! +$${winnerAmount}${venmoRequest}\n${BASE_URL}/bets`,
+    WINNER_URL
   )
   notifyPlayer(
     loserId,

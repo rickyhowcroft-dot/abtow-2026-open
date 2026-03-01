@@ -171,22 +171,24 @@ function BetDetailModal({
               </div>
             )}
             {viewerWon && !isPush && (
-              <div className="bg-emerald-50 border-2 border-emerald-400 rounded-2xl p-4 text-center">
-                <p className="text-3xl mb-1">🏆</p>
-                <p className="font-bold text-emerald-800 text-lg">You won!</p>
-                <p className="text-sm text-emerald-700 mt-1">
-                  <strong>${Number(winnerAmount).toLocaleString()}</strong> from {loserName} — your read was right.
-                </p>
-                <p className="text-xs text-emerald-600 mt-1 italic">{loserName} has been notified. Expect payment.</p>
-                {loserPlayer.venmo_handle && (
-                  <button
-                    onClick={() => openVenmo(loserPlayer.venmo_handle!, 'charge', 'ABTOW 2026 Bet')}
-                    className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-[#008CFF] text-white text-sm font-bold rounded-full"
-                  >
-                    <svg width="14" height="14" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
-                    Request from {loserName}
-                  </button>
-                )}
+              <div className="rounded-2xl overflow-hidden border-2 border-emerald-400 mb-4">
+                <img src="/winner.jpg" alt="" className="w-full object-cover max-h-48" style={{objectPosition:'center 30%'}} />
+                <div className="bg-emerald-50 p-4 text-center">
+                  <p className="font-bold text-emerald-900 text-base mb-1">🏆 You won!</p>
+                  <p className="text-sm text-emerald-800">
+                    <strong>${Number(winnerAmount).toLocaleString()}</strong> from {loserName} — your read was right.
+                  </p>
+                  <p className="text-xs text-emerald-600 mt-1 italic">{loserName} has been notified. Collect your coins.</p>
+                  {loserPlayer.venmo_handle && (
+                    <button
+                      onClick={() => openVenmo(loserPlayer.venmo_handle!, 'charge', 'ABTOW 2026 Bet')}
+                      className="inline-flex items-center gap-1.5 mt-3 px-4 py-2 bg-[#008CFF] text-white text-sm font-bold rounded-full"
+                    >
+                      <svg width="14" height="14" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
+                      Request from {loserName}
+                    </button>
+                  )}
+                </div>
               </div>
             )}
             {viewerLost && !isPush && (

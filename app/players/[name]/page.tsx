@@ -442,20 +442,22 @@ export default function PlayerProfilePage() {
                     </div>
                   )
                   if (vWon) return (
-                    <div key={b.id} className="bg-emerald-50 border-2 border-emerald-400 rounded-xl p-3 flex items-center gap-3">
-                      <span className="text-xl shrink-0">🏆</span>
-                      <div className="flex-1 min-w-0">
-                        <div className="text-sm font-bold text-emerald-800">You won — {label}</div>
-                        <div className="text-xs text-emerald-600">${Number(amt).toLocaleString()} from {losN}</div>
+                    <div key={b.id} className="rounded-xl overflow-hidden border-2 border-emerald-400">
+                      <img src="/winner.jpg" alt="" className="w-full h-24 object-cover" style={{objectPosition:'center 30%'}} />
+                      <div className="bg-emerald-50 p-3 flex items-start gap-3">
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-emerald-900">🏆 You won — {label}</div>
+                          <div className="text-xs text-emerald-700">{losN} owes you <strong>${Number(amt).toLocaleString()}</strong></div>
+                        </div>
+                        {losP.venmo_handle && (
+                          <button
+                            onClick={() => openVenmo(losP.venmo_handle!, 'charge', 'ABTOW 2026 Bet')}
+                            className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-[#008CFF] text-white text-xs font-bold rounded-full">
+                            <svg width="10" height="10" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
+                            Request
+                          </button>
+                        )}
                       </div>
-                      {losP.venmo_handle && (
-                        <button
-                          onClick={() => openVenmo(losP.venmo_handle!, 'charge', 'ABTOW 2026 Bet')}
-                          className="shrink-0 flex items-center gap-1 px-3 py-1.5 bg-[#008CFF] text-white text-xs font-bold rounded-full">
-                          <svg width="10" height="10" viewBox="0 0 32 32" fill="white"><path d="M26.3 2c1 1.7 1.5 3.4 1.5 5.6 0 7-6 16.1-10.9 22.4H6.8L3 4.2l8.8-.8 2 16.2c1.8-3 4-7.8 4-11 0-1.8-.3-3-.8-4L26.3 2z"/></svg>
-                          Request
-                        </button>
-                      )}
                     </div>
                   )
                   if (vLost) return (
