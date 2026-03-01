@@ -130,9 +130,9 @@ export async function getMvpStandings(): Promise<MvpPlayer[]> {
           const hcp = playerMap.get(pid)?.playing_handicap ?? 0
           return stablefordPts(g, par, hcp, si)
         })
-        // Best Ball: max stableford pts per team
-        s1Total += Math.max(...t1Pts, 0)
-        s2Total += Math.max(...t2Pts, 0)
+        // Combined: sum both players' points per hole
+        s1Total += t1Pts.reduce((a, b) => a + b, 0)
+        s2Total += t2Pts.reduce((a, b) => a + b, 0)
       } else {
         // Net stroke play — Best Ball (min net) or Individual
         const t1Nets = t1.map(pid => {
