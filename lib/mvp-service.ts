@@ -97,7 +97,7 @@ export async function getMvpStandings(): Promise<MvpPlayer[]> {
     const parData = parDataMap[match.day]
     if (!parData) return
     const matchScores = scoresByMatch[match.id] ?? {}
-    const isStableford = match.format === 'stableford'
+    const isStableford = match.format === 'Stableford'
     const t1: string[] = match.team1_players ?? []
     const t2: string[] = match.team2_players ?? []
     const allIds = [...t1, ...t2]
@@ -109,7 +109,7 @@ export async function getMvpStandings(): Promise<MvpPlayer[]> {
     })
     if (!hasFullScores) return
 
-    const isMatchPlay = match.format === 'individual'
+    const isMatchPlay = match.format === 'Individual'
 
     // Compute match result per format
     let t1Pts: number, t2Pts: number
