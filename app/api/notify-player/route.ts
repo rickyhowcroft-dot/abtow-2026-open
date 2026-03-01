@@ -14,7 +14,7 @@ function normalizePhone(raw: string): string {
 
 export async function POST(request: NextRequest) {
   try {
-    const { playerId, message } = await request.json()
+    const { playerId, message, mediaUrl } = await request.json()
     if (!playerId || !message) {
       return NextResponse.json({ error: 'Missing playerId or message' }, { status: 400 })
     }
@@ -42,10 +42,13 @@ export async function POST(request: NextRequest) {
     }
 
     // TextBelt REST API — single POST, no SDK needed
+    const payload: Record<string, string> = { phone, message, key: apiKey }
+    if (mediaUrl) payload.mediaUrl = mediaUrl
+
     const res = await fetch('https://textbelt.com/text', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ phone, message, key: apiKey }),
+      body: JSON.stringify(payload),
     })
 
     const result = await res.json()

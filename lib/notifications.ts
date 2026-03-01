@@ -6,15 +6,16 @@
 
 const BASE_URL = 'https://abtow.golf'
 const HEADER = '🏌️ ABTOW 2026 Open'
+const TYWIN_URL = `${BASE_URL}/tywin.jpg`
 
 // ─── Core sender ─────────────────────────────────────────────────────────────
 
-export async function notifyPlayer(playerId: string, message: string): Promise<void> {
+export async function notifyPlayer(playerId: string, message: string, mediaUrl?: string): Promise<void> {
   try {
     await fetch('/api/notify-player', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ playerId, message }),
+      body: JSON.stringify({ playerId, message, ...(mediaUrl ? { mediaUrl } : {}) }),
     })
   } catch (e) {
     console.warn('SMS notification failed (non-critical):', e)
@@ -108,6 +109,7 @@ export function notifyBetSettled(params: {
   )
   notifyPlayer(
     loserId,
-    `${HEADER}\n\n📜 You lost your ${betTypeLabel} bet vs ${winnerFirstName}. -$${loserAmount}\n"A Lannister always pays their debts."${venmoPay}\n${BASE_URL}/bets`
+    `${HEADER}\n\n📜 You lost your ${betTypeLabel} bet vs ${winnerFirstName}. -$${loserAmount}\n"A Lannister always pays their debts."${venmoPay}\n${BASE_URL}/bets`,
+    TYWIN_URL
   )
 }
