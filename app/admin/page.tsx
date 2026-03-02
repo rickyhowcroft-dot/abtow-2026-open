@@ -18,6 +18,8 @@ interface MatchRow {
   scores_locked: boolean
   team1_players: string[]
   team2_players: string[]
+  attested_by: string | null
+  attested_at: string | null
 }
 
 interface PlayerRow {
@@ -62,7 +64,7 @@ export default function AdminPage() {
     const [matchRes, playerRes, locks] = await Promise.all([
       supabase
         .from('matches')
-        .select('id, day, format, group_access_token, scores_locked, team1_players, team2_players')
+        .select('id, day, format, group_access_token, scores_locked, team1_players, team2_players, attested_by, attested_at')
         .order('day'),
       supabase
         .from('players')
@@ -286,7 +288,14 @@ export default function AdminPage() {
                             <div key={match.id} className={`bg-white rounded-xl shadow-sm border-l-4 p-4 ${isLocked ? 'border-red-400' : 'border-green-400'}`}>
                               <div className="mb-3">
                                 <p className="font-semibold text-gray-800 text-sm leading-tight">{allPlayers.join(' · ')}</p>
-                                <p className="text-xs text-gray-400 mt-0.5">{match.format} · Day {match.day}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                  <p className="text-xs text-gray-400">{match.format} · Day {match.day}</p>
+                                  {match.attested_at ? (
+                                    <span className="text-[10px] font-semibold bg-emerald-100 text-emerald-700 px-1.5 py-0.5 rounded-full">✅ Attested</span>
+                                  ) : (
+                                    <span className="text-[10px] font-semibold bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-full">⚠️ Not Attested</span>
+                                  )}
+                                </div>
                               </div>
                               <div className="flex items-center gap-2 mb-3 bg-gray-50 rounded-lg px-3 py-2">
                                 <span className="text-xs text-gray-400 font-mono truncate flex-1 min-w-0">/score/{match.group_access_token}</span>

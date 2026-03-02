@@ -25,6 +25,9 @@ export default function ScoreEntry() {
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState<{ [playerId: string]: { [hole: number]: boolean } }>({});
   const [isAdminMode, setIsAdminMode] = useState(false);
+  const [attestedById, setAttestedById] = useState<string | null>(null);
+  const [attestingPlayerId, setAttestingPlayerId] = useState('');
+  const [isAttesting, setIsAttesting] = useState(false);
 
   useEffect(() => {
     // Check for admin override: needs both the query param AND a valid admin session
@@ -50,6 +53,7 @@ export default function ScoreEntry() {
       }
 
       setMatch(matchData);
+      if ((matchData as any).attested_by) setAttestedById((matchData as any).attested_by);
 
       // Fetch course data
       const { data: courseData } = await supabase
@@ -167,6 +171,22 @@ export default function ScoreEntry() {
     }
   }
 
+  async function attestMatch() {
+    if (!match || !attestingPlayerId) return;
+    setIsAttesting(true);
+    try {
+      await supabase.rpc('set_match_attested', {
+        p_match_id: match.id,
+        p_player_id: attestingPlayerId,
+      });
+      setAttestedById(attestingPlayerId);
+    } catch (e) {
+      console.error('Attestation failed:', e);
+    } finally {
+      setIsAttesting(false);
+    }
+  }
+
   function getHoleData(hole: number) {
     if (!course) return { par: 4, handicap: 1 };
     return course.par_data[`hole_${hole}`] || { par: 4, handicap: 1 };
@@ -243,6 +263,13 @@ export default function ScoreEntry() {
       ✏️ Admin Override — Editing locked scorecard
     </div>
   ) : null;
+
+  const allHolesComplete = players.length > 0 && players.every(player =>
+    Array.from({ length: 18 }, (_, i) => i + 1).every(hole => scores[player.id]?.[hole] != null)
+  );
+  const attestedByName = attestedById
+    ? (players.find(p => p.id === attestedById)?.first_name || players.find(p => p.id === attestedById)?.name.split(' ')[0] || 'A player')
+    : '';
 
   const holeData = getHoleData(currentHole);
   const isFront9 = currentHole <= 9;
@@ -751,6 +778,47 @@ export default function ScoreEntry() {
       {saving && (
         <div className="fixed bottom-4 right-4 bg-blue-600 text-white px-4 py-2 rounded-lg shadow-lg">
           Saving...
+        </div>
+      )}
+
+      {/* Attestation */}
+      {allHolesComplete && !isAdminMode && (
+        <div className="bg-white border-t p-4">
+          {attestedById ? (
+            <div className="flex items-center gap-3 justify-center py-3 px-4 bg-emerald-50 border border-emerald-300 rounded-xl">
+              <span className="text-2xl">✅</span>
+              <div>
+                <div className="text-sm font-bold text-emerald-800">Scorecard Attested</div>
+                <div className="text-xs text-emerald-600">Confirmed by {attestedByName}</div>
+              </div>
+            </div>
+          ) : (
+            <div>
+              <div className="text-sm font-bold text-gray-800 mb-1 text-center">📋 Attest Scorecard</div>
+              <p className="text-xs text-gray-500 mb-3 text-center">
+                Opponent — confirm the scores are correct before the round is closed.
+              </p>
+              <select
+                value={attestingPlayerId}
+                onChange={e => setAttestingPlayerId(e.target.value)}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 bg-white"
+              >
+                <option value="">Select your name…</option>
+                {players.map(p => (
+                  <option key={p.id} value={p.id}>
+                    {p.first_name || p.name.split(' ')[0]} {p.last_name || ''}
+                  </option>
+                ))}
+              </select>
+              <button
+                onClick={attestMatch}
+                disabled={!attestingPlayerId || isAttesting}
+                className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl disabled:opacity-40 active:bg-emerald-700 transition-colors"
+              >
+                {isAttesting ? 'Confirming…' : '✅ I Attest This Scorecard is Correct'}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

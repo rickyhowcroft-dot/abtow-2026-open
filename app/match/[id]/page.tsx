@@ -17,6 +17,9 @@ export default function MatchDetail() {
   const [course, setCourse] = useState<Course | null>(null);
   const [scores, setScores] = useState<Score[]>([]);
   const [loading, setLoading] = useState(true);
+  const [attestedById, setAttestedById] = useState<string | null>(null);
+  const [attestingPlayerId, setAttestingPlayerId] = useState('');
+  const [isAttesting, setIsAttesting] = useState(false);
 
   useEffect(() => {
     if (matchId) {
@@ -58,6 +61,7 @@ export default function MatchDetail() {
       }
 
       setMatch(matchData);
+      if ((matchData as any).attested_by) setAttestedById((matchData as any).attested_by);
 
       const { data: courseData } = await supabase
         .from('courses')
@@ -99,6 +103,22 @@ export default function MatchDetail() {
       .eq('match_id', matchId);
 
     if (scoresData) setScores(scoresData);
+  }
+
+  async function attestMatch() {
+    if (!match || !attestingPlayerId) return;
+    setIsAttesting(true);
+    try {
+      await supabase.rpc('set_match_attested', {
+        p_match_id: match.id,
+        p_player_id: attestingPlayerId,
+      });
+      setAttestedById(attestingPlayerId);
+    } catch (e) {
+      console.error('Attestation failed:', e);
+    } finally {
+      setIsAttesting(false);
+    }
   }
 
   function getPlayerScore(playerId: string, hole: number): number | null {
@@ -529,6 +549,58 @@ export default function MatchDetail() {
           </span>
         </div>
       </div>
+
+      {/* Attestation */}
+      {!(match as any).scores_locked && (() => {
+        const allComplete = players.length > 0 && players.every(player =>
+          Array.from({ length: 18 }, (_, i) => i + 1).every(hole =>
+            scores.some(s => s.player_id === player.id && s.hole_number === hole && s.gross_score != null)
+          )
+        );
+        if (!allComplete) return null;
+        const attestedByName = attestedById
+          ? (players.find(p => p.id === attestedById)?.first_name || players.find(p => p.id === attestedById)?.name.split(' ')[0] || 'A player')
+          : '';
+        return (
+          <div className="mt-4 bg-white rounded-2xl shadow-sm border border-gray-100 p-4">
+            {attestedById ? (
+              <div className="flex items-center gap-3 justify-center py-2">
+                <span className="text-2xl">✅</span>
+                <div>
+                  <div className="text-sm font-bold text-emerald-800">Scorecard Attested</div>
+                  <div className="text-xs text-emerald-600">Confirmed by {attestedByName}</div>
+                </div>
+              </div>
+            ) : (
+              <div>
+                <div className="text-sm font-bold text-gray-800 mb-1 text-center">📋 Attest Scorecard</div>
+                <p className="text-xs text-gray-500 mb-3 text-center">
+                  Opponent — confirm the scores are correct before the round is closed.
+                </p>
+                <select
+                  value={attestingPlayerId}
+                  onChange={e => setAttestingPlayerId(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm mb-3 bg-white"
+                >
+                  <option value="">Select your name…</option>
+                  {players.map(p => (
+                    <option key={p.id} value={p.id}>
+                      {p.first_name || p.name.split(' ')[0]} {p.last_name || ''}
+                    </option>
+                  ))}
+                </select>
+                <button
+                  onClick={attestMatch}
+                  disabled={!attestingPlayerId || isAttesting}
+                  className="w-full py-3 bg-emerald-600 text-white font-bold rounded-xl disabled:opacity-40 active:bg-emerald-700 transition-colors"
+                >
+                  {isAttesting ? 'Confirming…' : '✅ I Attest This Scorecard is Correct'}
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Navigation */}
       <div className="mt-6 text-center space-x-4">
