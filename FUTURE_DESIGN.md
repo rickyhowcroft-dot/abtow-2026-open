@@ -1,7 +1,8 @@
 # Future Design — Multi-Tournament Architecture
 
 > **Status:** Planned post-ABTOW 2026 (target: 3/21/2026+)
-> **Context:** Current schema is purpose-built for a single 3-day tournament. These changes would allow the app to support multiple events, leagues, and seasons without rebuilding from scratch.
+> **Domain:** `puttitout.golf` — registered and reserved for the full multi-tournament platform
+> **Context:** Current schema is purpose-built for a single 3-day tournament. These changes would allow the app to support multiple events, leagues, and seasons without rebuilding from scratch. ABTOW and the winter sim league would both live under puttitout.golf once the architecture is in place.
 
 ---
 
