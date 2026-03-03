@@ -115,17 +115,8 @@ function BetDetailModal({
     setError('')
     try {
       await acceptBet(bet.id)
-      // Notify the proposer that their bet was accepted
-      const proposerId = bet.proposer_side === 'side1' ? bet.side1_player_id : bet.side2_player_id
-      const acceptorFirst = (isAcceptor
-        ? (viewerIs1 ? bet.side1_player : bet.side2_player)
-        : (viewerIs1 ? bet.side2_player : bet.side1_player)
-      ).first_name ?? ''
-      notifyBetAccepted({
-        proposerPlayerId: proposerId,
-        acceptorFirstName: acceptorFirst,
-        betTypeLabel: betTypeLabel(bet.bet_type),
-      })
+      // Notify proposer — message built server-side, only reaches the proposer
+      notifyBetAccepted(bet.id)
       onAccepted()
     } catch (e: unknown) {
       setError(e instanceof Error ? e.message : 'Failed to accept')
@@ -432,7 +423,7 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
     setSubmitting(true)
     setSubmitError('')
     try {
-      await Promise.all(loggedSlots.map(type => {
+      const createdBets = await Promise.all(loggedSlots.map(type => {
         const slot = slots[type]
         const [s1Ml, s2Ml] = slotMl(type, slot.tease)
         return createBet({
@@ -444,21 +435,8 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
           proposerSide: mySide as 'side1' | 'side2',
         })
       }))
-      // Notify the opponent that a bet has been proposed
-      const acceptorPlayerId = mySide === 'side1' ? side2PlayerId : side1PlayerId
-      const acceptor = players.find(p => p.id === acceptorPlayerId)
-      if (acceptor && myPlayer) {
-        const proposerFirst = myPlayer.first_name ?? myPlayer.name.split(' ')[0]
-        const totalAmt = loggedSlots.reduce((sum, t) => sum + parseInt(slots[t].amount || '0'), 0)
-        const betTypes = loggedSlots.map(t => betTypeLabel(t))
-        notifyBetProposed({
-          acceptorPlayerId,
-          proposerFirstName: proposerFirst,
-          acceptorProfileSlug: acceptor.name,
-          betTypes,
-          totalAmount: totalAmt,
-        })
-      }
+      // Notify opponent — message built server-side, only reaches the acceptor
+      notifyBetProposed(createdBets.map(b => b.id))
       onCreated()
     } catch (e: unknown) {
       setSubmitError(e instanceof Error ? e.message : 'Failed to submit')

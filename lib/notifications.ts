@@ -16,6 +16,8 @@ export async function notifyPlayer(playerId: string, message: string, mediaUrl?:
     await fetch('/api/notify-player', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
+      // credentials: 'include' sends the admin session cookie — required by /api/notify-player
+      credentials: 'include',
       body: JSON.stringify({ playerId, message, ...(mediaUrl ? { mediaUrl } : {}) }),
     })
   } catch (e) {
@@ -27,38 +29,28 @@ export async function notifyPlayer(playerId: string, message: string, mediaUrl?:
 
 /**
  * Notify the bet acceptor that someone proposed a bet.
- * Called immediately after createBet() succeeds.
+ * Routes through /api/bets/notify — message built server-side, only reaches involved players.
+ * betIds: all bets in the batch (front/back/overall created together).
  */
-export function notifyBetProposed(params: {
-  acceptorPlayerId: string
-  proposerFirstName: string
-  acceptorProfileSlug: string   // player.name, URL-safe
-  betTypes: string[]            // e.g. ['Front 9', 'Back 9']
-  totalAmount: number
-}): void {
-  const { acceptorPlayerId, proposerFirstName, acceptorProfileSlug, betTypes, totalAmount } = params
-  const typeStr = betTypes.join(' + ')
-  const url = `${BASE_URL}/players/${encodeURIComponent(acceptorProfileSlug)}`
-  notifyPlayer(
-    acceptorPlayerId,
-    `${HEADER}\n\n⛳ ${proposerFirstName} wants to bet you!\n${typeStr} · $${totalAmount}\nAccept here: ${url}`
-  )
+export function notifyBetProposed(betIds: string[]): void {
+  if (betIds.length === 0) return
+  fetch('/api/bets/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ betIds, event: 'proposed' }),
+  }).catch(e => console.warn('notifyBetProposed failed (non-critical):', e))
 }
 
 /**
  * Notify the proposer that their bet was accepted.
- * Called immediately after acceptBet() succeeds.
+ * Routes through /api/bets/notify — message built server-side, only reaches the proposer.
  */
-export function notifyBetAccepted(params: {
-  proposerPlayerId: string
-  acceptorFirstName: string
-  betTypeLabel: string
-}): void {
-  const { proposerPlayerId, acceptorFirstName, betTypeLabel } = params
-  notifyPlayer(
-    proposerPlayerId,
-    `${HEADER}\n\n✅ ${acceptorFirstName} accepted your ${betTypeLabel} bet. It's on!\n${BASE_URL}/bets`
-  )
+export function notifyBetAccepted(betId: string): void {
+  fetch('/api/bets/notify', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ betIds: [betId], event: 'accepted' }),
+  }).catch(e => console.warn('notifyBetAccepted failed (non-critical):', e))
 }
 
 /**

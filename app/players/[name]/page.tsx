@@ -49,15 +49,8 @@ function AcceptBetInline({ bet, s1Name, s2Name, onAccepted }: {
     setLoading(true)
     try {
       await acceptBet(bet.id)
-      // Notify the proposer their bet was accepted
-      const proposerId = bet.proposer_side === 'side1' ? bet.side1_player_id : bet.side2_player_id
-      const acceptorPlayer = bet.proposer_side === 'side1' ? bet.side2_player : bet.side1_player
-      const acceptorFirst = acceptorPlayer.first_name ?? acceptorPlayer.name.split(' ')[0]
-      notifyBetAccepted({
-        proposerPlayerId: proposerId,
-        acceptorFirstName: acceptorFirst,
-        betTypeLabel: betTypeLabel(bet.bet_type),
-      })
+      // Notify proposer — message built server-side, only reaches the proposer
+      notifyBetAccepted(bet.id)
       onAccepted(bet.id)
     }
     catch (e: unknown) { setErr(e instanceof Error ? e.message : 'Failed') }

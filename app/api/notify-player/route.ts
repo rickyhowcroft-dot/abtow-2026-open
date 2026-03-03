@@ -8,6 +8,13 @@ function normalizePhone(raw: string): string {
 
 export async function POST(request: NextRequest) {
   try {
+    // Require admin session — this endpoint sends arbitrary messages to arbitrary players
+    const adminCookie = request.cookies.get('abtow_admin_session')?.value
+    const adminPassword = process.env.ADMIN_PASSWORD
+    if (!adminPassword || adminCookie !== adminPassword) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { playerId, message, mediaUrl } = await request.json()
     if (!playerId || !message) {
       return NextResponse.json({ error: 'Missing playerId or message' }, { status: 400 })
