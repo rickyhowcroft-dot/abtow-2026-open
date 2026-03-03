@@ -28,6 +28,7 @@ export default function ScoreEntry() {
   const [attestedById, setAttestedById] = useState<string | null>(null);
   const [attestingPlayerId, setAttestingPlayerId] = useState('');
   const [isAttesting, setIsAttesting] = useState(false);
+  const [showAttestModal, setShowAttestModal] = useState(false);
 
   useEffect(() => {
     // Check for admin override: needs both the query param AND a valid admin session
@@ -138,13 +139,17 @@ export default function ScoreEntry() {
       }
 
       // Update local state
-      setScores(prev => ({
-        ...prev,
-        [playerId]: {
-          ...prev[playerId],
-          [hole]: score
+      setScores(prev => {
+        const next = { ...prev, [playerId]: { ...prev[playerId], [hole]: score } };
+        // Auto-show attest modal when all 18 holes are complete for all players
+        if (score !== null && !attestedById) {
+          const complete = players.every(p =>
+            Array.from({ length: 18 }, (_, i) => i + 1).every(h => next[p.id]?.[h] != null)
+          );
+          if (complete) setTimeout(() => setShowAttestModal(true), 400);
         }
-      }));
+        return next;
+      });
     } catch (error) {
       console.error('Error saving score:', error);
     } finally {
@@ -180,6 +185,7 @@ export default function ScoreEntry() {
         p_player_id: attestingPlayerId,
       });
       setAttestedById(attestingPlayerId);
+      setShowAttestModal(false);
     } catch (e) {
       console.error('Attestation failed:', e);
     } finally {
@@ -839,6 +845,48 @@ export default function ScoreEntry() {
           </button>
         </div>
       </div>
+
+      {/* Attest Modal — auto-pops when all 18 holes complete */}
+      {showAttestModal && !attestedById && (
+        <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/60 backdrop-blur-sm"
+          onClick={e => { if (e.target === e.currentTarget) setShowAttestModal(false); }}>
+          <div className="w-full max-w-lg bg-white rounded-t-3xl p-6 shadow-2xl animate-slide-up">
+            <div className="w-10 h-1 bg-gray-300 rounded-full mx-auto mb-5" />
+            <div className="text-center mb-5">
+              <div className="text-4xl mb-2">📋</div>
+              <h2 className="text-xl font-bold text-gray-900">Attest Scorecard</h2>
+              <p className="text-sm text-gray-500 mt-1">
+                All 18 holes are in. The <strong>opponent</strong> must confirm the scores are correct before this round can be closed.
+              </p>
+            </div>
+            <select
+              value={attestingPlayerId}
+              onChange={e => setAttestingPlayerId(e.target.value)}
+              className="w-full border border-gray-300 rounded-xl px-4 py-3 text-base mb-4 bg-white focus:outline-none focus:ring-2 focus:ring-emerald-400"
+            >
+              <option value="">Select your name…</option>
+              {players.map(p => (
+                <option key={p.id} value={p.id}>
+                  {p.first_name || p.name.split(' ')[0]} {p.last_name || ''}
+                </option>
+              ))}
+            </select>
+            <button
+              onClick={attestMatch}
+              disabled={!attestingPlayerId || isAttesting}
+              className="w-full py-4 bg-emerald-600 text-white text-base font-bold rounded-2xl disabled:opacity-40 active:bg-emerald-700 transition-colors mb-3"
+            >
+              {isAttesting ? 'Confirming…' : '✅ I Attest This Scorecard is Correct'}
+            </button>
+            <button
+              onClick={() => setShowAttestModal(false)}
+              className="w-full py-3 text-sm text-gray-400 font-medium"
+            >
+              Do this later
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
