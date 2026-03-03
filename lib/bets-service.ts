@@ -122,10 +122,18 @@ export async function cancelBet(betId: string): Promise<void> {
 }
 
 export async function settleBetsForMatch(matchId: string): Promise<void> {
-  const { error } = await supabase.rpc('settle_bets_for_match', {
-    p_match_id: matchId,
+  // Settlement logic lives in the API route (uses lib/scoring.ts, not SQL)
+  // credentials: 'include' sends the admin session cookie
+  const res = await fetch('/api/bets/settle', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ matchId }),
   })
-  if (error) throw error
+  if (!res.ok) {
+    const body = await res.json().catch(() => ({}))
+    throw new Error(body.error ?? `Settlement failed (${res.status})`)
+  }
 }
 
 type PlayerLookup = { id: string; name: string; first_name?: string | null; playing_handicap?: number | null }[]

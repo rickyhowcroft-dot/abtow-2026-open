@@ -361,3 +361,81 @@ export function calculateIndividualResults(
     status: matchScores.length > 0 ? 'in_progress' : 'upcoming'
   };
 }
+// ─── Settlement segments ──────────────────────────────────────────────────────
+// Returns raw hole-win counts / stableford-point totals per 9 for bet settlement.
+// Unlike MatchResult (which normalises to 0/0.5/1 match pts), these are the
+// numbers used to apply tease adjustments and determine bet winners.
+
+export interface SettlementSegments {
+  team1Front:   number  // holes won (BB/Ind) or combined SF pts — front 9
+  team1Back:    number
+  team1Overall: number  // = team1Front + team1Back
+  team2Front:   number
+  team2Back:    number
+  team2Overall: number
+}
+
+export function calculateSettlementSegments(
+  match: Match,
+  allScores: Score[],
+  players: Player[],
+  course: Course
+): SettlementSegments {
+  const matchScores = allScores.filter(s => s.match_id === match.id)
+  const team1Players = players.filter(p => match.team1_players.includes(p.name))
+  const team2Players = players.filter(p => match.team2_players.includes(p.name))
+
+  let t1F = 0, t1B = 0, t2F = 0, t2B = 0
+
+  if (match.format === 'Best Ball') {
+    for (let hole = 1; hole <= 18; hole++) {
+      const hd = course.par_data[`hole_${hole}`]
+      if (!hd) continue
+      let t1Best = Infinity, t2Best = Infinity
+      for (const p of team1Players) {
+        const s = matchScores.find(x => x.player_id === p.id && x.hole_number === hole)
+        if (s?.gross_score) t1Best = Math.min(t1Best, calculateNetScore(s.gross_score, p.playing_handicap, hd.handicap))
+      }
+      for (const p of team2Players) {
+        const s = matchScores.find(x => x.player_id === p.id && x.hole_number === hole)
+        if (s?.gross_score) t2Best = Math.min(t2Best, calculateNetScore(s.gross_score, p.playing_handicap, hd.handicap))
+      }
+      if (t1Best < t2Best)       { hole <= 9 ? (t1F += 1) : (t1B += 1) }
+      else if (t2Best < t1Best)  { hole <= 9 ? (t2F += 1) : (t2B += 1) }
+      else if (t1Best !== Infinity) { hole <= 9 ? (t1F += 0.5, t2F += 0.5) : (t1B += 0.5, t2B += 0.5) }
+    }
+  } else if (match.format === 'Stableford') {
+    for (let hole = 1; hole <= 18; hole++) {
+      const hd = course.par_data[`hole_${hole}`]
+      if (!hd) continue
+      let t1Pts = 0, t2Pts = 0
+      for (const p of team1Players) {
+        const s = matchScores.find(x => x.player_id === p.id && x.hole_number === hole)
+        if (s?.gross_score) t1Pts += calculateStablefordPoints(calculateNetScore(s.gross_score, p.playing_handicap, hd.handicap), hd.par)
+      }
+      for (const p of team2Players) {
+        const s = matchScores.find(x => x.player_id === p.id && x.hole_number === hole)
+        if (s?.gross_score) t2Pts += calculateStablefordPoints(calculateNetScore(s.gross_score, p.playing_handicap, hd.handicap), hd.par)
+      }
+      if (hole <= 9) { t1F += t1Pts; t2F += t2Pts } else { t1B += t1Pts; t2B += t2Pts }
+    }
+  } else {
+    // Individual match play — hole-by-hole, delta strokes off low man
+    for (let i = 0; i < Math.min(team1Players.length, team2Players.length); i++) {
+      const p1 = team1Players[i], p2 = team2Players[i]
+      const p1S = calculateMatchPlayStrokes(p1.playing_handicap, p2.playing_handicap, course)
+      const p2S = calculateMatchPlayStrokes(p2.playing_handicap, p1.playing_handicap, course)
+      for (let hole = 1; hole <= 18; hole++) {
+        const s1 = matchScores.find(x => x.player_id === p1.id && x.hole_number === hole)
+        const s2 = matchScores.find(x => x.player_id === p2.id && x.hole_number === hole)
+        if (!s1?.gross_score || !s2?.gross_score) continue
+        const n1 = s1.gross_score - p1S[hole], n2 = s2.gross_score - p2S[hole]
+        if (n1 < n2)       { hole <= 9 ? (t1F += 1) : (t1B += 1) }
+        else if (n2 < n1)  { hole <= 9 ? (t2F += 1) : (t2B += 1) }
+        else               { hole <= 9 ? (t1F += 0.5, t2F += 0.5) : (t1B += 0.5, t2B += 0.5) }
+      }
+    }
+  }
+
+  return { team1Front: t1F, team1Back: t1B, team1Overall: t1F + t1B, team2Front: t2F, team2Back: t2B, team2Overall: t2F + t2B }
+}
