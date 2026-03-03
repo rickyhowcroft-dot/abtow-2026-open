@@ -7,8 +7,7 @@ import { settleBetsForMatch, getBetsForMatch, betTypeLabel, playerDisplayName } 
 import { notifyBetSettled } from '@/lib/notifications'
 import { getAllGameDayLocks, setGameDayLock, type GameDayLock } from '@/lib/games-service'
 
-const ADMIN_PASSWORD = 'FuckCalder'
-const ADMIN_KEY = 'abtow_admin_auth'
+// Admin auth is server-side — password never lives in client code
 
 interface MatchRow {
   id: string
@@ -52,11 +51,16 @@ export default function AdminPage() {
   const [gameLockToggling, setGameLockToggling] = useState<string | null>(null)
 
   useEffect(() => {
-    const stored = sessionStorage.getItem(ADMIN_KEY)
-    if (stored === ADMIN_PASSWORD) {
-      setAuthenticated(true)
-      fetchData()
-    }
+    // Check for existing admin session via HTTP-only cookie (server-side verify)
+    fetch('/api/admin/verify')
+      .then(r => r.json())
+      .then(d => {
+        if (d.admin) {
+          setAuthenticated(true)
+          fetchData()
+        }
+      })
+      .catch(() => {})
   }, [])
 
   async function fetchData() {
@@ -89,14 +93,22 @@ export default function AdminPage() {
     setLoading(false)
   }
 
-  function login() {
-    if (password === ADMIN_PASSWORD) {
-      sessionStorage.setItem(ADMIN_KEY, ADMIN_PASSWORD)
-      setAuthenticated(true)
-      fetchData()
-    } else {
-      setError('Wrong password. Try again.')
-      setPassword('')
+  async function login() {
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password }),
+      })
+      if (res.ok) {
+        setAuthenticated(true)
+        fetchData()
+      } else {
+        setError('Wrong password. Try again.')
+        setPassword('')
+      }
+    } catch {
+      setError('Network error. Try again.')
     }
   }
 
@@ -213,8 +225,8 @@ export default function AdminPage() {
     }
   }
 
-  function logout() {
-    sessionStorage.removeItem(ADMIN_KEY)
+  async function logout() {
+    await fetch('/api/admin/logout', { method: 'POST' }).catch(() => {})
     setAuthenticated(false)
     setMatches([])
     setPlayers([])

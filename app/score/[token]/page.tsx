@@ -8,8 +8,7 @@ import PostRoundProcessor from '@/lib/post-round-processor';
 import type { Player, Match, Score, Course } from '@/lib/scoring';
 import { calculateMatchPlayStrokes, calculateStablefordPoints, calculateNetScore, calculateBestBallResults, calculateStablefordResults, calculateIndividualResults } from '@/lib/scoring';
 
-const ADMIN_KEY = 'abtow_admin_auth';
-const ADMIN_PASSWORD = 'FuckCalder';
+// Admin auth is server-side — no credentials in client code
 
 export default function ScoreEntry() {
   const params = useParams();
@@ -31,11 +30,15 @@ export default function ScoreEntry() {
   const [showAttestModal, setShowAttestModal] = useState(false);
 
   useEffect(() => {
-    // Check for admin override: needs both the query param AND a valid admin session
+    // Check for admin override: needs both the query param AND a valid server-side admin session
     const params = new URLSearchParams(window.location.search);
     const override = params.get('adminOverride') === '1';
-    const hasAdminSession = sessionStorage.getItem(ADMIN_KEY) === ADMIN_PASSWORD;
-    if (override && hasAdminSession) setIsAdminMode(true);
+    if (override) {
+      fetch('/api/admin/verify')
+        .then(r => r.json())
+        .then(d => { if (d.admin) setIsAdminMode(true); })
+        .catch(() => {});
+    }
     if (token) fetchMatchData();
   }, [token]);
 
