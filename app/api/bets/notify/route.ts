@@ -17,6 +17,7 @@ import { sendSms } from '@/lib/sms'
 const BASE_URL          = 'https://abtow.golf'
 const HEADER            = '🏌️ ABTOW 2026 Open'
 const BET_PROPOSED_URL  = `${BASE_URL}/bet-proposed.jpg`
+const BET_ACCEPTED_URL  = `${BASE_URL}/bet-accepted.jpg`
 
 async function sendSMS(phone: string, message: string, mediaUrl?: string): Promise<void> {
   const result = await sendSms(phone, message, mediaUrl)
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
         if (!proposer.phone_number) continue
 
         const msg = `${HEADER}\n\n✅ ${acceptor.first_name ?? acceptor.name.split(' ')[0]} accepted your ${betTypeLabel(bet.bet_type)} bet. It's on!\n${BASE_URL}/bets`
-        await sendSMS(proposer.phone_number, msg)
+        await sendSMS(proposer.phone_number, msg, BET_ACCEPTED_URL)
       }
     }
 
