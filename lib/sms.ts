@@ -1,33 +1,36 @@
 /**
  * Server-side SMS/MMS helper using Twilio REST API.
- * Import only from API routes (server-side) — never from client components.
  *
- * Required env vars:
- *   TWILIO_ACCOUNT_SID   — from Twilio console
- *   TWILIO_AUTH_TOKEN    — from Twilio console
- *   TWILIO_FROM_NUMBER   — your purchased Twilio number e.g. +15855551234
+ * 'server-only' enforces this file is never bundled into the client —
+ * importing it from a client component will throw a build error.
+ *
+ * Required env vars (set in Vercel, never in source):
+ *   TWILIO_ACCOUNT_SID   — Account SID from Twilio console (starts with AC...)
+ *   TWILIO_AUTH_TOKEN    — Auth token from Twilio console (treat like a password)
+ *   TWILIO_FROM_NUMBER   — Your Twilio phone number in E.164 format (+15855551234)
  */
+import 'server-only'
 
 export interface SmsResult {
   success: boolean
-  sid?: string
-  error?: string
+  sid?: string       // Twilio message SID — safe to log, not sensitive
+  error?: string     // Sanitized error description — never contains credentials
 }
 
 /**
- * Normalise any US phone number to E.164 (+1XXXXXXXXXX)
+ * Normalise any US phone number to E.164 (+1XXXXXXXXXX).
  */
 export function normalizePhone(raw: string): string {
   const digits = raw.replace(/\D/g, '')
-  // Handle 10-digit (no country code) or 11-digit starting with 1
   if (digits.length === 10) return `+1${digits}`
   if (digits.length === 11 && digits.startsWith('1')) return `+${digits}`
-  return `+${digits}` // pass through, let Twilio validate
+  return `+${digits}`
 }
 
 /**
- * Send an SMS (or MMS if mediaUrl is provided) via Twilio.
- * Fire-and-forget safe — never throws; returns {success, sid} or {success:false, error}.
+ * Send an SMS or MMS via Twilio.
+ * Never throws — returns { success, sid } or { success: false, error }.
+ * Credentials are read from env vars and never included in return values or logs.
  */
 export async function sendSms(
   to: string,
@@ -39,7 +42,7 @@ export async function sendSms(
   const from       = process.env.TWILIO_FROM_NUMBER?.trim()
 
   if (!accountSid || !authToken || !from) {
-    return { success: false, error: 'Twilio not configured' }
+    return { success: false, error: 'SMS not configured' }
   }
 
   const phone = normalizePhone(to)
@@ -54,6 +57,7 @@ export async function sendSms(
         method: 'POST',
         headers: {
           'Content-Type': 'application/x-www-form-urlencoded',
+          // Basic auth: credentials only in this header, never logged or returned
           'Authorization': `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
         },
         body: params.toString(),
@@ -63,13 +67,15 @@ export async function sendSms(
     const data = await res.json()
 
     if (!res.ok) {
-      console.error('Twilio error:', data)
-      return { success: false, error: data?.message ?? `HTTP ${res.status}` }
+      // Log full Twilio error server-side only — return sanitized message to callers
+      console.error(`[sms] Twilio error ${res.status}:`, data?.code, data?.message)
+      return { success: false, error: `SMS delivery failed (code ${data?.code ?? res.status})` }
     }
 
     return { success: true, sid: data.sid }
   } catch (e) {
-    console.error('Twilio fetch error:', e)
-    return { success: false, error: String(e) }
+    // Network / parse error — log server-side, return generic message
+    console.error('[sms] Twilio fetch error:', e)
+    return { success: false, error: 'SMS unavailable' }
   }
 }
