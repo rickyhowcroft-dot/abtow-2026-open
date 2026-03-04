@@ -12,32 +12,14 @@
 
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
+import { sendSms } from '@/lib/sms'
 
 const BASE_URL = 'https://abtow.golf'
 const HEADER   = '🏌️ ABTOW 2026 Open'
-const TEXTBELT = 'https://textbelt.com/text'
-
-function normalizePhone(raw: string): string {
-  return raw.replace(/\D/g, '').slice(-10)
-}
 
 async function sendSMS(phone: string, message: string, mediaUrl?: string): Promise<void> {
-  const apiKey = process.env.TEXTBELT_API_KEY?.trim()
-  if (!apiKey) return
-
-  const normalised = normalizePhone(phone)
-  if (normalised.length !== 10) return
-
-  const payload: Record<string, string> = { phone: normalised, message, key: apiKey }
-  if (mediaUrl) payload.mediaUrl = mediaUrl
-
-  const res = await fetch(TEXTBELT, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
-  })
-  const result = await res.json()
-  if (!result.success) console.warn('TextBelt bet notify error:', result)
+  const result = await sendSms(phone, message, mediaUrl)
+  if (!result.success) console.warn('SMS bet notify error:', result.error)
 }
 
 function betTypeLabel(type: string): string {
@@ -61,8 +43,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
-    const apiKey = process.env.TEXTBELT_API_KEY?.trim()
-    if (!apiKey) return NextResponse.json({ skipped: true, reason: 'TextBelt not configured' })
+    if (!process.env.TWILIO_ACCOUNT_SID) return NextResponse.json({ skipped: true, reason: 'Twilio not configured' })
 
     // Fetch all specified bets with both player refs — server-side only
     const { data: bets, error } = await supabase

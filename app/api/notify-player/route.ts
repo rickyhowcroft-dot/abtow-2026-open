@@ -1,17 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
-
-function normalizePhone(raw: string): string {
-  // TextBelt accepts 10-digit US numbers — strip everything but digits
-  return raw.replace(/\D/g, '').slice(-10)
-}
+import { sendSms, normalizePhone } from '@/lib/sms'
 
 export async function POST(request: NextRequest) {
   try {
-    // Require admin session — this endpoint sends arbitrary messages to arbitrary players
+    // Require admin session — sends arbitrary messages to arbitrary players
     const adminCookie = request.cookies.get('abtow_admin_session')?.value
-    const adminPassword = process.env.ADMIN_PASSWORD
-    if (!adminPassword || adminCookie !== adminPassword) {
+    if (!adminCookie || adminCookie !== process.env.ADMIN_PASSWORD) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
@@ -20,13 +15,6 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing playerId or message' }, { status: 400 })
     }
 
-    const apiKey = process.env.TEXTBELT_API_KEY?.trim()
-    if (!apiKey) {
-      // Not configured — silently skip (dev / before tournament setup)
-      return NextResponse.json({ skipped: true, reason: 'TextBelt not configured' })
-    }
-
-    // Look up phone number using shared client (has hardcoded fallback values)
     const { data: player } = await supabase
       .from('players')
       .select('phone_number')
@@ -37,28 +25,17 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ skipped: true, reason: 'No phone number on file' })
     }
 
-    const phone = normalizePhone(player.phone_number)
-    if (phone.length !== 10) {
-      return NextResponse.json({ error: 'Invalid phone number' }, { status: 400 })
-    }
+    const result = await sendSms(player.phone_number, message, mediaUrl)
 
-    // TextBelt REST API — single POST, no SDK needed
-    const payload: Record<string, string> = { phone, message, key: apiKey }
-    if (mediaUrl) payload.mediaUrl = mediaUrl
-
-    const res = await fetch('https://textbelt.com/text', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    })
-
-    const result = await res.json()
     if (!result.success) {
-      console.error('TextBelt error:', result)
-      return NextResponse.json({ error: result.error ?? 'SMS failed' }, { status: 500 })
+      if (result.error === 'Twilio not configured') {
+        return NextResponse.json({ skipped: true, reason: 'Twilio not configured' })
+      }
+      console.error('SMS error:', result.error)
+      return NextResponse.json({ error: result.error }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true, textId: result.textId, quotaRemaining: result.quotaRemaining })
+    return NextResponse.json({ success: true, sid: result.sid })
   } catch (e) {
     console.error('notify-player error:', e)
     return NextResponse.json({ error: 'Internal error' }, { status: 500 })
