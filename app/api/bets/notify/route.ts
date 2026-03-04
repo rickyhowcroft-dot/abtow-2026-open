@@ -14,8 +14,9 @@ import { NextRequest, NextResponse } from 'next/server'
 import { supabase } from '@/lib/supabase'
 import { sendSms } from '@/lib/sms'
 
-const BASE_URL = 'https://abtow.golf'
-const HEADER   = '🏌️ ABTOW 2026 Open'
+const BASE_URL          = 'https://abtow.golf'
+const HEADER            = '🏌️ ABTOW 2026 Open'
+const BET_PROPOSED_URL  = `${BASE_URL}/bet-proposed.jpg`
 
 async function sendSMS(phone: string, message: string, mediaUrl?: string): Promise<void> {
   const result = await sendSms(phone, message, mediaUrl)
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
       const profileUrl = `${BASE_URL}/players/${encodeURIComponent(acceptor.name)}`
 
       const msg = `${HEADER}\n\n⛳ ${proposer.first_name ?? proposer.name.split(' ')[0]} wants to bet you!\n${typeStr} · $${total}\nAccept here: ${profileUrl}`
-      await sendSMS(acceptor.phone_number, msg)
+      await sendSMS(acceptor.phone_number, msg, BET_PROPOSED_URL)
 
     } else if (event === 'accepted') {
       // One SMS per accepted bet to the proposer
