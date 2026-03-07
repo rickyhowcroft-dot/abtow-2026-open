@@ -582,9 +582,13 @@ export default function ScoreEntry() {
       {/* Score Entry */}
       <div className="p-4 space-y-4">
         {(() => {
-          // Group players by team, team1 first then team2
-          const team1Players = players.filter(p => match.team1_players.includes(p.name));
-          const team2Players = players.filter(p => match.team2_players.includes(p.name));
+          // Group players by team in match array order, team1 first then team2
+          const team1Players = players
+            .filter(p => match.team1_players.includes(p.name))
+            .sort((a, b) => match.team1_players.indexOf(a.name) - match.team1_players.indexOf(b.name));
+          const team2Players = players
+            .filter(p => match.team2_players.includes(p.name))
+            .sort((a, b) => match.team2_players.indexOf(a.name) - match.team2_players.indexOf(b.name));
           const groupedPlayers = [...team1Players, ...team2Players];
           return groupedPlayers;
         })().map((player, idx, arr) => {
