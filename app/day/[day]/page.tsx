@@ -251,7 +251,7 @@ export default function DayDetail() {
             return h * 60 + min;
           };
           return parse(a.tee_time) - parse(b.tee_time);
-        }).map(match => {
+        }).map((match, idx) => {
           const result = getMatchResult(match);
           const team1IsShafts = players.find(p => match.team1_players.includes(p.name))?.team === 'Shaft';
           const status = getMatchStatus(match);
@@ -260,7 +260,7 @@ export default function DayDetail() {
             <div key={match.id} className="bg-white rounded-lg shadow-md p-6">
               <div className="flex justify-between items-start mb-4">
                 <div>
-                  <h3 className="text-xl font-bold">Group {match.group_number}</h3>
+                  <h3 className="text-xl font-bold">Match {idx + 1}</h3>
                   {match.tee_time && (
                     <p className="text-sm font-semibold text-green-600 flex items-center gap-1">
                       ⏰ {match.tee_time}

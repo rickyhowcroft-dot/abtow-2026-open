@@ -383,7 +383,7 @@ export default function Home() {
 
       {/* Match Cards */}
       <div className="max-w-2xl mx-auto px-4 pb-8 space-y-4">
-        {getMatchesForDay(selectedDay).map(match => {
+        {getMatchesForDay(selectedDay).map((match, idx) => {
           const result = getMatchResult(match);
           const team1IsShafts = players.find(p => match.team1_players.includes(p.name))?.team === 'Shaft';
           const status = getMatchStatus(match);
@@ -417,7 +417,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center px-3 text-center border-x border-gray-200">
                   <div>
-                    <div className="text-xs text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>Match {match.group_number}</div>
+                    <div className="text-xs text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>Match {idx + 1}</div>
                     <div className="text-xs text-gray-400">{match.format}</div>
                     {match.tee_time && (
                       <div className="text-[10px] font-semibold text-green-600 mt-0.5">⏰ {match.tee_time}</div>
