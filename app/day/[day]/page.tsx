@@ -250,6 +250,11 @@ export default function DayDetail() {
               <div className="flex justify-between items-start mb-4">
                 <div>
                   <h3 className="text-xl font-bold">Group {match.group_number}</h3>
+                  {match.tee_time && (
+                    <p className="text-sm font-semibold text-green-600 flex items-center gap-1">
+                      ⏰ {match.tee_time}
+                    </p>
+                  )}
                   <p className="text-gray-600">{status}</p>
                 </div>
                 <div className="text-right">

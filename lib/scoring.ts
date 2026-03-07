@@ -33,6 +33,7 @@ export interface Match {
   team2_players: string[];
   course_id: string;
   group_access_token: string;
+  tee_time?: string | null;
   course?: Course;
 }
 
