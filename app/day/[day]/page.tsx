@@ -250,7 +250,8 @@ export default function DayDetail() {
             if (m[3].toUpperCase() === 'AM' && h === 12) h = 0;
             return h * 60 + min;
           };
-          return parse(a.tee_time) - parse(b.tee_time);
+          const diff = parse(a.tee_time) - parse(b.tee_time);
+          return diff !== 0 ? diff : a.group_number - b.group_number;
         }).map((match, idx) => {
           const result = getMatchResult(match);
           const team1IsShafts = players.find(p => match.team1_players.includes(p.name))?.team === 'Shaft';

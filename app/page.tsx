@@ -155,7 +155,10 @@ export default function Home() {
   function getMatchesForDay(day: number) {
     return matches
       .filter(m => m.day === day)
-      .sort((a, b) => parseTeeTime(a.tee_time) - parseTeeTime(b.tee_time));
+      .sort((a, b) => {
+        const diff = parseTeeTime(a.tee_time) - parseTeeTime(b.tee_time);
+        return diff !== 0 ? diff : a.group_number - b.group_number;
+      });
   }
 
   function getMatchResult(match: Match): MatchResult {
