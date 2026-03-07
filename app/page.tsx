@@ -141,8 +141,21 @@ export default function Home() {
     setTeamScores({ shafts: shaftsPoints, balls: ballsPoints });
   }
 
+  function parseTeeTime(t: string | null | undefined): number {
+    if (!t) return 9999;
+    const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+    if (!m) return 9999;
+    let h = parseInt(m[1]), min = parseInt(m[2]);
+    const isPM = m[3].toUpperCase() === 'PM';
+    if (isPM && h !== 12) h += 12;
+    if (!isPM && h === 12) h = 0;
+    return h * 60 + min;
+  }
+
   function getMatchesForDay(day: number) {
-    return matches.filter(m => m.day === day);
+    return matches
+      .filter(m => m.day === day)
+      .sort((a, b) => parseTeeTime(a.tee_time) - parseTeeTime(b.tee_time));
   }
 
   function getMatchResult(match: Match): MatchResult {
@@ -406,6 +419,9 @@ export default function Home() {
                   <div>
                     <div className="text-xs text-gray-500" style={{ fontFamily: 'Georgia, serif' }}>Match {match.group_number}</div>
                     <div className="text-xs text-gray-400">{match.format}</div>
+                    {match.tee_time && (
+                      <div className="text-[10px] font-semibold text-green-600 mt-0.5">⏰ {match.tee_time}</div>
+                    )}
                   </div>
                 </div>
                 <div className="flex-1 p-3 text-right">

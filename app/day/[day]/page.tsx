@@ -240,7 +240,18 @@ export default function DayDetail() {
 
       {/* Matches */}
       <div className="space-y-6">
-        {matches.map(match => {
+        {[...matches].sort((a, b) => {
+          const parse = (t: string | null | undefined) => {
+            if (!t) return 9999;
+            const m = t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+            if (!m) return 9999;
+            let h = parseInt(m[1]), min = parseInt(m[2]);
+            if (m[3].toUpperCase() === 'PM' && h !== 12) h += 12;
+            if (m[3].toUpperCase() === 'AM' && h === 12) h = 0;
+            return h * 60 + min;
+          };
+          return parse(a.tee_time) - parse(b.tee_time);
+        }).map(match => {
           const result = getMatchResult(match);
           const team1IsShafts = players.find(p => match.team1_players.includes(p.name))?.team === 'Shaft';
           const status = getMatchStatus(match);
