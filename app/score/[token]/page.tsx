@@ -28,6 +28,7 @@ export default function ScoreEntry() {
   const [attestingPlayerId, setAttestingPlayerId] = useState('');
   const [isAttesting, setIsAttesting] = useState(false);
   const [showAttestModal, setShowAttestModal] = useState(false);
+  const [openPlayerId, setOpenPlayerId] = useState<string | null>(null);
 
   useEffect(() => {
     // Check for admin override: needs both the query param AND a valid server-side admin session
@@ -41,6 +42,16 @@ export default function ScoreEntry() {
     }
     if (token) fetchMatchData();
   }, [token]);
+
+  // Reset open card to first player when hole changes or players first load
+  useEffect(() => {
+    if (players.length > 0 && match) {
+      const firstTeam1Player = players
+        .filter(p => match.team1_players.includes(p.name))
+        .sort((a, b) => match.team1_players.indexOf(a.name) - match.team1_players.indexOf(b.name))[0];
+      setOpenPlayerId(firstTeam1Player?.id ?? null);
+    }
+  }, [currentHole, players.length]);
 
   async function fetchMatchData() {
     try {
@@ -594,157 +605,168 @@ export default function ScoreEntry() {
         })().map((player, idx, arr) => {
           const isShaftsPlayer = player.team === 'Shaft';
           const isTeam1 = match.team1_players.includes(player.name);
-          // Show divider between teams
           const prevPlayer = idx > 0 ? arr[idx - 1] : null;
           const showDivider = prevPlayer && match.team1_players.includes(prevPlayer.name) !== isTeam1;
-          
+          const isOpen = openPlayerId === player.id;
+          const currentScore = scores[player.id][currentHole];
+
           return (
             <div key={player.id}>
-            {showDivider && (
-              <div className="flex items-center gap-3 mb-4">
-                <div className="flex-1 border-t-2 border-gray-300"></div>
-                <span className="text-xs font-bold text-gray-400 uppercase">vs</span>
-                <div className="flex-1 border-t-2 border-gray-300"></div>
-              </div>
-            )}
-            <div
-              className={`bg-white rounded-lg border-2 p-4 ${
-                isShaftsPlayer ? 'border-blue-200' : 'border-red-200'
-              }`}
-            >
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <div className={`font-bold text-lg ${
-                    isShaftsPlayer ? 'text-blue-600' : 'text-red-600'
-                  }`}>
-                    {player.name}
-                    {renderStrokeDots(getStrokesOnHole(player, currentHole))}
-                  </div>
-                  <div className="text-sm text-gray-600">
-                    {player.team} • HCP {player.playing_handicap}
-                    {getStrokesOnHole(player, currentHole) > 0 && (
-                      <span className="ml-1 text-green-600 font-semibold">
-                        ({getStrokesOnHole(player, currentHole)} stroke{getStrokesOnHole(player, currentHole) > 1 ? 's' : ''})
-                      </span>
-                    )}
-                  </div>
+              {showDivider && (
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="flex-1 border-t-2 border-gray-300"></div>
+                  <span className="text-xs font-bold text-gray-400 uppercase">vs</span>
+                  <div className="flex-1 border-t-2 border-gray-300"></div>
                 </div>
-                <div className="text-right">
-                  <div className="text-xs text-gray-500">Current Score</div>
-                  <div className="font-bold">
-                    {scores[player.id][currentHole] || '—'}
-                  </div>
-                  {match.format === 'Stableford' && scores[player.id][currentHole] && (
-                    <div className="text-xs mt-1">
-                      {(() => {
-                        const gross = scores[player.id][currentHole]!;
-                        const strokes = getStrokesOnHole(player, currentHole);
-                        const net = gross - strokes;
-                        const pts = calculateStablefordPoints(net, holeData.par);
-                        return (
-                          <span className={`font-bold px-2 py-0.5 rounded ${
-                            pts >= 3 ? 'bg-green-200 text-green-800' :
-                            pts === 2 ? 'bg-blue-100 text-blue-800' :
-                            pts === 1 ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-red-100 text-red-800'
-                          }`}>
-                            {pts} pt{pts !== 1 ? 's' : ''}
-                          </span>
-                        );
-                      })()}
-                    </div>
-                  )}
-                </div>
-              </div>
-              
-              {/* Score Input */}
-              <div className="grid grid-cols-2 gap-2 mb-3">
-                <input
-                  type="number"
-                  min="1"
-                  max="15"
-                  value={scores[player.id][currentHole] || ''}
-                  onChange={(e) => handleScoreInput(player.id, e.target.value)}
-                  className="score-input mobile-tap-target"
-                  placeholder="Score"
-                />
-                <button
-                  onClick={() => saveScore(player.id, currentHole, null)}
-                  className="bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 mobile-tap-target"
+              )}
+              <div
+                className={`bg-white rounded-lg border-2 ${
+                  isShaftsPlayer ? 'border-blue-200' : 'border-red-200'
+                }${isOpen ? ' shadow-sm' : ''}`}
+              >
+                {/* Header — always visible, tap to toggle */}
+                <div
+                  className="flex items-center justify-between p-3 cursor-pointer select-none"
+                  onClick={() => setOpenPlayerId(isOpen ? null : player.id)}
                 >
-                  Clear
-                </button>
+                  <div>
+                    <div className={`font-bold text-base leading-tight ${isShaftsPlayer ? 'text-blue-600' : 'text-red-600'}`}>
+                      {player.name}
+                      {renderStrokeDots(getStrokesOnHole(player, currentHole))}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                      HCP {player.playing_handicap}
+                      {getStrokesOnHole(player, currentHole) > 0 && (
+                        <span className="ml-1 text-green-600 font-semibold">
+                          +{getStrokesOnHole(player, currentHole)} stroke{getStrokesOnHole(player, currentHole) > 1 ? 's' : ''}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className={`text-2xl font-bold ${currentScore ? (isShaftsPlayer ? 'text-blue-600' : 'text-red-600') : 'text-gray-300'}`}>
+                      {currentScore ?? '—'}
+                    </span>
+                    <span className={`text-gray-400 text-sm inline-block transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}`}>▾</span>
+                  </div>
+                </div>
+
+                {/* Expandable body */}
+                {isOpen && (
+                  <div className="border-t border-gray-100 px-4 pt-3 pb-4">
+                    {/* Stableford points (if applicable) */}
+                    {match.format === 'Stableford' && currentScore && (
+                      <div className="flex justify-end mb-2">
+                        {(() => {
+                          const strokes = getStrokesOnHole(player, currentHole);
+                          const net = currentScore - strokes;
+                          const pts = calculateStablefordPoints(net, holeData.par);
+                          return (
+                            <span className={`text-xs font-bold px-2 py-0.5 rounded ${
+                              pts >= 3 ? 'bg-green-200 text-green-800' :
+                              pts === 2 ? 'bg-blue-100 text-blue-800' :
+                              pts === 1 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}>
+                              {pts} pt{pts !== 1 ? 's' : ''}
+                            </span>
+                          );
+                        })()}
+                      </div>
+                    )}
+
+                    {/* Score Input */}
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      <input
+                        type="number"
+                        min="1"
+                        max="15"
+                        value={currentScore || ''}
+                        onChange={(e) => handleScoreInput(player.id, e.target.value)}
+                        className="score-input mobile-tap-target"
+                        placeholder="Score"
+                      />
+                      <button
+                        onClick={() => saveScore(player.id, currentHole, null)}
+                        className="bg-gray-300 text-gray-700 rounded-lg font-semibold hover:bg-gray-400 mobile-tap-target"
+                      >
+                        Clear
+                      </button>
+                    </div>
+
+                    {/* Quick Score Buttons */}
+                    <div className="grid grid-cols-5 gap-1.5">
+                      {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => (
+                        <button
+                          key={score}
+                          onClick={() => {
+                            saveScore(player.id, currentHole, score);
+                            // Auto-advance to next player; if last player, stay open
+                            const nextPlayer = arr[idx + 1];
+                            if (nextPlayer) setOpenPlayerId(nextPlayer.id);
+                          }}
+                          className={`py-3 px-1 text-base font-semibold rounded-lg mobile-tap-target ${
+                            currentScore === score
+                              ? isShaftsPlayer
+                                ? 'bg-blue-600 text-white'
+                                : 'bg-red-600 text-white'
+                              : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400'
+                          }`}
+                        >
+                          {score}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
-              
-              {/* Quick Score Buttons */}
-              <div className="grid grid-cols-5 gap-1.5">
-                {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(score => (
-                  <button
-                    key={score}
-                    onClick={() => {
-                      saveScore(player.id, currentHole, score);
-                    }}
-                    className={`py-3 px-1 text-base font-semibold rounded-lg mobile-tap-target ${
-                      scores[player.id][currentHole] === score
-                        ? isShaftsPlayer
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-red-600 text-white'
-                        : 'bg-gray-200 text-gray-700 hover:bg-gray-300 active:bg-gray-400'
-                    }`}
-                  >
-                    {score}
-                  </button>
-                ))}
-              </div>
-            </div>
 
-            {/* Best Ball Team Score — shown after last player in each team */}
-            {match.format === 'Best Ball' && (() => {
-              const isLastInTeam = idx === arr.length - 1 || match.team1_players.includes(arr[idx + 1].name) !== isTeam1;
-              if (!isLastInTeam) return null;
+              {/* Best Ball Team Score — shown after last player in each team */}
+              {match.format === 'Best Ball' && (() => {
+                const isLastInTeam = idx === arr.length - 1 || match.team1_players.includes(arr[idx + 1].name) !== isTeam1;
+                if (!isLastInTeam) return null;
 
-              const t1 = arr.filter(p => match.team1_players.includes(p.name));
-              const t2 = arr.filter(p => match.team2_players.includes(p.name));
-              const teamPlayers = isTeam1 ? t1 : t2;
-              let bestNet = Infinity;
-              let bestGross: number | null = null;
-              let bestPlayerName: string | null = null;
+                const t1 = arr.filter(p => match.team1_players.includes(p.name));
+                const t2 = arr.filter(p => match.team2_players.includes(p.name));
+                const teamPlayers = isTeam1 ? t1 : t2;
+                let bestNet = Infinity;
+                let bestGross: number | null = null;
+                let bestPlayerName: string | null = null;
 
-              for (const tp of teamPlayers) {
-                const gross = scores[tp.id]?.[currentHole];
-                if (gross) {
-                  const net = gross - getStrokesOnHole(tp, currentHole);
-                  if (net < bestNet) {
-                    bestNet = net;
-                    bestGross = gross;
-                    bestPlayerName = tp.name;
+                for (const tp of teamPlayers) {
+                  const gross = scores[tp.id]?.[currentHole];
+                  if (gross) {
+                    const net = gross - getStrokesOnHole(tp, currentHole);
+                    if (net < bestNet) {
+                      bestNet = net;
+                      bestGross = gross;
+                      bestPlayerName = tp.name;
+                    }
                   }
                 }
-              }
 
-              if (bestGross === null) return null;
+                if (bestGross === null) return null;
 
-              const isShaftsTeam = teamPlayers[0].team === 'Shaft';
-              const borderColor = isShaftsTeam ? 'border-blue-400 bg-blue-50' : 'border-red-400 bg-red-50';
-              const textColor = isShaftsTeam ? 'text-blue-700' : 'text-red-700';
-              const labelColor = isShaftsTeam ? 'text-blue-500' : 'text-red-500';
+                const isShaftsTeam = teamPlayers[0].team === 'Shaft';
+                const borderColor = isShaftsTeam ? 'border-blue-400 bg-blue-50' : 'border-red-400 bg-red-50';
+                const textColor = isShaftsTeam ? 'text-blue-700' : 'text-red-700';
+                const labelColor = isShaftsTeam ? 'text-blue-500' : 'text-red-500';
 
-              return (
-                <div className={`mt-2 p-3 rounded-lg border-2 ${borderColor}`}>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <div className={`text-xs font-bold uppercase tracking-wide ${labelColor}`}>Team Score</div>
-                      <div className="text-xs text-gray-500">{bestPlayerName}&apos;s ball</div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-2xl font-bold ${textColor}`}>{bestNet}</div>
-                      <div className="text-xs text-gray-400">net &nbsp;•&nbsp; gross {bestGross}</div>
+                return (
+                  <div className={`mt-2 p-3 rounded-lg border-2 ${borderColor}`}>
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className={`text-xs font-bold uppercase tracking-wide ${labelColor}`}>Team Score</div>
+                        <div className="text-xs text-gray-500">{bestPlayerName}&apos;s ball</div>
+                      </div>
+                      <div className="text-right">
+                        <div className={`text-2xl font-bold ${textColor}`}>{bestNet}</div>
+                        <div className="text-xs text-gray-400">net &nbsp;•&nbsp; gross {bestGross}</div>
+                      </div>
                     </div>
                   </div>
-                </div>
-              );
-            })()}
-
+                );
+              })()}
             </div>
           );
         })}
