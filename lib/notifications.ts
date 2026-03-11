@@ -1,6 +1,6 @@
 /**
  * Client-side notification helpers.
- * All SMS sending goes through /api/notify-player (server-side Twilio call).
+ * All SMS sending goes through /api/notify-player (server-side TextBelt call).
  * All functions are fire-and-forget — never throw.
  */
 

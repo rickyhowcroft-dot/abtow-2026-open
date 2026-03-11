@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'SMS delivery failed' }, { status: 500 })
     }
 
-    // sid is a Twilio message SID — safe to return, not a credential
+    // sid is a TextBelt textId — safe to return, not a credential
     return NextResponse.json({ success: true, sid: result.sid })
   } catch (e) {
     console.error('notify-player error:', e)
