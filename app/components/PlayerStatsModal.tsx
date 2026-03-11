@@ -293,135 +293,123 @@ function OverviewTab({
 }
 
 function ScorecardTab({ scorecardData }: { scorecardData: ScorecardDay[] }) {
-  if (scorecardData.length === 0) return <div className="text-gray-500">No scorecard data available.</div>
+  if (scorecardData.length === 0) return (
+    <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-2">
+      <span className="text-3xl">🏌️</span>
+      <span className="text-sm">No rounds played yet.</span>
+    </div>
+  )
 
-  function scoreColor(gross: number | null, par: number): string {
-    if (gross === null) return ''
+  function scoreCell(gross: number | null, par: number, strokesGiven: number) {
+    if (gross === null) return <span className="text-gray-300 text-xs">—</span>
     const diff = gross - par
-    if (diff <= -2) return 'bg-yellow-300 text-yellow-900'  // eagle+
-    if (diff === -1) return 'bg-green-200 text-green-900'   // birdie
-    if (diff === 0)  return ''                               // par
-    if (diff === 1)  return 'bg-orange-100 text-orange-800' // bogey
-    return 'bg-red-200 text-red-900'                        // double+
+    let cls = ''
+    let shape = ''
+    if (diff <= -2)       { cls = 'bg-yellow-300 text-yellow-900'; shape = 'rounded-full' }
+    else if (diff === -1) { cls = 'bg-green-200 text-green-900';   shape = 'rounded-full' }
+    else if (diff === 1)  { cls = 'bg-orange-100 text-orange-800'; shape = 'rounded' }
+    else if (diff >= 2)   { cls = 'bg-red-200 text-red-900';       shape = 'rounded' }
+    return (
+      <div className={`relative inline-flex items-center justify-center w-7 h-7 text-xs font-bold leading-none ${cls} ${shape}`}>
+        {gross}
+        {strokesGiven > 0 && (
+          <span className="absolute -top-0.5 -right-0.5 text-[6px] text-blue-500 font-black leading-none">
+            {'•'.repeat(Math.min(strokesGiven, 2))}
+          </span>
+        )}
+      </div>
+    )
   }
 
-  function netColor(net: number | null, par: number): string {
-    if (net === null) return ''
-    const diff = net - par
-    if (diff <= -2) return 'text-yellow-600 font-bold'
-    if (diff === -1) return 'text-green-600 font-bold'
-    if (diff === 0)  return 'text-gray-600'
-    if (diff === 1)  return 'text-orange-600'
-    return 'text-red-600 font-bold'
+  function renderNine(holes: ScorecardDay['holes'], label: string, grossTotal: number, netTotal: number, parTotal: number) {
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full border-collapse text-xs" style={{ minWidth: '360px' }}>
+          <tbody>
+            <tr className="bg-gray-800 text-white">
+              <td className="px-2 py-1.5 font-semibold text-gray-300 bg-gray-800 whitespace-nowrap w-12">Hole</td>
+              {holes.map(h => <td key={h.holeNumber} className="px-1 py-1.5 text-center font-bold w-7">{h.holeNumber}</td>)}
+              <td className="px-2 py-1.5 text-center font-bold bg-gray-700 w-10">{label}</td>
+            </tr>
+            <tr>
+              <td className="px-2 py-1.5 text-gray-500 font-medium bg-gray-50 whitespace-nowrap">H/I</td>
+              {holes.map(h => <td key={h.holeNumber} className="px-1 py-1.5 text-center text-gray-400">{h.holeHandicap}</td>)}
+              <td className="px-2 py-1.5 text-center text-gray-400 bg-gray-50">—</td>
+            </tr>
+            <tr className="border-b border-gray-100">
+              <td className="px-2 py-1.5 text-gray-600 font-medium bg-gray-50 whitespace-nowrap">Par</td>
+              {holes.map(h => <td key={h.holeNumber} className="px-1 py-1.5 text-center text-gray-700">{h.par}</td>)}
+              <td className="px-2 py-1.5 text-center font-bold text-gray-700 bg-gray-50">{parTotal}</td>
+            </tr>
+            <tr className="border-b border-gray-100">
+              <td className="px-2 py-1.5 font-bold text-gray-800 bg-gray-50 whitespace-nowrap">Score</td>
+              {holes.map(h => (
+                <td key={h.holeNumber} className="px-0.5 py-1 text-center">
+                  {scoreCell(h.grossScore, h.par, h.strokesGiven)}
+                </td>
+              ))}
+              <td className="px-2 py-1.5 text-center font-bold text-gray-800 bg-gray-50">{grossTotal || '—'}</td>
+            </tr>
+            <tr>
+              <td className="px-2 py-1.5 text-gray-500 font-medium bg-gray-50 whitespace-nowrap">Net</td>
+              {holes.map(h => <td key={h.holeNumber} className="px-1 py-1.5 text-center text-gray-500">{h.netScore ?? '—'}</td>)}
+              <td className="px-2 py-1.5 text-center font-bold text-gray-500 bg-gray-50">{netTotal || '—'}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    )
   }
-
-  const Cell = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-    <td className={`border border-gray-200 text-center px-1 py-1.5 text-xs ${className}`}>{children}</td>
-  )
-
-  const SubtotalCell = ({ children, className = '' }: { children: React.ReactNode; className?: string }) => (
-    <td className={`border border-gray-300 text-center px-1 py-1.5 text-xs font-bold bg-gray-50 ${className}`}>{children}</td>
-  )
-
-  const LabelCell = ({ children }: { children: React.ReactNode }) => (
-    <td className="border border-gray-200 px-2 py-1.5 text-xs font-semibold text-gray-600 bg-gray-50 whitespace-nowrap">{children}</td>
-  )
 
   return (
-    <div className="space-y-8">
-      {scorecardData.map(day => {
-        const front = day.holes.slice(0, 9)
-        const back = day.holes.slice(9, 18)
-
-        const renderNine = (holes: typeof day.holes, label: string, grossTotal: number, netTotal: number, parTotal: number) => (
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse min-w-[520px]">
-              <tbody>
-                {/* Hole row */}
-                <tr className="bg-gray-800 text-white">
-                  <LabelCell>Hole</LabelCell>
-                  {holes.map(h => <Cell key={h.holeNumber} className="bg-gray-800 text-white font-bold">{h.holeNumber}</Cell>)}
-                  <SubtotalCell className="bg-gray-700 text-white">{label}</SubtotalCell>
-                </tr>
-                {/* H/I row */}
-                <tr>
-                  <LabelCell>H/I</LabelCell>
-                  {holes.map(h => <Cell key={h.holeNumber} className="text-gray-500">{h.holeHandicap}</Cell>)}
-                  <SubtotalCell>—</SubtotalCell>
-                </tr>
-                {/* Par row */}
-                <tr>
-                  <LabelCell>Par</LabelCell>
-                  {holes.map(h => <Cell key={h.holeNumber} className="text-gray-700">{h.par}</Cell>)}
-                  <SubtotalCell>{parTotal}</SubtotalCell>
-                </tr>
-                {/* Gross row */}
-                <tr>
-                  <LabelCell>Gross</LabelCell>
-                  {holes.map(h => (
-                    <Cell key={h.holeNumber} className={scoreColor(h.grossScore, h.par)}>
-                      <div className="relative inline-block">
-                        {h.grossScore ?? '—'}
-                        {h.strokesGiven > 0 && (
-                          <span className="absolute -top-1 -right-1.5 text-[8px] text-blue-600 font-bold leading-none">
-                            {'•'.repeat(Math.min(h.strokesGiven, 2))}
-                          </span>
-                        )}
-                      </div>
-                    </Cell>
-                  ))}
-                  <SubtotalCell className={grossTotal > 0 ? '' : 'text-gray-400'}>{grossTotal || '—'}</SubtotalCell>
-                </tr>
-                {/* Net row */}
-                <tr>
-                  <LabelCell>Net</LabelCell>
-                  {holes.map(h => (
-                    <Cell key={h.holeNumber}>
-                      <span className={netColor(h.netScore, h.par)}>{h.netScore ?? '—'}</span>
-                    </Cell>
-                  ))}
-                  <SubtotalCell className={netTotal > 0 ? '' : 'text-gray-400'}>{netTotal || '—'}</SubtotalCell>
-                </tr>
-              </tbody>
-            </table>
+    <div className="space-y-6">
+      {scorecardData.map(day => (
+        <div key={day.day}>
+          {/* Day header */}
+          <div className="flex items-center justify-between mb-2 px-1">
+            <div>
+              <div className="text-sm font-bold text-gray-800">Day {day.day} · {day.courseName}</div>
+              <div className="text-xs text-gray-400">HCP {day.playingHandicap}</div>
+            </div>
+            <div className="text-right">
+              <div className="text-xl font-bold text-gray-900">{day.totalGross}</div>
+              <div className="text-xs text-gray-400">Net {day.totalNet}</div>
+            </div>
           </div>
-        )
 
-        return (
-          <div key={day.day}>
-            <div className="flex items-center justify-between mb-3">
-              <div>
-                <h3 className="text-lg font-bold">Day {day.day}</h3>
-                <p className="text-sm text-gray-500">{day.courseName} · HCP {day.playingHandicap}</p>
-              </div>
-              <div className="text-right">
-                <div className="text-2xl font-bold text-gray-800">{day.totalGross}</div>
-                <div className="text-sm text-gray-500">Net {day.totalNet}</div>
-              </div>
-            </div>
-            {renderNine(front, 'OUT', day.frontGross, day.frontNet, day.frontPar)}
-            <div className="mt-2">
-              {renderNine(back, 'IN', day.backGross, day.backNet, day.backPar)}
-            </div>
-            {/* Totals row */}
-            <div className="mt-2 overflow-x-auto">
-              <table className="w-full border-collapse min-w-[520px]">
-                <tbody>
-                  <tr className="bg-gray-100">
-                    <td className="border border-gray-300 px-2 py-1.5 text-xs font-bold text-gray-700 bg-gray-200 whitespace-nowrap">Totals</td>
-                    <td className="border border-gray-300 px-3 py-1.5 text-xs text-center text-gray-600">OUT {day.frontPar}</td>
-                    <td className="border border-gray-300 px-3 py-1.5 text-xs text-center text-gray-600">IN {day.backPar}</td>
-                    <td className="border border-gray-300 px-3 py-1.5 text-xs font-bold text-center">TOT {day.totalPar}</td>
-                    <td className="border border-gray-300 px-3 py-1.5 text-xs text-center">Gross <span className="font-bold text-gray-800">{day.totalGross}</span></td>
-                    <td className="border border-gray-300 px-3 py-1.5 text-xs text-center">Net <span className="font-bold text-teal-700">{day.totalNet}</span></td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div className="mt-2 text-xs text-gray-400">• = stroke given on hole</div>
+          {/* Scorecard tables */}
+          <div className="rounded-lg overflow-hidden border border-gray-200 space-y-px">
+            {renderNine(day.holes.slice(0, 9), 'Out', day.frontGross, day.frontNet, day.frontPar)}
+            {renderNine(day.holes.slice(9, 18), 'In', day.backGross, day.backNet, day.backPar)}
           </div>
-        )
-      })}
+
+          {/* Summary bar */}
+          <div className="flex items-center justify-between mt-2 px-3 py-2 bg-gray-50 rounded-lg border border-gray-200 text-xs text-gray-600">
+            <span>Par <strong className="text-gray-800">{day.totalPar}</strong></span>
+            <span>Out <strong className="text-gray-800">{day.frontGross}</strong> · In <strong className="text-gray-800">{day.backGross}</strong></span>
+            <span>Net <strong className="text-teal-700">{day.totalNet}</strong></span>
+          </div>
+        </div>
+      ))}
+
+      {/* Colour legend */}
+      <div className="flex flex-wrap gap-3 pt-2 border-t border-gray-100">
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <div className="w-5 h-5 rounded-full bg-yellow-300 flex items-center justify-center text-yellow-900 text-xs font-bold">3</div>Eagle+
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <div className="w-5 h-5 rounded-full bg-green-200 flex items-center justify-center text-green-900 text-xs font-bold">4</div>Birdie
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <div className="w-5 h-5 rounded bg-orange-100 flex items-center justify-center text-orange-800 text-xs font-bold">5</div>Bogey
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <div className="w-5 h-5 rounded bg-red-200 flex items-center justify-center text-red-900 text-xs font-bold">6</div>Dbl+
+        </div>
+        <div className="flex items-center gap-1.5 text-xs text-gray-500">
+          <span className="text-[8px] text-blue-500 font-black">•</span>Stroke given
+        </div>
+      </div>
     </div>
   )
 }
