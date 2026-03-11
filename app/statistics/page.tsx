@@ -523,7 +523,7 @@ export default function StatisticsPage() {
                     case 'netAverage':
                       return (a.total_net_strokes / a.total_rounds_played) - (b.total_net_strokes / b.total_rounds_played)
                     case 'handicapPerformance':
-                      return (a.strokes_to_handicap ?? 0) - (b.strokes_to_handicap ?? 0)
+                      return (a.total_strokes_to_handicap ?? 0) - (b.total_strokes_to_handicap ?? 0)
                     case 'mostBogeys':
                       return b.bogeys - a.bogeys
                     case 'mostBirdies':
@@ -612,7 +612,7 @@ export default function StatisticsPage() {
                         <div className="text-xs text-gray-400">HCP {playersHcp[player.player_id] ?? '—'}</div>
                       </div>
                       <div className="w-12 text-right text-sm font-bold text-gray-900">
-                        {player.total_rounds_played === 0 ? '—' : sortBy === 'netAverage' ? player.total_net_strokes : sortBy === 'handicapPerformance' ? (player.strokes_to_handicap != null ? (player.strokes_to_handicap > 0 ? `+${player.strokes_to_handicap}` : player.strokes_to_handicap) : '—') : sortBy === 'mostBirdies' ? player.birdies : sortBy === 'mostBogeys' ? player.bogeys : player.total_gross_strokes}
+                        {player.total_rounds_played === 0 ? '—' : sortBy === 'netAverage' ? player.total_net_strokes : sortBy === 'handicapPerformance' ? (player.total_strokes_to_handicap != null ? (player.total_strokes_to_handicap > 0 ? `+${player.total_strokes_to_handicap}` : player.total_strokes_to_handicap) : '—') : sortBy === 'mostBirdies' ? player.birdies : sortBy === 'mostBogeys' ? player.bogeys : player.total_gross_strokes}
                       </div>
                       <div className={`w-14 text-right text-sm ${(sortBy === 'scoringAverage' || sortBy === 'netAverage') ? toParColor : 'text-gray-300'}`}>
                         {(sortBy === 'scoringAverage' || sortBy === 'netAverage') ? toParDisplay : ''}
