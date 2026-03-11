@@ -1,21 +1,21 @@
 /**
- * Server-side SMS helper using TextBelt.
+ * Server-side SMS/MMS helper using Twilio REST API.
  *
  * 'server-only' enforces this file is never bundled into the client —
  * importing it from a client component will throw a build error.
  *
  * Required env vars (set in Vercel, never in source):
- *   TEXTBELT_KEY  — API key from textbelt.com (treat like a password)
- *
- * Note: TextBelt is SMS-only (no MMS). If a mediaUrl is supplied it is
- * appended as a plain-text link so callers don't need to change.
+ *   TWILIO_ACCOUNT_SID   — Account SID from Twilio console (starts with AC...)
+ *   TWILIO_AUTH_TOKEN    — Auth token from Twilio console (treat like a password)
+ *   TWILIO_FROM_NUMBER   — Your Twilio phone number in E.164 format (+15855551234)
+ *                          Use a local long-code number for MMS support.
  */
 import 'server-only'
 
 export interface SmsResult {
   success: boolean
-  sid?: string    // TextBelt textId — safe to log, not sensitive
-  error?: string  // Sanitized error description — never contains credentials
+  sid?: string       // Twilio message SID — safe to log, not sensitive
+  error?: string     // Sanitized error description — never contains credentials
 }
 
 /**
@@ -29,43 +29,51 @@ export function normalizePhone(raw: string): string {
 }
 
 /**
- * Send an SMS via TextBelt.
+ * Send an SMS or MMS via Twilio.
  * Never throws — returns { success, sid } or { success: false, error }.
- * mediaUrl is appended as a text link (TextBelt does not support MMS).
+ * Credentials are read from env vars and never included in return values or logs.
  */
 export async function sendSms(
   to: string,
   body: string,
   mediaUrl?: string
 ): Promise<SmsResult> {
-  const key = process.env.TEXTBELT_KEY?.trim()
+  const accountSid = process.env.TWILIO_ACCOUNT_SID?.trim()
+  const authToken  = process.env.TWILIO_AUTH_TOKEN?.trim()
+  const from       = process.env.TWILIO_FROM_NUMBER?.trim()
 
-  if (!key) {
+  if (!accountSid || !authToken || !from) {
     return { success: false, error: 'SMS not configured' }
   }
 
   const phone = normalizePhone(to)
-  const fullBody = mediaUrl ? `${body}\n${mediaUrl}` : body
 
-  const params = new URLSearchParams({ phone, message: fullBody, key })
+  const params = new URLSearchParams({ To: phone, From: from, Body: body })
+  if (mediaUrl) params.append('MediaUrl', mediaUrl)
 
   try {
-    const res = await fetch('https://textbelt.com/text', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: params.toString(),
-    })
+    const res = await fetch(
+      `https://api.twilio.com/2010-04-01/Accounts/${accountSid}/Messages.json`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+          'Authorization': `Basic ${Buffer.from(`${accountSid}:${authToken}`).toString('base64')}`,
+        },
+        body: params.toString(),
+      }
+    )
 
     const data = await res.json()
 
-    if (!data.success) {
-      console.error('[sms] TextBelt error:', data.error)
-      return { success: false, error: data.error ?? 'SMS delivery failed' }
+    if (!res.ok) {
+      console.error(`[sms] Twilio error ${res.status}:`, data?.code, data?.message)
+      return { success: false, error: `SMS delivery failed (code ${data?.code ?? res.status})` }
     }
 
-    return { success: true, sid: String(data.textId) }
+    return { success: true, sid: data.sid }
   } catch (e) {
-    console.error('[sms] TextBelt fetch error:', e)
+    console.error('[sms] Twilio fetch error:', e)
     return { success: false, error: 'SMS unavailable' }
   }
 }
