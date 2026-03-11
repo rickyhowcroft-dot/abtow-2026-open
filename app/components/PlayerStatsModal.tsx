@@ -433,7 +433,7 @@ function DailyTab({
     betsNetAmount: number
   }>
 }) {
-  const days = [...new Set([...dailyStats.map(d => d.day), ...gameData.map(d => d.day)])].sort()
+  const days = Array.from(new Set([...dailyStats.map(d => d.day), ...gameData.map(d => d.day)])).sort((a, b) => a - b)
 
   if (days.length === 0) {
     return (

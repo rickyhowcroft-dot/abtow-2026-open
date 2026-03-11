@@ -707,8 +707,8 @@ export class StatsService {
     if (!matches || matches.length === 0) return []
 
     const matchIds = matches.map((m: any) => m.id)
-    const allPlayerNames = [...new Set(matches.flatMap((m: any) => [...m.team1_players, ...m.team2_players]))] as string[]
-    const courseIds = [...new Set(matches.map((m: any) => m.course_id))] as string[]
+    const allPlayerNames = Array.from(new Set(matches.flatMap((m: any) => [...m.team1_players, ...m.team2_players]))) as string[]
+    const courseIds = Array.from(new Set(matches.map((m: any) => m.course_id))) as string[]
 
     const [scoresRes, playersRes, coursesRes, betsRes] = await Promise.all([
       supabase.from('scores').select('*').in('match_id', matchIds),
@@ -762,7 +762,7 @@ export class StatsService {
 
     // For bets on other matches (not this player's), fetch day separately
     const bets = (betsRes.data || []) as any[]
-    const unmappedMatchIds = [...new Set(bets.map((b: any) => b.match_id).filter((id: string) => !matchDayMap.has(id)))]
+    const unmappedMatchIds = Array.from(new Set(bets.map((b: any) => b.match_id).filter((id: string) => !matchDayMap.has(id))))
     if (unmappedMatchIds.length > 0) {
       const { data: extraMatches } = await supabase.from('matches').select('id, day').in('id', unmappedMatchIds)
       for (const m of extraMatches || []) matchDayMap.set(m.id, m.day)
@@ -786,7 +786,7 @@ export class StatsService {
       }
     }
 
-    const days = [...new Set(matches.map((m: any) => m.day))].sort((a, b) => a - b) as number[]
+    const days = Array.from(new Set(matches.map((m: any) => m.day))).sort((a, b) => a - b) as number[]
     return days.map(day => ({
       day,
       ...(matchResultsByDay.get(day) ?? { matchResult: null, matchPoints: null, matchScoreDisplay: null }),
