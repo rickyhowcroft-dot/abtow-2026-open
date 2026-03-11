@@ -601,10 +601,14 @@ export default function StatisticsPage() {
                       <div className={`w-14 text-right text-sm ${toParColor}`}>
                         {toParDisplay}
                       </div>
-                      <div className="w-10 text-right text-xs text-gray-400">
+                      <div className="w-10 text-right text-sm font-bold text-gray-500">
                         {player.total_holes_played > 0 ? player.total_holes_played : '—'}
                       </div>
-                      <span className={`w-5 shrink-0 text-gray-400 text-xs text-right transition-transform duration-200 inline-block ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
+                      <div className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center text-sm font-black transition-colors ${
+                        isExpanded ? 'bg-green-600 text-white' : 'bg-green-100 text-green-700 hover:bg-green-200'
+                      }`}>
+                        {isExpanded ? '−' : '+'}
+                      </div>
                     </div>
 
                     {isExpanded && (
