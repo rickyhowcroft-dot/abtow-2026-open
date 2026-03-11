@@ -532,7 +532,7 @@ function DailyTab({
                     {(game?.betsPush ?? 0) > 0 && (
                       <>
                         <span className="text-gray-300">·</span>
-                        <span className="text-sm font-bold text-gray-500">{game.betsPush}P</span>
+                        <span className="text-sm font-bold text-gray-500">{game?.betsPush ?? 0}P</span>
                       </>
                     )}
                   </div>
