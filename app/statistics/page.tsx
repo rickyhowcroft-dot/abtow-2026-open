@@ -7,6 +7,7 @@ import PlayerStatsModal from '@/app/components/PlayerStatsModal'
 import StatsService, { type PlayerStatsOverview } from '@/lib/stats-service'
 import { getMvpStandings, type MvpPlayer } from '@/lib/mvp-service'
 import { TrendingDown, Award } from 'lucide-react'
+import { supabase } from '@/lib/supabase'
 
 export default function StatisticsPage() {
   const [allStats, setAllStats] = useState<PlayerStatsOverview[]>([])
@@ -19,6 +20,10 @@ export default function StatisticsPage() {
   const [nightmareRound, setNightmareRound] = useState<{ playerNightmareRounds: Array<{ playerId: string; playerName: string; nightmareGross: number; nightmareNet: number }> } | null>(null)
   const [mvpStandings, setMvpStandings] = useState<MvpPlayer[]>([])
   const [mvpExpanded, setMvpExpanded] = useState(false)
+  const [expandedLeaderboardId, setExpandedLeaderboardId] = useState<string | null>(null)
+  const [leaderboardScorecards, setLeaderboardScorecards] = useState<Record<string, Awaited<ReturnType<typeof StatsService.getPlayerScorecardData>>>>({})
+  const [leaderboardLoading, setLeaderboardLoading] = useState<Record<string, boolean>>({})
+  const [playersHcp, setPlayersHcp] = useState<Record<string, number>>({})
 
   const InfoBtn = ({ title, description }: { title: string; description: string }) => (
     <button
@@ -36,20 +41,43 @@ export default function StatisticsPage() {
 
   const loadAllStats = async () => {
     try {
-      const [stats, dream, nightmare, mvp] = await Promise.all([
+      const [stats, dream, nightmare, mvp, playersRes] = await Promise.all([
         StatsService.getAllPlayersStats(),
         StatsService.getDreamRound(),
         StatsService.getNightmareRound(),
         getMvpStandings(),
+        supabase.from('players').select('id, playing_handicap'),
       ])
       setAllStats(stats)
       setDreamRound(dream)
       setNightmareRound(nightmare)
       setMvpStandings(mvp)
+      const hcpMap: Record<string, number> = {}
+      for (const p of playersRes.data || []) hcpMap[p.id] = p.playing_handicap
+      setPlayersHcp(hcpMap)
     } catch (error) {
       console.error('Error loading statistics:', error)
     } finally {
       setLoading(false)
+    }
+  }
+
+  async function toggleLeaderboard(playerId: string) {
+    if (expandedLeaderboardId === playerId) {
+      setExpandedLeaderboardId(null)
+      return
+    }
+    setExpandedLeaderboardId(playerId)
+    if (!leaderboardScorecards[playerId]) {
+      setLeaderboardLoading(prev => ({ ...prev, [playerId]: true }))
+      try {
+        const data = await StatsService.getPlayerScorecardData(playerId)
+        setLeaderboardScorecards(prev => ({ ...prev, [playerId]: data }))
+      } catch (e) {
+        console.error('Failed to load scorecard', e)
+      } finally {
+        setLeaderboardLoading(prev => ({ ...prev, [playerId]: false }))
+      }
     }
   }
 
@@ -466,6 +494,188 @@ export default function StatisticsPage() {
             </div>
           </div>
 
+          {/* Player Standings Leaderboard */}
+          <div className="bg-white rounded-lg shadow overflow-hidden mb-6">
+            <div className="bg-green-700 px-4 py-3 text-center">
+              <h2 className="text-white font-bold text-sm tracking-widest uppercase">Player Standings</h2>
+            </div>
+            <div className="flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-bold uppercase tracking-wider gap-2">
+              <div className="w-5 shrink-0 text-gray-400">#</div>
+              <div className="flex-1">Name</div>
+              <div className="w-12 text-right">Score</div>
+              <div className="w-14 text-right">To Par</div>
+              <div className="w-10 text-right">Holes</div>
+              <div className="w-5 shrink-0" />
+            </div>
+            {(() => {
+              const standings = [...allStats]
+                .filter(p => teamFilter === 'all' || p.team === teamFilter)
+                .sort((a, b) => {
+                  if (a.total_rounds_played === 0 && b.total_rounds_played === 0)
+                    return a.playerName.localeCompare(b.playerName)
+                  if (a.total_rounds_played === 0) return 1
+                  if (b.total_rounds_played === 0) return -1
+                  return a.total_gross_strokes - b.total_gross_strokes
+                })
+              return standings.map((player, idx) => {
+                const isExpanded = expandedLeaderboardId === player.player_id
+                const totalPar = player.total_rounds_played * 72
+                const toPar = player.total_rounds_played > 0 ? player.total_gross_strokes - totalPar : null
+                const toParDisplay = toPar === null ? '—' : toPar === 0 ? 'E' : toPar > 0 ? `+${toPar}` : `${toPar}`
+                const toParColor = toPar === null ? 'text-gray-400' : toPar < 0 ? 'text-red-600 font-bold' : toPar === 0 ? 'text-green-600 font-bold' : 'text-gray-700'
+                const scorecard = leaderboardScorecards[player.player_id]
+                const isLoading = leaderboardLoading[player.player_id]
+
+                function scoreCell(gross: number | null, par: number, strokesGiven: number) {
+                  if (gross === null) return <span className="text-gray-300 text-xs">—</span>
+                  const diff = gross - par
+                  let cls = ''
+                  let shape = ''
+                  if (diff <= -2)      { cls = 'bg-yellow-300 text-yellow-900'; shape = 'rounded-full' }
+                  else if (diff === -1) { cls = 'bg-green-200 text-green-900';  shape = 'rounded-full' }
+                  else if (diff === 1)  { cls = 'bg-orange-100 text-orange-800'; shape = 'rounded' }
+                  else if (diff >= 2)   { cls = 'bg-red-200 text-red-900';      shape = 'rounded' }
+                  return (
+                    <div className={`relative inline-flex items-center justify-center w-6 h-6 text-xs font-bold leading-none ${cls} ${shape}`}>
+                      {gross}
+                      {strokesGiven > 0 && <span className="absolute -top-0.5 -right-0.5 text-[6px] text-blue-500 font-black leading-none">{'•'.repeat(Math.min(strokesGiven, 2))}</span>}
+                    </div>
+                  )
+                }
+
+                function renderNine(holes: NonNullable<typeof scorecard>[number]['holes'], label: string, grossTotal: number, netTotal: number, parTotal: number) {
+                  return (
+                    <div className="overflow-x-auto">
+                      <table className="w-full border-collapse text-xs" style={{ minWidth: '380px' }}>
+                        <tbody>
+                          <tr className="bg-gray-800 text-white">
+                            <td className="px-2 py-1.5 font-semibold text-gray-300 bg-gray-800 whitespace-nowrap w-12">Hole</td>
+                            {holes.map(h => <td key={h.holeNumber} className="px-1 py-1.5 text-center font-bold w-7">{h.holeNumber}</td>)}
+                            <td className="px-2 py-1.5 text-center font-bold bg-gray-700 w-10">{label}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-2 py-1.5 text-gray-500 font-medium bg-gray-50 whitespace-nowrap">H/I</td>
+                            {holes.map(h => <td key={h.holeNumber} className="px-1 py-1.5 text-center text-gray-400">{h.holeHandicap}</td>)}
+                            <td className="px-2 py-1.5 text-center text-gray-400 bg-gray-50">—</td>
+                          </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="px-2 py-1.5 text-gray-600 font-medium bg-gray-50 whitespace-nowrap">Par</td>
+                            {holes.map(h => <td key={h.holeNumber} className="px-1 py-1.5 text-center text-gray-700">{h.par}</td>)}
+                            <td className="px-2 py-1.5 text-center font-bold text-gray-700 bg-gray-50">{parTotal}</td>
+                          </tr>
+                          <tr className="border-b border-gray-100">
+                            <td className="px-2 py-1.5 font-bold text-gray-800 bg-gray-50 whitespace-nowrap">Score</td>
+                            {holes.map(h => (
+                              <td key={h.holeNumber} className="px-0.5 py-1 text-center">
+                                {scoreCell(h.grossScore, h.par, h.strokesGiven)}
+                              </td>
+                            ))}
+                            <td className="px-2 py-1.5 text-center font-bold text-gray-800 bg-gray-50">{grossTotal || '—'}</td>
+                          </tr>
+                          <tr>
+                            <td className="px-2 py-1.5 text-gray-500 font-medium bg-gray-50 whitespace-nowrap">Net</td>
+                            {holes.map(h => <td key={h.holeNumber} className="px-1 py-1.5 text-center text-gray-500">{h.netScore ?? '—'}</td>)}
+                            <td className="px-2 py-1.5 text-center font-bold text-gray-500 bg-gray-50">{netTotal || '—'}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  )
+                }
+
+                return (
+                  <div key={player.player_id} className={`border-b border-gray-100 last:border-0 ${idx % 2 === 1 ? 'bg-gray-50/40' : ''}`}>
+                    <div
+                      className="flex items-center gap-2 px-4 py-3 cursor-pointer hover:bg-gray-50 active:bg-gray-100 transition-colors select-none"
+                      onClick={() => toggleLeaderboard(player.player_id)}
+                    >
+                      <div className="w-5 shrink-0 text-xs font-medium text-gray-400 text-right">{idx + 1}</div>
+                      <div className={`w-2.5 h-2.5 rounded-full shrink-0 ${player.team === 'Shaft' ? 'bg-blue-500' : 'bg-red-500'}`} />
+                      <div className="flex-1 min-w-0">
+                        <div className="text-sm font-semibold text-gray-900 truncate">{player.playerName}</div>
+                        <div className="text-xs text-gray-400">HCP {playersHcp[player.player_id] ?? '—'}</div>
+                      </div>
+                      <div className="w-12 text-right text-sm font-bold text-gray-900">
+                        {player.total_rounds_played > 0 ? player.total_gross_strokes : '—'}
+                      </div>
+                      <div className={`w-14 text-right text-sm ${toParColor}`}>
+                        {toParDisplay}
+                      </div>
+                      <div className="w-10 text-right text-xs text-gray-400">
+                        {player.total_holes_played > 0 ? player.total_holes_played : '—'}
+                      </div>
+                      <span className={`w-5 shrink-0 text-gray-400 text-xs text-right transition-transform duration-200 inline-block ${isExpanded ? 'rotate-180' : ''}`}>▾</span>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="border-t border-gray-100 bg-gray-50">
+                        {isLoading ? (
+                          <div className="flex items-center justify-center py-8 text-gray-400 text-sm gap-2">
+                            <span className="animate-spin">⏳</span> Loading scorecard…
+                          </div>
+                        ) : !scorecard || scorecard.length === 0 ? (
+                          <div className="flex flex-col items-center justify-center py-10 text-gray-400 gap-1">
+                            <span className="text-2xl">🏌️</span>
+                            <span className="text-sm">No rounds played yet.</span>
+                          </div>
+                        ) : (
+                          <div className="px-3 py-4 space-y-5">
+                            {scorecard.map(day => {
+                              const front = day.holes.slice(0, 9)
+                              const back = day.holes.slice(9, 18)
+                              const frontGross = front.reduce((s, h) => s + (h.grossScore ?? 0), 0)
+                              const backGross = back.reduce((s, h) => s + (h.grossScore ?? 0), 0)
+                              const frontNet = front.reduce((s, h) => s + (h.netScore ?? 0), 0)
+                              const backNet = back.reduce((s, h) => s + (h.netScore ?? 0), 0)
+                              const frontPar = front.reduce((s, h) => s + h.par, 0)
+                              const backPar = back.reduce((s, h) => s + h.par, 0)
+                              return (
+                                <div key={day.day}>
+                                  <div className="flex items-center justify-between mb-2 px-1">
+                                    <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Day {day.day} · {day.courseName}</span>
+                                    <span className="text-xs text-gray-400">{day.gross_score} gross · {day.net_score} net</span>
+                                  </div>
+                                  <div className="rounded-lg overflow-hidden border border-gray-200 space-y-px">
+                                    {renderNine(front, 'Out', frontGross, frontNet, frontPar)}
+                                    {renderNine(back, 'In', backGross, backNet, backPar)}
+                                  </div>
+                                </div>
+                              )
+                            })}
+                            <div className="pt-1 flex justify-end">
+                              <button
+                                onClick={(e) => { e.stopPropagation(); openPlayerStats(player.player_id, player.playerName) }}
+                                className="bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors"
+                              >
+                                Full Stats →
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })
+            })()}
+
+            {/* Colour legend */}
+            <div className="flex flex-wrap gap-3 px-4 py-3 border-t border-gray-100 bg-gray-50">
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <div className="w-5 h-5 rounded-full bg-yellow-300 flex items-center justify-center text-yellow-900 text-xs font-bold">3</div>Eagle+
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <div className="w-5 h-5 rounded-full bg-green-200 flex items-center justify-center text-green-900 text-xs font-bold">4</div>Birdie
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <div className="w-5 h-5 rounded bg-orange-100 flex items-center justify-center text-orange-800 text-xs font-bold">5</div>Bogey
+              </div>
+              <div className="flex items-center gap-1.5 text-xs text-gray-500">
+                <div className="w-5 h-5 rounded bg-red-200 flex items-center justify-center text-red-900 text-xs font-bold">6</div>Dbl+
+              </div>
+            </div>
+          </div>
+
           {/* Player Statistics Table */}
           {(() => {
             type Col = { key: string; label: string; sortKey?: string; renderCell: (p: PlayerStatsOverview, hidden: boolean) => React.ReactNode }
@@ -573,12 +783,6 @@ export default function StatisticsPage() {
                             >
                               View Details
                             </button>
-                            <Link
-                              href={`/players/${encodeURIComponent(player.playerName)}`}
-                              className="ml-2 bg-gray-600 text-white px-3 py-1 rounded hover:bg-gray-700 transition-colors inline-block"
-                            >
-                              Profile
-                            </Link>
                           </td>
                         </tr>
                       ))}
