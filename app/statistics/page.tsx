@@ -502,8 +502,12 @@ export default function StatisticsPage() {
             <div className="flex items-center px-4 py-2 bg-gray-800 text-white text-xs font-bold uppercase tracking-wider gap-2">
               <div className="w-5 shrink-0 text-gray-400">#</div>
               <div className="flex-1">Name</div>
-              <div className="w-12 text-right">Score</div>
-              <div className="w-14 text-right">To Par</div>
+              <div className="w-12 text-right">
+                {sortBy === 'netAverage' ? 'Net' : sortBy === 'handicapPerformance' ? 'vs HCP' : sortBy === 'mostBirdies' ? 'Birdies' : sortBy === 'mostBogeys' ? 'Bogeys' : 'Gross'}
+              </div>
+              <div className="w-14 text-right">
+                {sortBy === 'scoringAverage' || sortBy === 'netAverage' ? 'To Par' : ''}
+              </div>
               <div className="w-10 text-right">Holes</div>
               <div className="w-5 shrink-0" />
             </div>
@@ -515,7 +519,19 @@ export default function StatisticsPage() {
                     return a.playerName.localeCompare(b.playerName)
                   if (a.total_rounds_played === 0) return 1
                   if (b.total_rounds_played === 0) return -1
-                  return a.total_gross_strokes - b.total_gross_strokes
+                  switch (sortBy) {
+                    case 'netAverage':
+                      return (a.total_net_strokes / a.total_rounds_played) - (b.total_net_strokes / b.total_rounds_played)
+                    case 'handicapPerformance':
+                      return (a.strokes_to_handicap ?? 0) - (b.strokes_to_handicap ?? 0)
+                    case 'mostBogeys':
+                      return b.bogeys - a.bogeys
+                    case 'mostBirdies':
+                      return b.birdies - a.birdies
+                    case 'scoringAverage':
+                    default:
+                      return (a.total_gross_strokes / a.total_rounds_played) - (b.total_gross_strokes / b.total_rounds_played)
+                  }
                 })
               return standings.map((player, idx) => {
                 const isExpanded = expandedLeaderboardId === player.player_id
@@ -596,10 +612,10 @@ export default function StatisticsPage() {
                         <div className="text-xs text-gray-400">HCP {playersHcp[player.player_id] ?? '—'}</div>
                       </div>
                       <div className="w-12 text-right text-sm font-bold text-gray-900">
-                        {player.total_rounds_played > 0 ? player.total_gross_strokes : '—'}
+                        {player.total_rounds_played === 0 ? '—' : sortBy === 'netAverage' ? player.total_net_strokes : sortBy === 'handicapPerformance' ? (player.strokes_to_handicap != null ? (player.strokes_to_handicap > 0 ? `+${player.strokes_to_handicap}` : player.strokes_to_handicap) : '—') : sortBy === 'mostBirdies' ? player.birdies : sortBy === 'mostBogeys' ? player.bogeys : player.total_gross_strokes}
                       </div>
-                      <div className={`w-14 text-right text-sm ${toParColor}`}>
-                        {toParDisplay}
+                      <div className={`w-14 text-right text-sm ${(sortBy === 'scoringAverage' || sortBy === 'netAverage') ? toParColor : 'text-gray-300'}`}>
+                        {(sortBy === 'scoringAverage' || sortBy === 'netAverage') ? toParDisplay : ''}
                       </div>
                       <div className="w-10 text-right text-sm font-bold text-gray-500">
                         {player.total_holes_played > 0 ? player.total_holes_played : '—'}
