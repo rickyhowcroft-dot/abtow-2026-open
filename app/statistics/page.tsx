@@ -623,17 +623,17 @@ export default function StatisticsPage() {
                             {scorecard.map(day => {
                               const front = day.holes.slice(0, 9)
                               const back = day.holes.slice(9, 18)
-                              const frontGross = front.reduce((s, h) => s + (h.grossScore ?? 0), 0)
-                              const backGross = back.reduce((s, h) => s + (h.grossScore ?? 0), 0)
-                              const frontNet = front.reduce((s, h) => s + (h.netScore ?? 0), 0)
-                              const backNet = back.reduce((s, h) => s + (h.netScore ?? 0), 0)
-                              const frontPar = front.reduce((s, h) => s + h.par, 0)
-                              const backPar = back.reduce((s, h) => s + h.par, 0)
+                              const frontGross = day.frontGross
+                              const backGross = day.backGross
+                              const frontNet = day.frontNet
+                              const backNet = day.backNet
+                              const frontPar = day.frontPar
+                              const backPar = day.backPar
                               return (
                                 <div key={day.day}>
                                   <div className="flex items-center justify-between mb-2 px-1">
                                     <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">Day {day.day} · {day.courseName}</span>
-                                    <span className="text-xs text-gray-400">{day.gross_score} gross · {day.net_score} net</span>
+                                    <span className="text-xs text-gray-400">{day.totalGross} gross · {day.totalNet} net</span>
                                   </div>
                                   <div className="rounded-lg overflow-hidden border border-gray-200 space-y-px">
                                     {renderNine(front, 'Out', frontGross, frontNet, frontPar)}
