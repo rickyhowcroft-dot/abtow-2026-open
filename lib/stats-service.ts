@@ -1,4 +1,5 @@
 import { supabase } from './supabase'
+import { calculateBestBallResults, calculateStablefordResults, calculateIndividualResults } from './scoring'
 import type { Database } from './supabase'
 
 type Player = Database['public']['Tables']['players']['Row']
@@ -681,6 +682,119 @@ export class StatsService {
     if (playerNightmareRounds.length === 0) return null
 
     return { playerNightmareRounds }
+  }
+
+  /**
+   * Per-day match result, match points, and settled bet summary for a player.
+   */
+  static async getPlayerDailyGameData(playerId: string, playerName: string): Promise<Array<{
+    day: number
+    matchResult: 'W' | 'L' | 'D' | null
+    matchPoints: number | null
+    matchScoreDisplay: string | null
+    betsWon: number
+    betsLost: number
+    betsPush: number
+    betsNetAmount: number
+  }>> {
+    // Fetch matches this player is in
+    const { data: matches } = await supabase
+      .from('matches')
+      .select('*')
+      .or(`team1_players.cs.{"${playerName}"},team2_players.cs.{"${playerName}"}`)
+      .order('day')
+
+    if (!matches || matches.length === 0) return []
+
+    const matchIds = matches.map((m: any) => m.id)
+    const allPlayerNames = [...new Set(matches.flatMap((m: any) => [...m.team1_players, ...m.team2_players]))] as string[]
+    const courseIds = [...new Set(matches.map((m: any) => m.course_id))] as string[]
+
+    const [scoresRes, playersRes, coursesRes, betsRes] = await Promise.all([
+      supabase.from('scores').select('*').in('match_id', matchIds),
+      supabase.from('players').select('*').in('name', allPlayerNames),
+      supabase.from('courses').select('*').in('id', courseIds),
+      supabase.from('bets').select('*')
+        .or(`side1_player_id.eq.${playerId},side2_player_id.eq.${playerId}`)
+        .in('status', ['side1_won', 'side2_won', 'push']),
+    ])
+
+    const allScores = (scoresRes.data || []) as any[]
+    const allPlayers = (playersRes.data || []) as any[]
+    const courseMap = new Map((coursesRes.data || []).map((c: any) => [c.id, c]))
+
+    // Compute match result per day
+    const matchResultsByDay = new Map<number, { matchResult: 'W' | 'L' | 'D' | null; matchPoints: number | null; matchScoreDisplay: string | null }>()
+
+    for (const match of matches as any[]) {
+      const course = courseMap.get(match.course_id)
+      if (!course) continue
+
+      const matchScores = allScores.filter((s: any) => s.match_id === match.id)
+      if (matchScores.length === 0) {
+        matchResultsByDay.set(match.day, { matchResult: null, matchPoints: null, matchScoreDisplay: null })
+        continue
+      }
+
+      let result: any
+      try {
+        if (match.format === 'Best Ball') result = calculateBestBallResults(match, allScores, allPlayers, course)
+        else if (match.format === 'Stableford') result = calculateStablefordResults(match, allScores, allPlayers, course)
+        else if (match.format === 'Individual') result = calculateIndividualResults(match, allScores, allPlayers, course)
+        else continue
+      } catch { continue }
+
+      const isTeam1 = match.team1_players.includes(playerName)
+      const myTotal = isTeam1 ? result.team1_total : result.team2_total
+      const theirTotal = isTeam1 ? result.team2_total : result.team1_total
+
+      const matchResult: 'W' | 'L' | 'D' = myTotal > theirTotal ? 'W' : myTotal < theirTotal ? 'L' : 'D'
+      const matchPoints = matchResult === 'W' ? 2 : matchResult === 'D' ? 1 : 0
+      const matchScoreDisplay = match.format === 'Stableford'
+        ? `${myTotal}–${theirTotal} pts`
+        : `${myTotal}–${theirTotal} holes`
+
+      matchResultsByDay.set(match.day, { matchResult, matchPoints, matchScoreDisplay })
+    }
+
+    // Resolve bet days using the match_id → day map from already-fetched matches
+    const matchDayMap = new Map(matches.map((m: any) => [m.id, m.day]))
+
+    // For bets on other matches (not this player's), fetch day separately
+    const bets = (betsRes.data || []) as any[]
+    const unmappedMatchIds = [...new Set(bets.map((b: any) => b.match_id).filter((id: string) => !matchDayMap.has(id)))]
+    if (unmappedMatchIds.length > 0) {
+      const { data: extraMatches } = await supabase.from('matches').select('id, day').in('id', unmappedMatchIds)
+      for (const m of extraMatches || []) matchDayMap.set(m.id, m.day)
+    }
+
+    // Tally bets per day
+    const betsByDay: Record<number, { won: number; lost: number; push: number; net: number }> = {}
+    for (const bet of bets) {
+      const day = matchDayMap.get(bet.match_id)
+      if (!day) continue
+      if (!betsByDay[day]) betsByDay[day] = { won: 0, lost: 0, push: 0, net: 0 }
+      const isSide1 = bet.side1_player_id === playerId
+      if (bet.status === 'push') {
+        betsByDay[day].push++
+      } else if ((bet.status === 'side1_won' && isSide1) || (bet.status === 'side2_won' && !isSide1)) {
+        betsByDay[day].won++
+        betsByDay[day].net += isSide1 ? Number(bet.side1_amount) : Number(bet.side2_amount)
+      } else {
+        betsByDay[day].lost++
+        betsByDay[day].net -= isSide1 ? Number(bet.side2_amount) : Number(bet.side1_amount)
+      }
+    }
+
+    const days = [...new Set(matches.map((m: any) => m.day))].sort((a, b) => a - b) as number[]
+    return days.map(day => ({
+      day,
+      ...(matchResultsByDay.get(day) ?? { matchResult: null, matchPoints: null, matchScoreDisplay: null }),
+      betsWon: betsByDay[day]?.won ?? 0,
+      betsLost: betsByDay[day]?.lost ?? 0,
+      betsPush: betsByDay[day]?.push ?? 0,
+      betsNetAmount: betsByDay[day]?.net ?? 0,
+    }))
   }
 }
 

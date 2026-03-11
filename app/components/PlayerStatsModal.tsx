@@ -28,6 +28,7 @@ export default function PlayerStatsModal({ playerId, playerName, dreamRound, isO
   const [stats, setStats] = useState<PlayerStatsOverview | null>(null)
   const [dailyStats, setDailyStats] = useState<Array<PlayerDailyStats & { courseName: string }>>([])
   const [scorecardData, setScorecardData] = useState<ScorecardDay[]>([])
+  const [dailyGameData, setDailyGameData] = useState<Awaited<ReturnType<typeof StatsService.getPlayerDailyGameData>>>([]) 
   const [loading, setLoading] = useState(false)
 
   useEffect(() => {
@@ -39,14 +40,16 @@ export default function PlayerStatsModal({ playerId, playerName, dreamRound, isO
   const loadStats = async () => {
     setLoading(true)
     try {
-      const [playerStats, dailyData, scorecard] = await Promise.all([
+      const [playerStats, dailyData, scorecard, gameData] = await Promise.all([
         StatsService.getPlayerStats(playerId),
         StatsService.getPlayerDailyStats(playerId),
-        StatsService.getPlayerScorecardData(playerId)
+        StatsService.getPlayerScorecardData(playerId),
+        StatsService.getPlayerDailyGameData(playerId, playerName),
       ])
       setStats(playerStats)
       setDailyStats(dailyData)
       setScorecardData(scorecard)
+      setDailyGameData(gameData)
     } catch (error) {
       console.error('Error loading stats:', error)
     } finally {
@@ -121,7 +124,7 @@ export default function PlayerStatsModal({ playerId, playerName, dreamRound, isO
                 <OverviewTab stats={stats} dreamRound={dreamRound} formatPercentage={formatPercentage} />
               )}
               {activeTab === 'daily' && (
-                <DailyTab dailyStats={dailyStats} />
+                <DailyTab dailyStats={dailyStats} gameData={dailyGameData} />
               )}
               {activeTab === 'scorecard' && (
                 <ScorecardTab scorecardData={scorecardData} />
@@ -414,55 +417,139 @@ function ScorecardTab({ scorecardData }: { scorecardData: ScorecardDay[] }) {
   )
 }
 
-function DailyTab({ dailyStats }: { dailyStats: Array<PlayerDailyStats & { courseName: string }> }) {
-  if (dailyStats.length === 0) {
-    return <div>No daily statistics available</div>
+function DailyTab({
+  dailyStats,
+  gameData,
+}: {
+  dailyStats: Array<PlayerDailyStats & { courseName: string }>
+  gameData: Array<{
+    day: number
+    matchResult: 'W' | 'L' | 'D' | null
+    matchPoints: number | null
+    matchScoreDisplay: string | null
+    betsWon: number
+    betsLost: number
+    betsPush: number
+    betsNetAmount: number
+  }>
+}) {
+  const days = [...new Set([...dailyStats.map(d => d.day), ...gameData.map(d => d.day)])].sort()
+
+  if (days.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-gray-400 gap-2">
+        <span className="text-3xl">⛳</span>
+        <span className="text-sm">No rounds played yet.</span>
+      </div>
+    )
   }
 
+  const COURSE_NAMES: Record<number, string> = { 1: 'Ritz Carlton GC', 2: 'Southern Dunes', 3: "Champions Gate Int'l" }
+
   return (
-    <div className="space-y-4">
-      <h3 className="text-xl font-semibold mb-4">Daily Performance</h3>
-      <div className="overflow-x-auto">
-        <table className="w-full border-collapse">
-          <thead>
-            <tr className="bg-gray-50">
-              <th className="border p-3 text-left">Day</th>
-              <th className="border p-3 text-left">Course</th>
-              <th className="border p-3 text-center">Gross</th>
-              <th className="border p-3 text-center">Net</th>
-              <th className="border p-3 text-center">vs HCP</th>
-              <th className="border p-3 text-center">Eagles</th>
-              <th className="border p-3 text-center">Birdies</th>
-              <th className="border p-3 text-center">Pars</th>
-              <th className="border p-3 text-center">Bogeys</th>
-              <th className="border p-3 text-center">Doubles+</th>
-            </tr>
-          </thead>
-          <tbody>
-            {dailyStats.map((day) => (
-              <tr key={`${day.day}-${day.course_id}`} className="hover:bg-gray-50">
-                <td className="border p-3 font-medium">Day {day.day}</td>
-                <td className="border p-3">{day.courseName}</td>
-                <td className="border p-3 text-center font-bold">{day.gross_score}</td>
-                <td className="border p-3 text-center">{day.net_score}</td>
-                <td className={`border p-3 text-center font-medium ${
-                  (day.strokes_to_handicap || 0) < 0 ? 'text-green-600' : 'text-red-600'
-                }`}>
-                  {day.strokes_to_handicap !== null ? 
-                    (day.strokes_to_handicap > 0 ? `+${day.strokes_to_handicap}` : day.strokes_to_handicap) : 
-                    '-'
-                  }
-                </td>
-                <td className="border p-3 text-center">{day.eagles}</td>
-                <td className="border p-3 text-center">{day.birdies}</td>
-                <td className="border p-3 text-center">{day.pars}</td>
-                <td className="border p-3 text-center">{day.bogeys}</td>
-                <td className="border p-3 text-center">{day.double_bogeys + day.triple_bogeys_plus}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+    <div className="space-y-5">
+      {days.map(day => {
+        const daily = dailyStats.find(d => d.day === day)
+        const game = gameData.find(d => d.day === day)
+        const courseName = daily?.courseName ?? COURSE_NAMES[day] ?? `Day ${day}`
+
+        const resultColor = game?.matchResult === 'W'
+          ? 'text-green-700 bg-green-50 border-green-200'
+          : game?.matchResult === 'L'
+          ? 'text-red-700 bg-red-50 border-red-200'
+          : game?.matchResult === 'D'
+          ? 'text-yellow-700 bg-yellow-50 border-yellow-200'
+          : 'text-gray-400 bg-gray-50 border-gray-200'
+
+        const resultLabel = game?.matchResult === 'W' ? 'WIN' : game?.matchResult === 'L' ? 'LOSS' : game?.matchResult === 'D' ? 'DRAW' : '—'
+
+        const betsNet = game?.betsNetAmount ?? 0
+        const betsNetColor = betsNet > 0 ? 'text-green-700' : betsNet < 0 ? 'text-red-700' : 'text-gray-500'
+        const betsNetLabel = betsNet === 0 ? 'Even' : betsNet > 0 ? `+$${betsNet.toFixed(0)}` : `-$${Math.abs(betsNet).toFixed(0)}`
+
+        return (
+          <div key={day} className="rounded-xl border border-gray-200 overflow-hidden">
+            {/* Day header */}
+            <div className="bg-green-700 px-4 py-3 flex items-center justify-between">
+              <div>
+                <div className="text-white font-bold text-sm">Day {day}</div>
+                <div className="text-green-200 text-xs">{courseName}</div>
+              </div>
+              {daily && (
+                <div className="text-right">
+                  <div className="text-white font-bold text-lg">{daily.gross_score}</div>
+                  <div className="text-green-200 text-xs">Net {daily.net_score}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Stats grid */}
+            <div className="grid grid-cols-2 gap-px bg-gray-100">
+              {/* Match Result */}
+              <div className="bg-white px-4 py-3">
+                <div className="text-xs text-gray-400 font-medium mb-1">Match Result</div>
+                <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full border text-sm font-bold ${resultColor}`}>
+                  {resultLabel}
+                </div>
+                {game?.matchScoreDisplay && (
+                  <div className="text-xs text-gray-400 mt-1">{game.matchScoreDisplay}</div>
+                )}
+              </div>
+
+              {/* Match Points */}
+              <div className="bg-white px-4 py-3">
+                <div className="text-xs text-gray-400 font-medium mb-1">Match Points</div>
+                <div className="text-2xl font-bold text-gray-900">
+                  {game?.matchPoints ?? '—'}
+                </div>
+                <div className="text-xs text-gray-400">of 2 possible</div>
+              </div>
+
+              {/* Skins Won */}
+              <div className="bg-white px-4 py-3">
+                <div className="text-xs text-gray-400 font-medium mb-1">Skins Won</div>
+                <div className="text-2xl font-bold text-gray-900">—</div>
+                <div className="text-xs text-gray-400">after round</div>
+              </div>
+
+              {/* Side Games */}
+              <div className="bg-white px-4 py-3">
+                <div className="text-xs text-gray-400 font-medium mb-1">Handicap Game</div>
+                <div className="text-2xl font-bold text-gray-900">—</div>
+                <div className="text-xs text-gray-400">finish place</div>
+              </div>
+
+              {/* Bets Record */}
+              <div className="bg-white px-4 py-3">
+                <div className="text-xs text-gray-400 font-medium mb-1">Bets Record</div>
+                {(game?.betsWon ?? 0) + (game?.betsLost ?? 0) + (game?.betsPush ?? 0) === 0 ? (
+                  <div className="text-sm text-gray-400">No settled bets</div>
+                ) : (
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-sm font-bold text-green-700">{game?.betsWon ?? 0}W</span>
+                    <span className="text-gray-300">·</span>
+                    <span className="text-sm font-bold text-red-700">{game?.betsLost ?? 0}L</span>
+                    {(game?.betsPush ?? 0) > 0 && (
+                      <>
+                        <span className="text-gray-300">·</span>
+                        <span className="text-sm font-bold text-gray-500">{game.betsPush}P</span>
+                      </>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Bets Net */}
+              <div className="bg-white px-4 py-3">
+                <div className="text-xs text-gray-400 font-medium mb-1">Bets Net</div>
+                <div className={`text-2xl font-bold ${betsNetColor}`}>{betsNetLabel}</div>
+              </div>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
 }
+
+
