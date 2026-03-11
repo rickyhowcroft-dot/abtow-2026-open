@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
     const result = await sendSms(player.phone_number, message, mediaUrl)
 
     if (!result.success) {
-      // Log detail server-side; return generic message (never expose Twilio internals)
+      // Log detail server-side; return generic message
       console.error('[notify-player] SMS failed:', result.error)
       if (result.error === 'SMS not configured') {
         return NextResponse.json({ skipped: true, reason: 'SMS not configured' })
@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'SMS delivery failed' }, { status: 500 })
     }
 
-    // sid is a Twilio message ID — safe to return, not a credential
+    // sid is a TextBelt textId — safe to return, not a credential
     return NextResponse.json({ success: true, sid: result.sid })
   } catch (e) {
     console.error('notify-player error:', e)

@@ -45,7 +45,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Invalid request' }, { status: 400 })
     }
 
-    if (!process.env.TWILIO_ACCOUNT_SID) return NextResponse.json({ skipped: true, reason: 'Twilio not configured' })
+    if (!process.env.TEXTBELT_KEY) return NextResponse.json({ skipped: true, reason: 'SMS not configured' })
 
     // Fetch all specified bets with both player refs — server-side only
     const { data: bets, error } = await supabase
