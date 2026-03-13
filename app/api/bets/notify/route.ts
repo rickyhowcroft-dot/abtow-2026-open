@@ -79,7 +79,7 @@ export async function POST(request: NextRequest) {
       const total   = pending.reduce((s, b) => s + Number(b.side1_amount), 0)
       const profileUrl = `${BASE_URL}/players/${encodeURIComponent(acceptor.name)}`
 
-      const msg = `${HEADER}\n\n⛳ ${proposer.first_name ?? proposer.name.split(' ')[0]} wants to bet you!\n${typeStr} · $${total}\nAccept here: ${profileUrl}`
+      const msg = `${HEADER}\n\n⛳ ${proposer.first_name ?? proposer.name.split(' ')[0]} wants to bet you!\n${typeStr} · $${total}\n\nAccept here:\n${profileUrl}`
       await sendSMS(acceptor.phone_number, msg, BET_PROPOSED_URL)
 
     } else if (event === 'accepted') {
@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
 
         if (!proposer.phone_number) continue
 
-        const msg = `${HEADER}\n\n✅ ${acceptor.first_name ?? acceptor.name.split(' ')[0]} accepted your ${betTypeLabel(bet.bet_type)} bet. It's on!\n${BASE_URL}/bets`
+        const msg = `${HEADER}\n\n✅ ${acceptor.first_name ?? acceptor.name.split(' ')[0]} accepted your ${betTypeLabel(bet.bet_type)} bet. It's on!\n\n${BASE_URL}/bets`
         await sendSMS(proposer.phone_number, msg, BET_ACCEPTED_URL)
       }
     }

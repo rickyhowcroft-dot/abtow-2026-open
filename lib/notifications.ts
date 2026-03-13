@@ -81,29 +81,29 @@ export function notifyBetSettled(params: {
   } = params
 
   if (status === 'push') {
-    const pushMsg = `${HEADER}\n\n🤝 Your ${betTypeLabel} bet vs ${side2FirstName} pushed — no money changes hands.\n${BASE_URL}/bets`
+    const pushMsg = `${HEADER}\n\n🤝 Your ${betTypeLabel} bet vs ${side2FirstName} pushed — no money changes hands.\n\n${BASE_URL}/bets`
     notifyPlayer(side1Id, pushMsg)
-    notifyPlayer(side2Id, `${HEADER}\n\n🤝 Your ${betTypeLabel} bet vs ${side1FirstName} pushed — no money changes hands.\n${BASE_URL}/bets`)
+    notifyPlayer(side2Id, `${HEADER}\n\n🤝 Your ${betTypeLabel} bet vs ${side1FirstName} pushed — no money changes hands.\n\n${BASE_URL}/bets`)
     return
   }
 
   if (!winnerId || !loserId) return
 
   const venmoRequest = winnerVenmoHandle
-    ? `\nRequest on Venmo: venmo.com/${winnerVenmoHandle}`
+    ? `\n💸 venmo.com/${winnerVenmoHandle}`
     : ''
   const venmoPay = loserVenmoHandle
-    ? `\nPay on Venmo: venmo.com/${loserVenmoHandle}`
+    ? `\n💸 venmo.com/${loserVenmoHandle}`
     : ''
 
   notifyPlayer(
     winnerId,
-    `${HEADER}\n\n🏆 Congratulations on that masterpiece of a bet, you won ${betTypeLabel} vs ${loserFirstName}! +$${winnerAmount}\n\nIt's up to you how to spend the money. 💸${venmoRequest}\n${BASE_URL}/bets`,
+    `${HEADER}\n\n🏆 You won ${betTypeLabel} vs ${loserFirstName}! +$${winnerAmount}\n\nRequest payment:${venmoRequest}\n${BASE_URL}/bets`,
     WINNER_URL
   )
   notifyPlayer(
     loserId,
-    `${HEADER}\n\n📜 You lost your ${betTypeLabel} bet vs ${winnerFirstName}. -$${loserAmount}\n"A Lannister always pays their debts."${venmoPay}\n${BASE_URL}/bets`,
+    `${HEADER}\n\n📜 You lost ${betTypeLabel} vs ${winnerFirstName}. -$${loserAmount}\n"A Lannister always pays their debts."\n\nPay up:${venmoPay}\n${BASE_URL}/bets`,
     TYWIN_URL
   )
 }
