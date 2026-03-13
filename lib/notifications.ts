@@ -89,11 +89,13 @@ export function notifyBetSettled(params: {
 
   if (!winnerId || !loserId) return
 
-  const venmoRequest = winnerVenmoHandle
-    ? `\n💸 venmo.com/${winnerVenmoHandle}`
+  const note = encodeURIComponent('ABTOW 2026 Bet')
+  // Winner charges loser (opens loser's Venmo to request); loser pays winner
+  const venmoRequest = winnerVenmoHandle && loserVenmoHandle
+    ? `\n💸 venmo.com/${loserVenmoHandle}?txn=charge&note=${note}&amount=${winnerAmount}`
     : ''
-  const venmoPay = loserVenmoHandle
-    ? `\n💸 venmo.com/${loserVenmoHandle}`
+  const venmoPay = winnerVenmoHandle
+    ? `\n💸 venmo.com/${winnerVenmoHandle}?txn=pay&note=${note}&amount=${loserAmount}`
     : ''
 
   notifyPlayer(
