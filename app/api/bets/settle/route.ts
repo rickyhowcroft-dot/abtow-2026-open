@@ -66,16 +66,13 @@ export async function POST(request: NextRequest) {
     for (const bet of bets) {
       if (bet.status !== 'active') continue
 
-      // Map side1/side2 → team1/team2 by checking which team side1's player is in
-      const side1InTeam1 = players.some(
-        p => p.id === bet.side1_player_id && match.team1_players.includes(p.name)
-      )
-      const s1Front   = side1InTeam1 ? segs.team1Front   : segs.team2Front
-      const s1Back    = side1InTeam1 ? segs.team1Back    : segs.team2Back
-      const s1Overall = side1InTeam1 ? segs.team1Overall : segs.team2Overall
-      const s2Front   = side1InTeam1 ? segs.team2Front   : segs.team1Front
-      const s2Back    = side1InTeam1 ? segs.team2Back    : segs.team1Back
-      const s2Overall = side1InTeam1 ? segs.team2Overall : segs.team1Overall
+      // side1 always backs team1, side2 always backs team2 — enforced by UI at bet creation
+      const s1Front   = segs.team1Front
+      const s1Back    = segs.team1Back
+      const s1Overall = segs.team1Overall
+      const s2Front   = segs.team2Front
+      const s2Back    = segs.team2Back
+      const s2Overall = segs.team2Overall
 
       let raw1: number, raw2: number
       if      (bet.bet_type === 'front') { raw1 = s1Front;   raw2 = s2Front }
