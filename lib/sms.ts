@@ -36,7 +36,8 @@ export async function sendSms(
   }
 
   const phone = normalizePhone(to)
-  const fullBody = mediaUrl ? `${body}\n${mediaUrl}` : body
+  // mediaUrl intentionally unused — TextBelt is SMS-only; images preserved in /public/ for future MMS
+  const fullBody = body
   const params = new URLSearchParams({ phone, message: fullBody, key })
 
   try {
