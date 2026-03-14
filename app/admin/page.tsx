@@ -338,6 +338,16 @@ export default function AdminPage() {
                         })}
                       </div>
                     )}
+
+                    {/* Day Overview button */}
+                    <div className="mt-3">
+                      <a
+                        href={`/admin/day-overview/${day}`}
+                        className="flex items-center gap-2 text-sm font-semibold text-white bg-[#2a6b7c] hover:bg-[#225a69] px-4 py-2.5 rounded-xl transition-colors w-full justify-center"
+                      >
+                        📰 Day {day} Press Release
+                      </a>
+                    </div>
                   </div>
                 )
               })}
