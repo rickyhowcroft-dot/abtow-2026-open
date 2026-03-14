@@ -192,8 +192,8 @@ export default function DayOverview() {
     if (!players || !matches) { setLoading(false); return }
     setAllPlayers(players as Player[])
 
-    // Check all locked + attested
-    const allDone = matches.every((m: Match) => m.scores_locked && m.attested_by)
+    // Check all locked + attested (scores_locked/attested_by are DB fields not in the Match type)
+    const allDone = matches.every((m: Match & { scores_locked?: boolean; attested_by?: string | null }) => m.scores_locked && m.attested_by)
     setReady(allDone)
 
     if (!allDone) { setLoading(false); return }
