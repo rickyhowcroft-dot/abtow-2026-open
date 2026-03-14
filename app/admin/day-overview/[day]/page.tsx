@@ -169,6 +169,7 @@ export default function DayOverview() {
   const [cumulativeBalls,  setCumulativeBalls]  = useState(0)
   const [allPlayers, setAllPlayers] = useState<Player[]>([])
   const [mvp, setMvp] = useState<{ name: string; first: string; pts: number }[]>([])
+  const [spotlights, setSpotlights] = useState<{ emoji: string; title: string; player: string; stat: string; flavor: string }[]>([])
 
   // ── Auth check ───────────────────────────────────────────────────────────────
   useEffect(() => {
@@ -295,6 +296,138 @@ export default function DayOverview() {
         return { name: p?.name ?? '?', first: p?.first_name ?? '?', pts: s.match_points_total }
       }))
     }
+
+    // ── Player Spotlights ──────────────────────────────────────────────────────
+    const parData = course.par_data as Record<string, { par: number; handicap: number }>
+    const dayPlayers = players.filter((p: Player) =>
+      matches.some((m: Match) => [...m.team1_players, ...m.team2_players].includes(p.name))
+    ) as Player[]
+
+    type StatRow = {
+      player: Player
+      grossTotal: number
+      birdies: number
+      eagles: number
+      bogeys: number
+      doubles: number
+      pars: number
+    }
+    const stats: StatRow[] = dayPlayers.map(p => {
+      let grossTotal = 0, birdies = 0, eagles = 0, bogeys = 0, doubles = 0, pars = 0
+      for (let h = 1; h <= 18; h++) {
+        const gs = allScores.find(s => s.player_id === p.id && s.hole_number === h)?.gross_score
+        if (!gs) continue
+        const par = parData[`hole_${h}`]?.par ?? 4
+        grossTotal += gs
+        const diff = gs - par
+        if (diff <= -2) eagles++
+        else if (diff === -1) birdies++
+        else if (diff === 0) pars++
+        else if (diff === 1) bogeys++
+        else if (diff >= 2) doubles++
+      }
+      return { player: p, grossTotal, birdies, eagles, bogeys, doubles, pars }
+    }).filter(r => r.grossTotal > 0)
+
+    const displayName = (p: Player) => (p as Player & { nickname?: string }).nickname || p.first_name || p.name
+
+    const newSpots: typeof spotlights = []
+
+    // Eagle club
+    const eaglers = stats.filter(r => r.eagles > 0).sort((a, b) => b.eagles - a.eagles)
+    if (eaglers.length > 0) {
+      const e = eaglers[0]
+      newSpots.push({
+        emoji: '🦅',
+        title: 'Eagle Club',
+        player: displayName(e.player),
+        stat: `${e.eagles} eagle${e.eagles > 1 ? 's' : ''}`,
+        flavor: e.eagles > 1
+          ? `${displayName(e.player)} is playing like it's a video game. ${e.eagles} eagles today.`
+          : `${displayName(e.player)} found the bottom of the cup from distance. Welcome to the Eagle Club.`,
+      })
+    }
+
+    // Birdie leader
+    const birdieLeader = [...stats].sort((a, b) => b.birdies - a.birdies)[0]
+    if (birdieLeader && birdieLeader.birdies > 0) {
+      newSpots.push({
+        emoji: '🐦',
+        title: 'Birdie Bird',
+        player: displayName(birdieLeader.player),
+        stat: `${birdieLeader.birdies} birdies`,
+        flavor: birdieLeader.birdies >= 4
+          ? `${displayName(birdieLeader.player)} was on fire. ${birdieLeader.birdies} birdies — the field had no answer.`
+          : `${displayName(birdieLeader.player)} led the field in birdies with ${birdieLeader.birdies}. Take a bow.`,
+      })
+    }
+
+    // Low gross (round of the day)
+    const lowGross = [...stats].sort((a, b) => a.grossTotal - b.grossTotal)[0]
+    if (lowGross) {
+      const toPar = lowGross.grossTotal - 72
+      const toParStr = toPar === 0 ? 'even par' : toPar > 0 ? `+${toPar}` : `${toPar}`
+      newSpots.push({
+        emoji: '🏆',
+        title: 'Round of the Day',
+        player: displayName(lowGross.player),
+        stat: `${lowGross.grossTotal} gross (${toParStr})`,
+        flavor: toPar <= 0
+          ? `${displayName(lowGross.player)} posted the low round at ${toParStr}. That's how it's done.`
+          : `${displayName(lowGross.player)} led the field with a ${lowGross.grossTotal} — not pretty, but it's the best out there.`,
+      })
+    }
+
+    // Bogey machine
+    const bogeyKing = [...stats].sort((a, b) => b.bogeys - a.bogeys)[0]
+    if (bogeyKing && bogeyKing.bogeys >= 5) {
+      newSpots.push({
+        emoji: '🚂',
+        title: 'Bogey Machine',
+        player: displayName(bogeyKing.player),
+        stat: `${bogeyKing.bogeys} bogeys`,
+        flavor: `${displayName(bogeyKing.player)} was consistent today — consistently bogey. ${bogeyKing.bogeys} of them. The train never stopped.`,
+      })
+    }
+
+    // High gross (rough day)
+    const highGross = [...stats].sort((a, b) => b.grossTotal - a.grossTotal)[0]
+    if (highGross && highGross.grossTotal > lowGross.grossTotal + 8) {
+      const toPar = highGross.grossTotal - 72
+      newSpots.push({
+        emoji: '😬',
+        title: 'Rough Day Award',
+        player: displayName(highGross.player),
+        stat: `${highGross.grossTotal} gross (+${toPar})`,
+        flavor: `${displayName(highGross.player)} had a day to forget. +${toPar} and a lot of explaining to do at the bar.`,
+      })
+    }
+
+    // Double trouble
+    const doubleKing = [...stats].sort((a, b) => b.doubles - a.doubles)[0]
+    if (doubleKing && doubleKing.doubles >= 3) {
+      newSpots.push({
+        emoji: '😱',
+        title: 'Double Trouble',
+        player: displayName(doubleKing.player),
+        stat: `${doubleKing.doubles} doubles+`,
+        flavor: `${displayName(doubleKing.player)} found trouble in bulk today. ${doubleKing.doubles} double bogeys or worse. The course won this round.`,
+      })
+    }
+
+    // Par machine (most pars — sneaky consistent)
+    const parMachine = [...stats].sort((a, b) => b.pars - a.pars)[0]
+    if (parMachine && parMachine.pars >= 12 && parMachine.player.id !== lowGross.player.id) {
+      newSpots.push({
+        emoji: '🤖',
+        title: 'Par Machine',
+        player: displayName(parMachine.player),
+        stat: `${parMachine.pars} pars`,
+        flavor: `${displayName(parMachine.player)} was the picture of consistency — ${parMachine.pars} pars. Not spectacular, not disastrous. Just there.`,
+      })
+    }
+
+    setSpotlights(newSpots)
 
     setLoading(false)
   }, [day])
@@ -494,6 +627,26 @@ export default function DayOverview() {
                     })}
                 </div>
               )}
+            </section>
+          )}
+
+          {/* Player Spotlights */}
+          {spotlights.length > 0 && (
+            <section>
+              <div className="text-xs text-gray-500 tracking-widest uppercase mb-3">━━━ Player Spotlights ━━━</div>
+              <div className="space-y-3">
+                {spotlights.map((s, i) => (
+                  <div key={i} className="bg-gray-800 rounded-xl p-4 border-l-4 border-[#2a6b7c]">
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xl">{s.emoji}</span>
+                      <span className="text-xs font-bold text-[#7dd3e8] uppercase tracking-widest">{s.title}</span>
+                      <span className="ml-auto text-xs font-bold text-yellow-400 bg-yellow-900/30 px-2 py-0.5 rounded-full">{s.stat}</span>
+                    </div>
+                    <div className="text-base font-bold text-white mb-1">{s.player}</div>
+                    <div className="text-sm text-gray-400 italic">"{s.flavor}"</div>
+                  </div>
+                ))}
+              </div>
             </section>
           )}
 
