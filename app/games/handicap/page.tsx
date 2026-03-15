@@ -352,7 +352,8 @@ function HandicapGameContent() {
         <div className="flex items-start gap-3 text-xs text-gray-600">
           <div className="flex-1">
             <p className="mb-0.5"><strong>Target = 36 − your handicap.</strong></p>
-            <p className="mb-1">Earn points on every hole based on gross score vs par. Hit your target to be eligible to win.</p>
+            <p className="mb-0.5">Earn points on every hole based on gross score vs par.</p>
+            <p className="mb-1">Hit your target to be eligible to win.</p>
             <div className="grid grid-cols-2 gap-x-4 gap-y-0.5 mt-2 text-[11px]">
               <span>Double Eagle ≤−3: <strong>16 pts</strong></span>
               <span>Bogey +1: <strong>1 pt</strong></span>
