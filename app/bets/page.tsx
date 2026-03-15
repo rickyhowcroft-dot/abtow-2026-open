@@ -435,8 +435,9 @@ function AddBetModal({ matchId, day, group, side1Names, side2Names, players, vie
           proposerSide: mySide as 'side1' | 'side2',
         })
       }))
-      // Notify opponent — message built server-side, only reaches the acceptor
-      notifyBetProposed(createdBets.map(b => b.id))
+      // Notify opponent — small delay to ensure bets are committed before notify route queries them
+      const betIds = createdBets.map(b => b.id)
+      setTimeout(() => notifyBetProposed(betIds), 800)
       onCreated()
     } catch (e: unknown) {
       setSubmitError(e instanceof Error ? e.message : 'Failed to submit')
