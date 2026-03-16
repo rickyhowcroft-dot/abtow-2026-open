@@ -330,12 +330,7 @@ export default function DayDetail() {
                 >
                   View Scorecard
                 </Link>
-                <Link
-                  href={`/score/${match.group_access_token}`}
-                  className="px-4 py-2 bg-[#2a6b7c] text-white rounded-lg font-medium hover:bg-[#235a68] transition-colors"
-                >
-                  Enter Scores
-                </Link>
+{/* Enter Scores removed — access via direct URL only */}
               </div>
             </div>
           );

@@ -469,16 +469,10 @@ export default function Home() {
               <div className="flex border-t border-gray-200">
                 <button
                   onClick={() => setModalMatch(match)}
-                  className="flex-1 py-2.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors border-r border-gray-200"
+                  className="flex-1 py-2.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
                 >
                   View Scorecard
                 </button>
-                <Link
-                  href={`/score/${match.group_access_token}`}
-                  className="flex-1 py-2.5 text-center text-sm font-medium text-[#2a6b7c] hover:bg-[#2a6b7c]/5 transition-colors"
-                >
-                  Enter Scores
-                </Link>
               </div>
             </div>
           );
