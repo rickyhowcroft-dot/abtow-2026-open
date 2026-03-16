@@ -22,6 +22,14 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [teamScores, setTeamScores] = useState({ shafts: 0, balls: 0 });
   const [modalMatch, setModalMatch] = useState<Match | null>(null);
+  const [scoreTokens, setScoreTokens] = useState<Record<string, string>>({}); // matchId → token
+
+  useEffect(() => {
+    try {
+      const stored = JSON.parse(localStorage.getItem('abtow_score_tokens') || '{}')
+      setScoreTokens(stored)
+    } catch {}
+  }, [])
 
   useEffect(() => {
     fetchData();
@@ -469,10 +477,18 @@ export default function Home() {
               <div className="flex border-t border-gray-200">
                 <button
                   onClick={() => setModalMatch(match)}
-                  className="flex-1 py-2.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors"
+                  className={`flex-1 py-2.5 text-center text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors ${scoreTokens[match.id] ? 'border-r border-gray-200' : ''}`}
                 >
                   View Scorecard
                 </button>
+                {scoreTokens[match.id] && (
+                  <a
+                    href={`/score/${scoreTokens[match.id]}`}
+                    className="flex-1 py-2.5 text-center text-sm font-medium text-[#2a6b7c] hover:bg-[#2a6b7c]/5 transition-colors"
+                  >
+                    ✏️ Enter Scores
+                  </a>
+                )}
               </div>
             </div>
           );

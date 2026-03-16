@@ -69,6 +69,12 @@ export default function ScoreEntry() {
 
       setMatch(matchData);
       if ((matchData as any).attested_by) setAttestedById((matchData as any).attested_by);
+      // Save token so scorer can find their way back from the homepage
+      try {
+        const stored = JSON.parse(localStorage.getItem('abtow_score_tokens') || '{}')
+        stored[matchData.id] = token
+        localStorage.setItem('abtow_score_tokens', JSON.stringify(stored))
+      } catch {}
 
       // Fetch course data
       const { data: courseData } = await supabase
