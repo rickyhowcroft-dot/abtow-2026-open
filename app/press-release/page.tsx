@@ -50,7 +50,7 @@ function computeSkins(players: Player[], scores: Score[], course: Course): SkinH
     const hs = players.map(p => {
       const gross = scores.find(s => s.player_id === p.id && s.hole_number === h)?.gross_score
       if (!gross) return null
-      const strokes = Math.floor((p.playing_handicap * 0.75) / 18) + (holeHcp <= (p.playing_handicap * 0.75) % 18 ? 1 : 0)
+      const strokes = Math.floor(p.playing_handicap / 18) + (holeHcp <= p.playing_handicap % 18 ? 1 : 0)
       return { player: p, grossScore: gross, netScore: gross - strokes }
     }).filter(Boolean) as { player: Player; grossScore: number; netScore: number }[]
     if (hs.length < 2) { results.push({ hole: h, par: holePar, grossTie: false, netTie: false, push: false }); continue }

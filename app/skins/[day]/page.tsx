@@ -70,7 +70,7 @@ export default function SkinsDetail() {
 
     const results: SkinResult[] = [];
 
-    // Skins use 75% of playing_handicap for net calculation (all 3 days).
+    // playing_handicap in DB is already the 75%-adjusted value — use directly for skins.
     // Net scores never cut or push a gross score:
     // If a player wins gross outright, exclude them from net evaluation on that hole.
 
@@ -84,8 +84,8 @@ export default function SkinsDetail() {
       players.forEach(player => {
         const score = scores.find(s => s.player_id === player.id && s.hole_number === hole);
         if (score?.gross_score) {
-          // Skins use 75% of playing_handicap for net calculation
-          const netScore = calculateNetScore(score.gross_score, player.playing_handicap * 0.75, holeData.handicap);
+          // playing_handicap in DB is already the 75% adjusted value — use directly
+          const netScore = calculateNetScore(score.gross_score, player.playing_handicap, holeData.handicap);
           holeScores.push({
             player,
             grossScore: score.gross_score,
