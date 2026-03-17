@@ -169,6 +169,24 @@ export class PostRoundProcessor {
       
       // If round is complete (18 holes), process the stats
       if (completedHoles.length === 18) {
+        // Idempotency guard: fetch match day, check if already processed
+        const { data: matchRow } = await supabase
+          .from('matches')
+          .select('day')
+          .eq('id', matchId)
+          .single()
+        if (matchRow) {
+          const { data: existing } = await supabase
+            .from('player_daily_stats')
+            .select('id')
+            .eq('player_id', playerId)
+            .eq('day', matchRow.day)
+            .maybeSingle()
+          if (existing) {
+            console.log(`Stats already processed for player ${playerId} on day ${matchRow.day}, skipping`)
+            return false
+          }
+        }
         await this.processPlayerRound(playerId, matchId)
         return true
       }
