@@ -195,6 +195,20 @@ export default function AdminPage() {
     setPhoneSaving(null)
   }
 
+  async function togglePressRelease(day: number) {
+    const key = `press-release-${day}`
+    setGameLockToggling(key)
+    const existing = gameLocks.find(l => l.game_id === 'press-release' && l.day === day)
+    const isPublished = existing?.locked === false
+    const newLocked = isPublished // publishing = locked:false, unpublishing = locked:true
+    await setGameDayLock('press-release', day, newLocked)
+    setGameLocks(prev => {
+      const filtered = prev.filter(l => !(l.game_id === 'press-release' && l.day === day))
+      return [...filtered, { game_id: 'press-release', day, locked: newLocked, updated_at: new Date().toISOString() }]
+    })
+    setGameLockToggling(null)
+  }
+
   async function toggleGameLock(gameId: string, day: number) {
     const key = `${gameId}-${day}`
     setGameLockToggling(key)
@@ -418,6 +432,51 @@ export default function AdminPage() {
                     </div>
                   </div>
                 ))}
+              </div>
+
+              {/* ── Press Release Publishing ── */}
+              <div className="mb-8">
+                <h2 className="text-base font-semibold text-[#2a6b7c] uppercase tracking-wide mb-1">
+                  📰 Press Release
+                </h2>
+                <p className="text-xs text-gray-400 mb-3">
+                  Review each day&apos;s recap in the Day Press Release page above, then publish here to make it visible to all players.
+                </p>
+                <div className="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                  <div className="divide-y divide-gray-50">
+                    {[1, 2, 3].map(day => {
+                      const lock = gameLocks.find(l => l.game_id === 'press-release' && l.day === day)
+                      const isPublished = lock?.locked === false
+                      const key = `press-release-${day}`
+                      const isToggling = gameLockToggling === key
+                      const dayLabel = day === 1 ? 'Day 1 — Ritz Carlton' : day === 2 ? 'Day 2 — Southern Dunes' : 'Day 3 — Champions Gate'
+                      return (
+                        <div key={day} className="flex items-center gap-3 px-4 py-3">
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium text-gray-800">{dayLabel}</div>
+                            <div className="text-xs mt-0.5">
+                              {isPublished
+                                ? <span className="text-green-600">✅ Published — visible to all players</span>
+                                : <span className="text-gray-400">🔒 Not published yet</span>
+                              }
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => togglePressRelease(day)}
+                            disabled={!!isToggling}
+                            className={`text-xs px-3 py-1.5 rounded-lg font-semibold transition-colors disabled:opacity-60 ${
+                              isPublished
+                                ? 'bg-red-100 text-red-700 hover:bg-red-200'
+                                : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                            }`}
+                          >
+                            {isToggling ? '…' : isPublished ? 'Unpublish' : '📢 Publish'}
+                          </button>
+                        </div>
+                      )
+                    })}
+                  </div>
+                </div>
               </div>
 
               {/* ── Phone Numbers ── */}
