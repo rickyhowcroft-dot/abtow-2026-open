@@ -12,7 +12,8 @@ export async function POST(req: NextRequest) {
   // Admin auth check
   const cookieStore = cookies()
   const session = cookieStore.get('abtow_admin_session')
-  if (!session || session.value !== 'authenticated') {
+  const adminPassword = process.env.ADMIN_PASSWORD
+  if (!session || !adminPassword || session.value !== adminPassword) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
