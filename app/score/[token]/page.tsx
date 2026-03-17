@@ -119,6 +119,16 @@ export default function ScoreEntry() {
             }
           });
           setScores(updatedScores);
+
+          // Resume at first hole where any player is missing a score
+          const playerIds = playersData.map(p => p.id);
+          for (let hole = 1; hole <= 18; hole++) {
+            const allEntered = playerIds.every(pid => (updatedScores[pid]?.[hole] ?? 0) > 0);
+            if (!allEntered) {
+              setCurrentHole(hole);
+              break;
+            }
+          }
         }
       }
     } catch (error) {
