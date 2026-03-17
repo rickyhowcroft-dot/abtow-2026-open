@@ -110,11 +110,11 @@ export default function StatisticsPage() {
 
   const playedStats = allStats.filter(p => p.total_rounds_played > 0)
   const leaders = {
-    lowestAverage:  topTied(allStats,    p => p.scoringAverage,    false),
-    mostBirdies:    topTied(allStats,    p => p.birdies,           true),
-    mostPars:       topTied(allStats,    p => p.pars,              true),
-    bestHandicap:   topTied(allStats,    p => p.handicapPerformance, false),
-    mostConsistent: topTied(allStats,    p => p.pars / (p.total_holes_played || 1), true),
+    lowestAverage:  topTied(playedStats, p => p.scoringAverage,    false),
+    mostBirdies:    topTied(playedStats, p => p.birdies,           true),
+    mostPars:       topTied(playedStats, p => p.pars,              true),
+    bestHandicap:   topTied(playedStats, p => p.handicapPerformance, false),
+    mostConsistent: topTied(playedStats, p => p.pars / (p.total_holes_played || 1), true),
     bestNetScore:   topTied(playedStats, p => p.netScoringAverage,  false),
     mostBogeys:     topTied(allStats,    p => p.bogeys,             true),
     worstNetScore:  topTied(playedStats, p => p.netScoringAverage,  true),
