@@ -847,7 +847,8 @@ function ScorecardModal({ match, allPlayers, allScores, courses, onClose }: {
                   holes.forEach(h => {
                     const w = getHoleWinner(h);
                     if (w === 'team1') t1++;
-                    if (w === 'team2') t2++;
+                    else if (w === 'team2') t2++;
+                    else if (w === 'tie') { t1 += 0.5; t2 += 0.5; }
                   });
                   return { t1, t2 };
                 }
@@ -903,8 +904,8 @@ function ScorecardModal({ match, allPlayers, allScores, courses, onClose }: {
 
           // Count wins for front, back, overall
           let fT1 = 0, fT2 = 0, bT1 = 0, bT2 = 0;
-          [1,2,3,4,5,6,7,8,9].forEach(h => { const w = getHoleWinnerSummary(h); if (w === 'team1') fT1++; if (w === 'team2') fT2++; });
-          [10,11,12,13,14,15,16,17,18].forEach(h => { const w = getHoleWinnerSummary(h); if (w === 'team1') bT1++; if (w === 'team2') bT2++; });
+          [1,2,3,4,5,6,7,8,9].forEach(h => { const w = getHoleWinnerSummary(h); if (w === 'team1') fT1++; else if (w === 'team2') fT2++; else if (w === 'tie') { fT1 += 0.5; fT2 += 0.5; } });
+          [10,11,12,13,14,15,16,17,18].forEach(h => { const w = getHoleWinnerSummary(h); if (w === 'team1') bT1++; else if (w === 'team2') bT2++; else if (w === 'tie') { bT1 += 0.5; bT2 += 0.5; } });
           const allT1 = fT1 + bT1, allT2 = fT2 + bT2;
           const hasScores = [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18].some(h => getHoleWinnerSummary(h) !== null);
 

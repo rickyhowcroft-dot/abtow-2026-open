@@ -400,8 +400,8 @@ export default function ScoreEntry() {
           const frontNine = [1,2,3,4,5,6,7,8,9];
           const backNine = [10,11,12,13,14,15,16,17,18];
           let frontT1 = 0, frontT2 = 0, backT1 = 0, backT2 = 0;
-          frontNine.forEach(h => { const w = getHoleWinner(h); if (w === 'team1') frontT1++; if (w === 'team2') frontT2++; });
-          backNine.forEach(h => { const w = getHoleWinner(h); if (w === 'team1') backT1++; if (w === 'team2') backT2++; });
+          frontNine.forEach(h => { const w = getHoleWinner(h); if (w === 'team1') frontT1++; else if (w === 'team2') frontT2++; else if (w === 'tie') { frontT1 += 0.5; frontT2 += 0.5; } });
+          backNine.forEach(h => { const w = getHoleWinner(h); if (w === 'team1') backT1++; else if (w === 'team2') backT2++; else if (w === 'tie') { backT1 += 0.5; backT2 += 0.5; } });
 
           return (
             <div>
