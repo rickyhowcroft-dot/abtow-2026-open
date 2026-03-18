@@ -34,6 +34,7 @@ export interface Match {
   course_id: string;
   group_access_token: string;
   tee_time?: string | null;
+  scores_locked?: boolean | null;
   course?: Course;
 }
 
