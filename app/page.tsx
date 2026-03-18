@@ -215,6 +215,7 @@ export default function Home() {
   }
 
   function getMatchStatus(match: Match): string {
+    if (match.scores_locked) return 'Final';
     const matchScores = scores.filter(s => s.match_id === match.id);
     const totalPlayersInMatch = match.team1_players.length + match.team2_players.length;
     const completedHoles = matchScores.filter(s => s.gross_score !== null).length;
