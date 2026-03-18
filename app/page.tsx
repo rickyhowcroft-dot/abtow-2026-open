@@ -459,17 +459,24 @@ export default function Home() {
               <div className="flex items-center bg-[#2a6b7c] text-white">
                 <div className="flex-1 flex items-center gap-2 px-3 py-2">
                   <span className="text-lg font-bold">{shaftsTotal}</span>
-                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded">
-                    {(() => { const pts = team1IsShafts ? result.team1_front + result.team1_back : result.team2_front + result.team2_back; return `${pts}pts`; })()}
-                  </span>
+                  {match.format !== 'Individual' && (
+                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded">
+                      {(() => { const pts = team1IsShafts ? result.team1_front + result.team1_back : result.team2_front + result.team2_back; return `${pts}pts`; })()}
+                    </span>
+                  )}
                 </div>
                 <div className="px-4 py-2 text-center">
                   <span className="text-sm font-semibold">{status}</span>
+                  {match.format === 'Individual' && (
+                    <div className="text-[10px] text-white/70 mt-0.5">F/B/Overall</div>
+                  )}
                 </div>
                 <div className="flex-1 flex items-center gap-2 px-3 py-2 justify-end">
-                  <span className="text-xs bg-white/20 px-2 py-0.5 rounded">
-                    {(() => { const pts = team1IsShafts ? result.team2_front + result.team2_back : result.team1_front + result.team1_back; return `${pts}pts`; })()}
-                  </span>
+                  {match.format !== 'Individual' && (
+                    <span className="text-xs bg-white/20 px-2 py-0.5 rounded">
+                      {(() => { const pts = team1IsShafts ? result.team2_front + result.team2_back : result.team1_front + result.team1_back; return `${pts}pts`; })()}
+                    </span>
+                  )}
                   <span className="text-lg font-bold">{ballsTotal}</span>
                 </div>
               </div>
