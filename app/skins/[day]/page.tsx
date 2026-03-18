@@ -112,21 +112,18 @@ export default function SkinsDetail() {
       let push = false;
 
       if (grossWinner) {
-        const isBirdieOrBetter = minGrossScore < holeData.par;
+        const isBirdieOrBetter = minGrossScore <= holeData.par - 1;
 
         if (isBirdieOrBetter) {
           // Birdie or better outright gross winner takes BOTH gross and net skins
           netWinner = grossWinner;
         } else {
-          // Par or worse outright gross winner: check if any other player's net ties or beats it
+          // Par or worse outright gross winner: net skin goes to lowest net among others
           const others = holeScores.filter(s => s.player.id !== grossWinner.player.id);
-          const netPushes = others.filter(s => s.netScore <= minGrossScore);
-
-          if (netPushes.length > 0) {
-            // Push — net score tied/beat the gross winner's score; nobody wins
-            push = true;
-          }
-          // else: gross winner takes gross skin only — no net skin awarded
+          const minNetScore = Math.min(...others.map(s => s.netScore));
+          const netWinners = others.filter(s => s.netScore === minNetScore);
+          netWinner = netWinners.length === 1 ? netWinners[0] : null;
+          netTie = netWinners.length > 1;
         }
       } else {
         // Gross tied — no gross skin; check all players for outright net winner
