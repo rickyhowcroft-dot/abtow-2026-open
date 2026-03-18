@@ -53,21 +53,30 @@ export default function Home() {
     }
   }, [players, matches, scores, courses]);
 
+    async function fetchAllScores(): Promise<Score[]> {
+    // Fetch in 600-row pages to stay under PostgREST's 1000-row cap
+    const [r1, r2] = await Promise.all([
+      supabase.from('scores').select('*').order('created_at', { ascending: true }).range(0, 599),
+      supabase.from('scores').select('*').order('created_at', { ascending: true }).range(600, 1999),
+    ]);
+    return [...(r1.data ?? []), ...(r2.data ?? [])];
+  }
+
   async function fetchData() {
     setLoading(true);
     
     try {
-      const [playersResult, matchesResult, scoresResult, coursesResult] = await Promise.all([
+      const [playersResult, matchesResult, coursesResult, allScores] = await Promise.all([
         supabase.from('players').select('*'),
         supabase.from('matches').select('*'),
-        supabase.from('scores').select('*').limit(5000),
-        supabase.from('courses').select('*')
+        supabase.from('courses').select('*'),
+        fetchAllScores(),
       ]);
 
       if (playersResult.data) setPlayers(playersResult.data);
       if (matchesResult.data) setMatches(matchesResult.data);
-      if (scoresResult.data) setScores(scoresResult.data);
       if (coursesResult.data) setCourses(coursesResult.data);
+      setScores(allScores);
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -76,8 +85,8 @@ export default function Home() {
   }
 
   async function fetchScores() {
-    const { data } = await supabase.from('scores').select('*').limit(5000);
-    if (data) setScores(data);
+    const allScores = await fetchAllScores();
+    setScores(allScores);
   }
 
   function calculateTeamScores() {
