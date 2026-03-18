@@ -39,7 +39,7 @@ export default function SkinsDetail() {
     try {
       const [playersResult, scoresResult, coursesResult] = await Promise.all([
         supabase.from('players').select('*'),
-        supabase.from('scores').select('*'),
+        supabase.from('scores').select('*').limit(5000),
         supabase.from('courses').select('*').eq('day', day).single()
       ]);
 

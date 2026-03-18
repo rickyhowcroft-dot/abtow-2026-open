@@ -60,7 +60,7 @@ export default function Home() {
       const [playersResult, matchesResult, scoresResult, coursesResult] = await Promise.all([
         supabase.from('players').select('*'),
         supabase.from('matches').select('*'),
-        supabase.from('scores').select('*'),
+        supabase.from('scores').select('*').limit(5000),
         supabase.from('courses').select('*')
       ]);
 
@@ -76,7 +76,7 @@ export default function Home() {
   }
 
   async function fetchScores() {
-    const { data } = await supabase.from('scores').select('*');
+    const { data } = await supabase.from('scores').select('*').limit(5000);
     if (data) setScores(data);
   }
 

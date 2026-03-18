@@ -45,7 +45,7 @@ export default function ScoreboardPage() {
     const [p, m, s, c] = await Promise.all([
       supabase.from('players').select('*'),
       supabase.from('matches').select('*').eq('day', day).order('group_number'),
-      supabase.from('scores').select('*'),
+      supabase.from('scores').select('*').limit(5000),
       supabase.from('courses').select('*').eq('day', day),
     ]);
     if (p.data) setPlayers(p.data);
@@ -56,7 +56,7 @@ export default function ScoreboardPage() {
   }
 
   async function fetchScores() {
-    const { data } = await supabase.from('scores').select('*');
+    const { data } = await supabase.from('scores').select('*').limit(5000);
     if (data) setScores(data);
   }
 

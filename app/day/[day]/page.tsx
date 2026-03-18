@@ -29,7 +29,7 @@ export default function DayDetail() {
       const [playersResult, matchesResult, scoresResult, coursesResult] = await Promise.all([
         supabase.from('players').select('*'),
         supabase.from('matches').select('*').eq('day', day),
-        supabase.from('scores').select('*'),
+        supabase.from('scores').select('*').limit(5000),
         supabase.from('courses').select('*').eq('day', day)
       ]);
 
