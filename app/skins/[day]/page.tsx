@@ -37,21 +37,21 @@ export default function SkinsDetail() {
 
   async function fetchSkinsData() {
     try {
-      const [playersResult, scoresResult, coursesResult] = await Promise.all([
+      const [playersResult, matchesResult, coursesResult] = await Promise.all([
         supabase.from('players').select('*'),
-        supabase.from('scores').select('*').limit(5000),
+        supabase.from('matches').select('id').eq('day', day),
         supabase.from('courses').select('*').eq('day', day).single()
       ]);
 
       if (playersResult.data) setPlayers(playersResult.data);
-      if (scoresResult.data) {
-        // Filter scores for matches on this day
-        const dayMatches = await supabase.from('matches').select('id').eq('day', day);
-        const dayMatchIds = dayMatches.data?.map(m => m.id) || [];
-        const dayScores = scoresResult.data.filter(s => dayMatchIds.includes(s.match_id));
-        setScores(dayScores);
-      }
       if (coursesResult.data) setCourse(coursesResult.data);
+
+      // Fetch scores filtered directly by this day's match IDs — avoids hitting row cap
+      if (matchesResult.data) {
+        const matchIds = matchesResult.data.map((m: { id: string }) => m.id);
+        const { data: dayScores } = await supabase.from('scores').select('*').in('match_id', matchIds);
+        if (dayScores) setScores(dayScores);
+      }
     } catch (error) {
       console.error('Error fetching skins data:', error);
     } finally {
